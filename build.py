@@ -18,13 +18,14 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 30                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 31                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
 ZWERG_TAKT = 300                        # Ticks je Schlag auf Stufe 0 (15 s)
 ZWERG_STUFE_TICKS = 20                  # je Upgrade eine Sekunde schneller
 ZWERG_MAX = 12                          # 12 Upgrades -> 3 s
+ZWERG_YAW_VERSATZ = 180                # Display-Konvention: Gesicht = Modell-Nord; 0 wenn er falsch herum steht
 ZWERG_UPGRADE_PREIS = 250               # mal (Stufe + 1)
 def zwerg_item(lvl):
     """Der Zwerg als Gegenstand (Spawn-Ei, das einen Marker mit Stufen-Tag setzt)."""
@@ -255,7 +256,7 @@ OBJEKTIVE = [(f"nw.mined{i+1}", "minecraft.mined:" + st[0].replace("minecraft:",
     ("nw.tode", "deathCount"),
     ("nw.px", "dummy"), ("nw.py", "dummy"), ("nw.pz", "dummy"), ("nw.qx", "dummy"), ("nw.qy", "dummy"), ("nw.qz", "dummy"),
     ("nw.still", "dummy"), ("nw.kills", "dummy"), ("nw.verdient", "dummy"), ("nw.anzeige", "dummy"), ("nw.const", "dummy"),
-    ("nw.boss", "dummy"), ("nw.upgrade", "dummy"), ("nw.laterne", "dummy"), ("nw.zwerg", "dummy"), ("nw.zwerg_t", "dummy"), ("reset", "trigger"), ("yes", "trigger"), ("night", "trigger"), ("boss", "trigger"), ("nw.schlaf", "dummy"), ("nw.fest", "dummy"), ("nw.dmin", "dummy"),
+    ("nw.boss", "dummy"), ("nw.upgrade", "dummy"), ("nw.laterne", "dummy"), ("nw.zwerg", "dummy"), ("nw.zwerg_t", "dummy"), ("reset", "trigger"), ("yes", "trigger"), ("night", "trigger"), ("boss", "trigger"), ("fraggle", "trigger"), ("nw.schlaf", "dummy"), ("nw.fest", "dummy"), ("nw.dmin", "dummy"),
 ]
 
 # ---- load ------------------------------------------------------------------
@@ -268,7 +269,7 @@ load += [
     "bossbar add nw:uhr \"Day\"", "bossbar set nw:uhr color green", "bossbar set nw:uhr style notched_6", "bossbar set nw:uhr max 13500",
     "bossbar add nw:boss \"Boss\"", "bossbar set nw:boss color purple", "bossbar set nw:boss style progress", "bossbar set nw:boss visible false",
 ]
-for k in [-1, 2, 3, 4, 5, 6, 7, 10, 16, 20, 100, 200, 250, 1000, 6000]:
+for k in [-1, 2, 3, 4, 5, 6, 7, 10, 16, 20, 100, 200, 250, 360, 1000, 6000]:
     load.append(f"scoreboard players set #{k} nw.const {k}")
 load += [
     f"execute unless score #init nw.status matches 1 run function {NS}:init",
@@ -288,6 +289,7 @@ fn("migration", [
     f"execute unless score #phase nw.phase matches 1.. run scoreboard players set #phase nw.phase 1",
     f"setblock {QUELL[0]} {QUELL[1]} {QUELL[2]} minecraft:air", f"function {NS}:quell/setzen",
     f"function {NS}:sammler/kaufmenue",
+    f"execute as @e[type=marker,tag=nw.zwerg] at @s run function {NS}:zwerg/zeichnen",
     f"clear @a minecraft:echo_shard[custom_data~{{nw_splitter:1b}}]", f"clear @a minecraft:prismarine_crystals[custom_data~{{nw_buendel:1b}}]",
     "kill @e[type=item,x=-6,y=60,z=-10,dx=12,dy=10,dz=8]",
     "tellraw @a " + J([txt("[Nightwatch] Stall and Collector updated to the current version.", "yellow")]),
@@ -498,24 +500,39 @@ neu = [
 for dx in (-1, 0, 1):
     for dz in (-1, 0, 1):
         if dx == 0 and dz == 0: continue
-        # Display-Entity: bei yaw 0 zeigt die Modell-Nordseite (-z, das Gesicht) nach Norden, also entgegen der Blickrichtung
-        # des Entities. Deshalb 180 Grad drauf, damit das Gesicht zum Quell zeigt.
-        yaw = round((_m.degrees(_m.atan2(-dx, dz)) + 180) % 360, 1)
-        neu.append(f"execute positioned {qx+dx+0.5} {qy+0.5} {qz+dz+0.5} if entity @s[distance=..0.01] run function {NS}:zwerg/setzen {{yaw:{yaw}}}")
+        neu.append(f"execute positioned {qx+dx+0.5} {qy+0.5} {qz+dz+0.5} if entity @s[distance=..0.01] run function {NS}:zwerg/setzen")
+neu.append(f"execute unless entity @s[tag=nw.zwerg] run function {NS}:zwerg/zurueck")
+# Blickrichtung: Grundwinkel je Nachbarfeld (Blick zum Quell) plus Versatz #zoff nw.status (Display-Konvention, im Spiel
+# per /trigger fraggle set <0|90|180|270> einstellbar, Standard ZWERG_YAW_VERSATZ)
+zeichnen = ["kill @e[type=item_display,tag=nw.zwerg_k,distance=..0.1]", "kill @e[type=item_display,tag=nw.zwerg_a,distance=..0.1]",
+            f"execute unless score #zoff nw.status matches -1000.. run scoreboard players set #zoff nw.status {ZWERG_YAW_VERSATZ}"]
+for dx in (-1, 0, 1):
+    for dz in (-1, 0, 1):
+        if dx == 0 and dz == 0: continue
+        basis = round(_m.degrees(_m.atan2(dx, -dz)))          # Entity-Yaw, der zum Quell zeigt (Richtung -dx, -dz)
+        zeichnen.append(f"execute positioned {qx+dx+0.5} {qy+0.5} {qz+dz+0.5} if entity @s[distance=..0.01] run scoreboard players set #yaw nw.tmp2 {basis}")
+zeichnen += [
+    "scoreboard players operation #yaw nw.tmp2 += #zoff nw.status", "scoreboard players add #yaw nw.tmp2 720",
+    "scoreboard players operation #yaw nw.tmp2 %= #360 nw.const",
+    "execute store result storage nachtwache:tmp yaw int 1 run scoreboard players get #yaw nw.tmp2",
+    f"function {NS}:zwerg/displays with storage nachtwache:tmp",
+]
+fn("zwerg/zeichnen", zeichnen)
+fn("zwerg/displays", ["$" + _display("nw.zwerg_k", "dwarf_body", "$(yaw)"), "$" + _display("nw.zwerg_a", "dwarf_arm", "$(yaw)")])
 fn("zwerg/neu", neu)
 setzen = ["tag @s add nw.zwerg", "scoreboard players set @s nw.zwerg 0", "scoreboard players set @s nw.zwerg_t 0"]
 setzen += [f"execute if entity @s[tag=nw.lvl{l}] run scoreboard players set @s nw.zwerg {l}" for l in range(1, ZWERG_MAX + 1)]
 setzen += [
     "setblock ~ ~ ~ minecraft:barrel[facing=down]",
-    "$" + _display("nw.zwerg_k", "dwarf_body", "$(yaw)"),
-    "$" + _display("nw.zwerg_a", "dwarf_arm", "$(yaw)"),
+    f"function {NS}:zwerg/zeichnen",
     f"function {NS}:zwerg/symbol",
     "playsound minecraft:entity.villager.work_toolsmith neutral @a ~ ~ ~ 1 0.8",
     "tellraw @a[distance=..12] " + J([txt("Fraggle takes his place at the Source. Right-click him for his pack.", "aqua")]),
 ]
 fn("zwerg/setzen", setzen)
 fn("zwerg/zurueck", [
-    f"execute as @p[distance=..10] run give @s {zwerg_item(0)}",
+    # falsch gesetzt: zurueck ins Inventar, mit seiner Stufe (vorher kam hier immer Stufe 0 zurueck)
+    *[f"execute if entity @s[tag=nw.lvl{l}] as @p[distance=..10] run give @s {zwerg_item(l)}" for l in range(ZWERG_MAX + 1)],
     "tellraw @p[distance=..10] " + J([txt("[Fraggle] ", "aqua"), txt("Put me right next to the Source, on a free block. I need to see it.", "gray")]),
     "kill @s",
 ])
@@ -626,6 +643,7 @@ fn("tick", [
     f"execute as @a[tag=nw.admin,scores={{yes=1..}}] run function {NS}:admin/yes_trigger",
     f"execute as @a[tag=nw.admin,scores={{night=1..}}] run function {NS}:admin/night_trigger",
     f"execute as @a[tag=nw.admin,scores={{boss=1..}}] run function {NS}:admin/boss_trigger",
+    f"execute as @a[tag=nw.admin,scores={{fraggle=1..}}] run function {NS}:admin/fraggle_trigger",
     f"execute if score #m20 nw.tmp matches 0 run function {NS}:sammler/rampe",
     f"execute if score #m20 nw.tmp matches 0 run function {NS}:schutz/sekunde",
     f"execute if score #m20 nw.tmp matches 10 run function {NS}:anzeige/aktualisieren",
@@ -1459,7 +1477,7 @@ fn("schutz/tick", [
 fn("schutz/sekunde", [
     f"function {NS}:welt/stand",
     *[f"tag @a[name={n}] add nw.admin" for n in ADMINS],
-    "scoreboard players enable @a[tag=nw.admin] reset", "scoreboard players enable @a[tag=nw.admin] yes", "scoreboard players enable @a[tag=nw.admin] night", "scoreboard players enable @a[tag=nw.admin] boss",
+    "scoreboard players enable @a[tag=nw.admin] reset", "scoreboard players enable @a[tag=nw.admin] yes", "scoreboard players enable @a[tag=nw.admin] night", "scoreboard players enable @a[tag=nw.admin] boss", "scoreboard players enable @a[tag=nw.admin] fraggle",
     f"function {NS}:laterne/sekunde",
     f"function {NS}:gegner/enderman_wut",
     # Sammler fehlt laenger als 5 s (nicht nur beim Start, wenn die Entities noch nicht geladen sind)? Dann neu.
@@ -1549,6 +1567,13 @@ fn("admin/night_trigger", [
     "scoreboard players operation #nacht nw.nacht = #n nw.tmp", "scoreboard players remove #nacht nw.nacht 1",
     f"scoreboard players set #zeit nw.zeit {NACHT_START}",
     "tellraw @a " + J([txt("[Nightwatch] Night ", "yellow"), {"score": {"name": "#n", "objective": "nw.tmp"}, "color": "yellow"}, txt(" starts now.", "yellow")]),
+])
+# /trigger fraggle set <Grad>: Blickrichtungs-Versatz aller Zwerge (1 = 0 Grad, sonst 90/180/270), Zwerge neu zeichnen
+fn("admin/fraggle_trigger", [
+    "scoreboard players operation #zoff nw.status = @s fraggle", "scoreboard players set @s fraggle 0", "scoreboard players enable @s fraggle",
+    "execute if score #zoff nw.status matches 1 run scoreboard players set #zoff nw.status 0",
+    f"execute as @e[type=marker,tag=nw.zwerg] at @s run function {NS}:zwerg/zeichnen",
+    "tellraw @s " + J([txt("[Nightwatch] Fraggle turned by ", "yellow"), {"score": {"name": "#zoff", "objective": "nw.status"}, "color": "yellow"}, txt(" degrees (all dwarves redrawn).", "yellow")]),
 ])
 # /trigger boss set N: nur den Boss der Nacht N rufen (alter Boss weg)
 boss_trigger = [
