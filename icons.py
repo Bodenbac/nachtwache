@@ -118,11 +118,33 @@ SKULL = [
 def totenkopf():
     return bild(SKULL, {"o": (60, 60, 66), "w": (228, 228, 224), "k": (20, 20, 24)})
 
+STERN = [
+    ".......gg.......",
+    ".......gg.......",
+    "......gGGg......",
+    "......gGGg......",
+    "oggggggGGgggggo.",
+    ".ogGGGGGGGGGGgo.",
+    "..ogGGGGGGGGgo..",
+    "...ogGGGGGGgo...",
+    "....gGGGGGGg....",
+    "...ogGGGggGGgo..",
+    "...gGGggooggGg..",
+    "..ogGgo....ogGgo",
+    "..ogo........ogo",
+    "...o..........o.",
+    "................",
+    "................",
+]
+
+def stern():
+    return bild(STERN, {"o": (110, 70, 10), "g": (232, 176, 40), "G": (255, 222, 90)})
+
 # Zeichen in der Standardschrift: Muenze bleibt ● (U+25CF), Rest im Private-Use-Bereich
-ZEICHEN = {"coin": "●", "moon": "", "zombie": "", "skull": ""}
+ZEICHEN = {"coin": "\u25cf", "moon": "\ue010", "zombie": "\ue011", "skull": "\ue012", "star": "\u2605"}
 for _n in range(1, 8):
     ZEICHEN[f"tier{_n}"] = chr(0xE000 + _n)
 
-ALLE = {"coin": muenze, "moon": mond, "zombie": zombie, "skull": totenkopf}
+ALLE = {"coin": muenze, "moon": mond, "zombie": zombie, "skull": totenkopf, "star": stern}
 for _n in range(1, 8):
     ALLE[f"tier{_n}"] = (lambda n: (lambda: stufe(n)))(_n)

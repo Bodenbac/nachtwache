@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 9                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 10                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 QUELL = (0, 64, 0)                     # der One Block
@@ -180,6 +180,10 @@ def coin():
     """Muenzsymbol als eigene Komponente in Weiss, damit die Muenzgrafik des Ressourcenpakets ihre Farben behaelt."""
     return {"text": COIN, "color": "white"}
 
+def star():
+    """Stern (Kontrakt aktiv), Grafik aus dem Ressourcenpaket."""
+    return {"text": "\u2605", "color": "white"}
+
 def sammler_sagt(component_list):
     return "tellraw @a " + J([txt("[The Collector] ", "dark_red")] + component_list)
 
@@ -218,7 +222,7 @@ OBJEKTIVE = [(f"nw.mined{i+1}", "minecraft.mined:" + st[0].replace("minecraft:",
     ("nw.tode", "deathCount"),
     ("nw.px", "dummy"), ("nw.py", "dummy"), ("nw.pz", "dummy"), ("nw.qx", "dummy"), ("nw.qy", "dummy"), ("nw.qz", "dummy"),
     ("nw.still", "dummy"), ("nw.kills", "dummy"), ("nw.verdient", "dummy"), ("nw.anzeige", "dummy"), ("nw.const", "dummy"),
-    ("nw.boss", "dummy"), ("nw.upgrade", "dummy"), ("nw.schlaf", "dummy"), ("nw.fest", "dummy"), ("nw.dmin", "dummy"),
+    ("nw.boss", "dummy"), ("nw.upgrade", "dummy"), ("nw.laterne", "dummy"), ("nw.schlaf", "dummy"), ("nw.fest", "dummy"), ("nw.dmin", "dummy"),
 ]
 
 # ---- load ------------------------------------------------------------------
@@ -269,7 +273,7 @@ init = [
     "scoreboard players set #konto nw.konto 0", "scoreboard players set #abbau nw.abbau 0", "scoreboard players set #phase nw.phase 1",
     "scoreboard players set #nacht nw.nacht 0", "scoreboard players set #gegner nw.gegner 0", "scoreboard players set #status nw.status 0",
     "scoreboard players set #modus nw.status 0", "scoreboard players set #finale nw.status 0", "scoreboard players set #kills nw.kills 0",
-    "scoreboard players set #verdient nw.verdient 0", "scoreboard players set #tode nw.tode 0", "scoreboard players set #glocke nw.upgrade 0",
+    "scoreboard players set #verdient nw.verdient 0", "scoreboard players set #tode nw.tode 0", "scoreboard players set #glocke nw.upgrade 0", "scoreboard players set #kontrakt nw.upgrade 0", "kill @e[type=marker,tag=nw.laterne]",
     "scoreboard players set #boss nw.boss 0",
     f"forceload add -20 -20 20 100",
     f"function {NS}:welt/startinsel", f"function {NS}:welt/stand", f"function {NS}:welt/gegnerinsel",
@@ -390,12 +394,56 @@ def strasse_bauen():
         for x in (-2, 2):
             out.append(f"execute unless block {x} {BODEN_Y} {z} minecraft:crimson_fence run setblock {x} {BODEN_Y} {z} minecraft:crimson_fence")
             out.append(f"execute unless block {x} {BODEN_Y+1} {z} minecraft:redstone_torch run setblock {x} {BODEN_Y+1} {z} minecraft:redstone_torch[lit=true]")
+    out.append(f"execute as @e[type=marker,tag=nw.laterne,x=-3,y={BODEN_Y},z={Z1},dx=6,dy=3,dz={Z2-Z1}] at @s run function {NS}:laterne/halten")
     return out
 
 fn("strasse/bauen", strasse_bauen())
 # Entfernen: erst die Fackeln, dann die Pfosten, dann der Rest (so faellt nichts ab)
 fn("strasse/entfernen", [f"fill -2 {BODEN_Y+1} {Z1} -2 {BODEN_Y+1} {Z2} minecraft:air", f"fill 2 {BODEN_Y+1} {Z1} 2 {BODEN_Y+1} {Z2} minecraft:air",
-                         f"fill -3 {BODEN_Y-1} {Z1} 3 {BODEN_Y+3} {Z2} minecraft:air"])
+                         f"fill -3 {BODEN_Y-1} {Z1} 3 {BODEN_Y+3} {Z2} minecraft:air",
+                         f"execute as @e[type=marker,tag=nw.laterne,x=-3,y={BODEN_Y},z={Z1},dx=6,dy=3,dz={Z2-Z1}] at @s run function {NS}:laterne/halten"])
+
+# ----------------------------------------------------------------------------
+# Collector Lantern: Marker je gesetzter Laterne, Gegner im Umkreis 8 langsam, drei Naechte
+# ----------------------------------------------------------------------------
+w(f"{NS}/advancement/laterne_gesetzt.json", {"criteria": {"gesetzt": {"trigger": "minecraft:placed_block", "conditions": {
+    "item": {"items": "minecraft:soul_lantern", "predicates": {"minecraft:custom_data": "{nw_laterne:1b}"}}}}},
+    "rewards": {"function": f"{NS}:laterne/gesetzt"}})
+fn("laterne/gesetzt", [
+    f"advancement revoke @s only {NS}:laterne_gesetzt",
+    "scoreboard players set #strahl nw.tmp2 28",
+    f"execute at @s anchored eyes positioned ^ ^ ^ run function {NS}:laterne/strahl",
+])
+fn("laterne/strahl", [
+    f"execute if block ~ ~ ~ minecraft:soul_lantern unless entity @e[type=marker,tag=nw.laterne,distance=..0.9] run return run function {NS}:laterne/markieren",
+    "scoreboard players remove #strahl nw.tmp2 1",
+    f"execute if score #strahl nw.tmp2 matches 1.. positioned ^ ^ ^0.25 run function {NS}:laterne/strahl",
+])
+fn("laterne/markieren", [
+    'execute align xyz positioned ~0.5 ~0.5 ~0.5 run summon minecraft:marker ~ ~ ~ {Tags:["nw.laterne"]}',
+    "execute align xyz positioned ~0.5 ~0.5 ~0.5 run scoreboard players set @e[type=marker,tag=nw.laterne,distance=..0.9] nw.laterne 0",
+    "execute align xyz positioned ~0.5 ~0.5 ~0.5 run particle minecraft:soul ~ ~ ~ 0.3 0.3 0.3 0.02 20",
+    "playsound minecraft:block.respawn_anchor.charge block @s ~ ~ ~ 1 0.7",
+    "tellraw @s " + J([txt("The lantern burns. Enemies near it slow down. Three nights.", "aqua")]),
+])
+fn("laterne/halten", [       # Strasse wird alle 2 Ticks neu gesetzt: Stuetze und Laterne wieder hinstellen (Stuetze zuerst)
+    f"execute unless block ~ ~-1 ~ minecraft:crimson_planks run setblock ~ ~-1 ~ minecraft:crimson_planks",
+    "execute unless block ~ ~ ~ minecraft:soul_lantern run setblock ~ ~ ~ minecraft:soul_lantern",
+])
+fn("laterne/sekunde", [f"execute as @e[type=marker,tag=nw.laterne] at @s run function {NS}:laterne/eine"])
+fn("laterne/eine", [
+    "execute unless block ~ ~ ~ minecraft:soul_lantern run return run kill @s",
+    "effect give @e[tag=nw.welle,distance=..8] minecraft:slowness 2 1 true",
+    "particle minecraft:soul ~ ~0.2 ~ 0.2 0.2 0.2 0.01 3",
+])
+fn("laterne/erloschen", [
+    "setblock ~ ~ ~ minecraft:air",
+    f"execute if entity @s[x=-3,y={BODEN_Y},z={Z1},dx=6,dy=3,dz={Z2-Z1}] run setblock ~ ~-1 ~ minecraft:air",
+    "particle minecraft:large_smoke ~ ~ ~ 0.2 0.2 0.2 0.02 15",
+    "playsound minecraft:block.fire.extinguish block @a ~ ~ ~ 1 0.8",
+    "tellraw @a " + J([txt("A Collector Lantern has burned out.", "gray", italic=True)]),
+    "kill @s",
+])
 
 # ----------------------------------------------------------------------------
 # tick
@@ -611,12 +659,23 @@ def kauf_block(slot):
 
 MODELL_GLOCKE = 'item_model="nachtwache:watch_bell",' if RESSOURCENPAKET else ""
 MODELL_KIT = 'item_model="nachtwache:kit",' if RESSOURCENPAKET else ""
+MODELL_LATERNE = 'item_model="nachtwache:lantern",' if RESSOURCENPAKET else ""
+MODELL_KONTRAKT = 'item_model="nachtwache:contract",' if RESSOURCENPAKET else ""
+LORE_LATERNE_L = ['{text:"Place it on the road or on your island.",color:"gray",italic:false}', '{text:"Enemies within 8 blocks are slowed.",color:"gray",italic:false}', '{text:"Burns for three nights, then goes out.",color:"gray",italic:false}']
+LORE_KONTRAKT_L = ['{text:"Tonight: double bounty, wave 50% bigger.",color:"gray",italic:false}', '{text:"One contract at a time. Signed by daylight only.",color:"gray",italic:false}']
+LORE_LATERNE = "[" + ",".join(LORE_LATERNE_L) + "]"
+LORE_KONTRAKT = "[" + ",".join(LORE_KONTRAKT_L) + "]"
+
 
 def item_spec(spec):
     """Angebots-Item -> (id, components-string ohne Klammern oder '', count) fuer das echte Item."""
     if spec in SONDERITEMS:
         iid, cnt, comp = SONDERITEMS[spec]
         return iid, comp[1:-1], cnt
+    if spec == "LATERNE":
+        return "minecraft:soul_lantern", MODELL_LATERNE + 'custom_name={text:"Collector Lantern",color:"aqua",italic:false},custom_data={nw_laterne:1b},lore=' + LORE_LATERNE, 1
+    if spec == "KONTRAKT":
+        return "minecraft:paper", MODELL_KONTRAKT + 'custom_name={text:"Bounty Contract",color:"red",italic:false},custom_data={nw_kontrakt:1b},lore=' + LORE_KONTRAKT, 1
     if spec == "GLOCKE":
         return "minecraft:bell", MODELL_GLOCKE + 'custom_name={text:"Watch Bell",color:"gold",italic:false},custom_data={nw_glocke:1b},lore=[{text:"Rings when something steps onto the road",color:"gray",italic:false}]', 1
     if spec.startswith("SET:"):
@@ -637,13 +696,21 @@ def menue_item(r):
     preis, mx, name = int(r["preis"]), int(r["max"]), r["name"]
     lore = [f'[{{text:"Price: {preis} ",color:"gold",italic:false}},{{text:"{COIN}",color:"white",italic:false}}]',
             f'{{text:"Click: buy 1",color:"gray",italic:false}}']
+    if r["item"] == "LATERNE":
+        lore = LORE_LATERNE_L + lore
+    if r["item"] == "KONTRAKT":
+        lore = LORE_KONTRAKT_L + lore
     if mx > 1:
         lore.append(f'[{{text:"Shift-click: buy {mx} for {preis * mx} ",color:"gray",italic:false}},{{text:"{COIN}",color:"white",italic:false}}]')
     comps = [f'custom_data={{nw_menu:{int(r["id"])}}}', f'custom_name={{text:"{name}",color:"white",italic:false}}', "lore=[" + ",".join(lore) + "]"]
-    if comp and not r["item"].startswith("SET:") and not r["item"] == "GLOCKE":
+    if comp and not r["item"].startswith("SET:") and r["item"] not in ("GLOCKE", "LATERNE", "KONTRAKT"):
         comps.insert(0, comp)
     elif r["item"] == "GLOCKE" and MODELL_GLOCKE:
         comps.insert(0, MODELL_GLOCKE[:-1])
+    elif r["item"] == "LATERNE" and MODELL_LATERNE:
+        comps.insert(0, MODELL_LATERNE[:-1])
+    elif r["item"] == "KONTRAKT" and MODELL_KONTRAKT:
+        comps.insert(0, MODELL_KONTRAKT[:-1])
     elif r["item"].startswith("SET:") and MODELL_KIT:
         comps.insert(0, MODELL_KIT[:-1])
     return f"{iid}[{','.join(comps)}]"
@@ -736,6 +803,23 @@ for r in angebot:
         f"execute as @a[x=-1,y=64,z=-5,distance=..8,scores={{nw.tmp=1..}}] run function {NS}:sammler/kauf_abwickeln/{rid}",
         f"function {NS}:sammler/kaufmenue",
     ])
+    if r["item"] == "KONTRAKT":
+        fn(f"sammler/kauf_abwickeln/{rid}", [
+            f"clear @s {pred}",
+            f"execute if score #status nw.status matches 1 run tellraw @s {J([txt('[The Collector] ', 'dark_red'), txt('Contracts are signed by daylight. Come back in the morning.', 'gray')])}",
+            "execute if score #status nw.status matches 1 run return run playsound minecraft:entity.villager.no neutral @s ~ ~ ~ 1 1",
+            f"execute if score #kontrakt nw.upgrade matches 1.. run tellraw @s {J([txt('[The Collector] ', 'dark_red'), txt('One contract at a time. Tonight is already spoken for.', 'gray')])}",
+            "execute if score #kontrakt nw.upgrade matches 1.. run return run playsound minecraft:entity.villager.no neutral @s ~ ~ ~ 1 1",
+            f"scoreboard players set #preis nw.tmp {preis}",
+            f"execute if score #konto nw.konto < #preis nw.tmp run tellraw @s {J([txt('[The Collector] ', 'dark_red'), txt('Not enough coins. ', 'gray'), {'score': {'name': '#preis', 'objective': 'nw.tmp'}, 'color': 'gold'}, txt(' needed.', 'gray')])}",
+            "execute if score #konto nw.konto < #preis nw.tmp run return run playsound minecraft:entity.villager.no neutral @s ~ ~ ~ 1 1",
+            "scoreboard players operation #konto nw.konto -= #preis nw.tmp",
+            "scoreboard players set #kontrakt nw.upgrade 1",
+            "playsound minecraft:item.book.page_turn neutral @a ~ ~ ~ 1 0.8",
+            f"tellraw @a {J([txt('[The Collector] ', 'dark_red'), txt('A bounty contract is signed. Tonight: double bounty, and I send more of them. ', 'gold'), star()])}",
+            f"function {NS}:uhr/anzeige",
+        ])
+        continue
     fn(f"sammler/kauf_abwickeln/{rid}", [
         f"scoreboard players set #anz nw.tmp 1",
         f"execute if items entity @s container.* {pred} run scoreboard players set #anz nw.tmp {mx}",   # Shift-Klick: im Inventar statt am Cursor
@@ -814,7 +898,7 @@ fn("nacht/haelt", [
     "playsound minecraft:entity.warden.heartbeat hostile @a ~ ~ ~ 1 0.5",
 ])
 # Tages-Uhr als Bossleiste: wie lange noch bis zur Nacht (in echten Minuten)
-uhr_name = lambda pad: J([txt("Day  ", "green"), txt("night in ", "gray"), {"score": {"name": "#umin", "objective": "nw.tmp2"}, "color": "white"}, txt(":" + ("0" if pad else ""), "white"), {"score": {"name": "#usek", "objective": "nw.tmp2"}, "color": "white"}])
+uhr_name = lambda pad, stern=False: J([txt("Day  ", "green"), txt("night in ", "gray"), {"score": {"name": "#umin", "objective": "nw.tmp2"}, "color": "white"}, txt(":" + ("0" if pad else ""), "white"), {"score": {"name": "#usek", "objective": "nw.tmp2"}, "color": "white"}] + ([txt("  ", "white"), star()] if stern else []))
 fn("uhr/anzeige", [
     "execute if score #status nw.status matches 1 run return run bossbar set nw:uhr visible false",
     "execute if score #modus nw.status matches 3 run return run bossbar set nw:uhr visible false",
@@ -832,6 +916,8 @@ fn("uhr/anzeige", [
     "scoreboard players operation #usek nw.tmp2 %= #sechzig nw.tmp2",
     f"execute if score #usek nw.tmp2 matches 0..9 run bossbar set nw:uhr name {uhr_name(True)}",
     f"execute if score #usek nw.tmp2 matches 10.. run bossbar set nw:uhr name {uhr_name(False)}",
+    f"execute if score #kontrakt nw.upgrade matches 1.. if score #usek nw.tmp2 matches 0..9 run bossbar set nw:uhr name {uhr_name(True, True)}",
+    f"execute if score #kontrakt nw.upgrade matches 1.. if score #usek nw.tmp2 matches 10.. run bossbar set nw:uhr name {uhr_name(False, True)}",
     "bossbar set nw:uhr color green",
     "execute if score #rest nw.tmp2 matches ..4000 run bossbar set nw:uhr color yellow",
     "execute if score #rest nw.tmp2 matches ..1000 run bossbar set nw:uhr color red",
@@ -881,6 +967,9 @@ for p, f in PHASEN_FAKTOR.items():
 welle += [
     "scoreboard players operation #anz nw.tmp *= #f nw.tmp2", "scoreboard players operation #anz nw.tmp /= #10 nw.const",
     f"execute if score #nacht nw.nacht matches {LETZTE_NACHT} unless score #modus nw.status matches 2 run scoreboard players operation #anz nw.tmp *= #2 nw.const",
+    "execute if score #kontrakt nw.upgrade matches 1.. run scoreboard players operation #anz nw.tmp *= #3 nw.const",
+    "execute if score #kontrakt nw.upgrade matches 1.. run scoreboard players operation #anz nw.tmp /= #2 nw.const",
+    "execute if score #kontrakt nw.upgrade matches 1 run scoreboard players set #kontrakt nw.upgrade 2",
     "execute if score #anz nw.tmp matches 151.. run scoreboard players set #anz nw.tmp 150",
     "scoreboard players operation #anz0 nw.tmp = #anz nw.tmp",
     f"function {NS}:nacht/spawn_schleife",
@@ -973,6 +1062,10 @@ fn("nacht/ende", [
     f"execute if score #gegner nw.gegner matches 1.. run tellraw @a {J([txt('Dawn breaks. ', 'gray'), {'score': {'name': '#gegner', 'objective': 'nw.gegner'}, 'color': 'red'}, txt(' enemies are still alive. They glow, and they are coming.', 'gray')])}",
     f"execute if score #gegner nw.gegner matches 1.. run playsound minecraft:entity.zombie.ambient hostile @a ~ ~ ~ 1 0.5",
     f"function {NS}:sammler/spruch/morgen",
+    f"execute if score #kontrakt nw.upgrade matches 2 run tellraw @a {J([txt('[The Collector] ', 'dark_red'), txt('The contract is fulfilled. Pleasure doing business.', 'gray')])}",
+    "execute if score #kontrakt nw.upgrade matches 2 run scoreboard players set #kontrakt nw.upgrade 0",
+    "scoreboard players add @e[type=marker,tag=nw.laterne] nw.laterne 1",
+    f"execute as @e[type=marker,tag=nw.laterne,scores={{nw.laterne=3..}}] at @s run function {NS}:laterne/erloschen",
 ])
 fn("nacht/bonus", [
     "scoreboard players operation #b nw.tmp = #nacht nw.nacht", f"scoreboard players operation #b nw.tmp *= #{BONUS_PRO_NACHT} nw.const",
@@ -1017,7 +1110,8 @@ fn("nacht/warden_wut", [
 ])
 fn("nacht/boss_tot", [
     "scoreboard players set #boss nw.boss 0", "bossbar set nw:boss visible false",
-    "scoreboard players add #konto nw.konto " + str(KOPFGELD_BOSS), "scoreboard players add #verdient nw.verdient " + str(KOPFGELD_BOSS),
+    f"scoreboard players set #d nw.tmp {KOPFGELD_BOSS}", "execute if score #kontrakt nw.upgrade matches 2 run scoreboard players operation #d nw.tmp *= #2 nw.const",
+    "scoreboard players operation #konto nw.konto += #d nw.tmp", "scoreboard players operation #verdient nw.verdient += #d nw.tmp",
     f"execute if score #finale nw.status matches 1 run return run function {NS}:nacht/sieg",
     f"tellraw @a {J([txt('The boss is dead. ', 'dark_purple'), txt(f'+{KOPFGELD_BOSS} ', 'gray'), coin(), txt(' and something from his pocket.', 'gray')])}",
     f"loot give @a loot {NS}:bossbeute",
@@ -1050,6 +1144,7 @@ gt = [
     "execute store result score #gegner nw.gegner if entity @e[tag=nw.welle]",
     "execute store result bossbar nw:welle value run scoreboard players get #gegner nw.gegner",
     "execute unless score #gegner nw.gegner = #gegner_prev nw.gegner run " + f"bossbar set nw:welle name {J([txt('Night ', 'red'), {'score': {'name': '#nacht', 'objective': 'nw.nacht'}, 'color': 'red'}, txt(':  ', 'red'), {'score': {'name': '#gegner', 'objective': 'nw.gegner'}, 'color': 'white'}, txt(' enemies', 'red')])}",
+    "execute unless score #gegner nw.gegner = #gegner_prev nw.gegner if score #kontrakt nw.upgrade matches 2 run " + f"bossbar set nw:welle name {J([txt('Night ', 'red'), {'score': {'name': '#nacht', 'objective': 'nw.nacht'}, 'color': 'red'}, txt(':  ', 'red'), {'score': {'name': '#gegner', 'objective': 'nw.gegner'}, 'color': 'white'}, txt(' enemies  ', 'red'), star()])}",
     "execute if score #gegner nw.gegner matches 0 if score #status nw.status matches 0 run bossbar set nw:welle visible false",
     "scoreboard players operation #gegner_prev nw.gegner = #gegner nw.gegner",
     "execute if score #m20 nw.tmp matches 3 if score #status nw.status matches 1 run bossbar set nw:welle players @a",
@@ -1062,6 +1157,7 @@ for t, kg in KOPFGELD.items():
         f"execute if score #c_{t} nw.tmp2 < #p_{t} nw.tmp2 run scoreboard players operation #kills nw.kills += #d nw.tmp",
         f"execute if score #c_{t} nw.tmp2 < #p_{t} nw.tmp2 run scoreboard players set #kg nw.tmp {kg}",
         f"execute if score #c_{t} nw.tmp2 < #p_{t} nw.tmp2 run scoreboard players operation #d nw.tmp *= #kg nw.tmp",
+        f"execute if score #c_{t} nw.tmp2 < #p_{t} nw.tmp2 if score #kontrakt nw.upgrade matches 2 run scoreboard players operation #d nw.tmp *= #2 nw.const",
         f"execute if score #c_{t} nw.tmp2 < #p_{t} nw.tmp2 run scoreboard players operation #konto nw.konto += #d nw.tmp",
         f"execute if score #c_{t} nw.tmp2 < #p_{t} nw.tmp2 run scoreboard players operation #verdient nw.verdient += #d nw.tmp",
         f"execute if score #c_{t} nw.tmp2 < #p_{t} nw.tmp2 run title @a actionbar {J([txt('Bounty +', 'gold'), {'score': {'name': '#d', 'objective': 'nw.tmp'}, 'color': 'gold'}])}",
@@ -1159,6 +1255,7 @@ fn("schutz/tick", [
 ])
 fn("schutz/sekunde", [
     f"function {NS}:welt/stand",
+    f"function {NS}:laterne/sekunde",
     # Sammler fehlt laenger als 5 s (nicht nur beim Start, wenn die Entities noch nicht geladen sind)? Dann neu.
     "execute if entity @e[tag=nw.villager] run scoreboard players set #fehlt nw.tmp2 0",
     "execute unless entity @e[tag=nw.villager] run scoreboard players add #fehlt nw.tmp2 1",

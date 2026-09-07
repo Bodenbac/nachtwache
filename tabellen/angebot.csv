@@ -21,6 +21,8 @@ id,stufe,name,preis,max,item
 25,1,Stone Axe,30,1,stone_axe
 26,1,Stone Shovel,20,1,stone_shovel
 29,1,Iron Ingot,50,64,iron_ingot
+30,1,Collector Lantern,300,1,LATERNE
+31,1,Bounty Contract,150,1,KONTRAKT
 130,1,Coal,15,64,coal
 131,1,Diamond,1000,64,diamond
 132,1,Book: Sharpness III,6000,1,BUCH_SHARPNESS_3

@@ -6,7 +6,8 @@ Inhalt:
   - Icons der Seitenleiste als Schriftzeichen (icons.py): Muenze = ● (U+25CF, ohne Paket ein Punkt),
     Stufenscheiben U+E001..E007, Mond U+E010, Zombie U+E011, Totenkopf U+E012 (ohne Paket leere Kaestchen).
   - Sieben Quell-Stufen im Amethyst-Stil (Tuff, Gruen, Blau, Amethyst, Gelb, Orange, Schwarz).
-  - Eigene Symbole fuer Watch Bell und Kits (item_model nachtwache:watch_bell / nachtwache:kit).
+  - Eigene Symbole fuer Watch Bell, Kits, Collector Lantern und Bounty Contract (item_model nachtwache:watch_bell / kit / lantern / contract).
+  - Stern (U+2605) als Goldstern fuer den laufenden Kontrakt.
   - Truhen-Oberflaeche in Daemmerungs-Toenen (gilt fuer alle Truhen, Faesser und den Laden).
   - Pack-Icon.
 
@@ -101,6 +102,57 @@ def glocke():
                 px[x, y] = P[ch] + (255,)
     return im
 
+def pixel(rows, P):
+    im = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    px = im.load()
+    for y, row in enumerate(rows):
+        for x, ch in enumerate(row):
+            if P.get(ch):
+                px[x, y] = P[ch] + (255,)
+    return im
+
+def laterne():
+    """Collector Lantern: Seelenlaterne mit violettem Schein, dunkler Rahmen, Haken."""
+    return pixel([
+        ".......kk.......",
+        "......kook......",
+        ".......kk.......",
+        ".....kkkkkk.....",
+        "....kddddddk....",
+        "....kdffffdk....",
+        "....kdfFFfdk....",
+        "....kdfFhFdk....",
+        "....kdfFFfdk....",
+        "....kdffffdk....",
+        "....kddddddk....",
+        "....kkkkkkkk....",
+        ".....kddddk.....",
+        "......kkkk......",
+        "................",
+        "................",
+    ], {"k": (28, 22, 34), "o": (90, 80, 100), "d": (70, 56, 90), "f": (120, 60, 200), "F": (170, 110, 255), "h": (240, 220, 255)})
+
+def kontrakt():
+    """Bounty Contract: Pergament mit Zeilen und rotem Siegel."""
+    return pixel([
+        "..pppppppppppp..",
+        ".pPPPPPPPPPPPPp.",
+        ".pPllllllllllPp.",
+        ".pPPPPPPPPPPPPp.",
+        ".pPllllllllPPPp.",
+        ".pPPPPPPPPPPPPp.",
+        ".pPlllllllllPPp.",
+        ".pPPPPPPPPPPPPp.",
+        ".pPllllllPPPPPp.",
+        ".pPPPPPPPPrrPPp.",
+        ".pPllllPPrRRrPp.",
+        ".pPPPPPPPrRrrPp.",
+        ".pPPPPPPPPrrPPp.",
+        ".pPPPPPPPPPPPPp.",
+        "..pppppppppppp..",
+        "................",
+    ], {"p": (120, 90, 50), "P": (226, 206, 160), "l": (110, 90, 70), "r": (150, 20, 20), "R": (220, 60, 50)})
+
 def kiste():
     """Kit: Versorgungskiste, dunkles Holz, Goldband, Schloss."""
     im = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
@@ -174,7 +226,7 @@ def build(out_dir=None):
         w(mc / "textures" / "block" / f"{block}.png", umfaerben(VORLAGEN / "amethyst_block.png", stops))
 
     # Eigene Item-Symbole (item_model="nachtwache:watch_bell" / "nachtwache:kit")
-    for name, img in (("watch_bell", glocke()), ("kit", kiste())):
+    for name, img in (("watch_bell", glocke()), ("kit", kiste()), ("lantern", laterne()), ("contract", kontrakt())):
         w(nw / "textures" / "item" / f"{name}.png", img)
         w(nw / "models" / "item" / f"{name}.json", json.dumps({"parent": "minecraft:item/generated", "textures": {"layer0": f"nachtwache:item/{name}"}}))
         w(nw / "items" / f"{name}.json", json.dumps({"model": {"type": "minecraft:model", "model": f"nachtwache:item/{name}"}}))
