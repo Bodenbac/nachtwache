@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 25                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 26                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -1425,16 +1425,14 @@ fn("gegner/graben", [
 fn("gegner/klopfen", [
     "execute if score #m20 nw.tmp matches 0 run playsound minecraft:entity.zombie.attack_wooden_door hostile @a ~ ~ ~ 1 0.7",
 ])
-# Festgefahren oder in den Nebel gefallen: der Gegner taucht neben dem naechsten Spieler wieder auf
-# (auf dessen Ebene, auch auf Plattformen). Geht das nicht, an den Inselrand.
-fn("gegner/festgefahren", [
-    "scoreboard players set @s nw.still 0", "scoreboard players set @s nw.fest 0", "scoreboard players set @s nw.dmin 9999",
-    f"tp @s {STRASSENMUND[0]} {STRASSENMUND[1]} {STRASSENMUND[2]}",
-    f"execute if entity @p run function {NS}:gegner/zum_spieler",
-    "playsound minecraft:entity.enderman.teleport hostile @a ~ ~ ~ 0.8 0.5",
-])
+# Festgefahren oder in den Nebel gefallen: der Gegner taucht 10 bis 16 Bloecke vor dem naechsten Spieler wieder auf
+# (in dessen Blickrichtung, auf festem Boden). Ist dort nichts, seitlich oder hinter ihm, zuletzt am Strassenmund.
+AM_MUND = f"x={STRASSENMUND[0]},y={STRASSENMUND[1]},z={STRASSENMUND[2]},distance=..1.5"
 fn("gegner/zum_spieler", [
-    "execute at @p run spreadplayers ~ ~ 2 4 under 320 false @s",
+    f"execute at @p rotated ~ 0 positioned ^ ^ ^13 run spreadplayers ~ ~ 0 3 under 320 false @s",
+    *[f"execute if entity @s[{AM_MUND}] at @p rotated ~{w} 0 positioned ^ ^ ^13 run spreadplayers ~ ~ 0 3 under 320 false @s" for w in (45, -45, 90, -90, 135, -135, 180)],
+    # Insel zu klein fuer 10 Bloecke Abstand und der Spieler steht am Strassenmund: hinter ihn, so weit weg wie es geht
+    f"execute if entity @s[{AM_MUND}] if entity @p[distance=..8] at @p rotated ~180 0 positioned ^ ^ ^5 run spreadplayers ~ ~ 0 2 under 320 false @s",
     "execute at @s run particle minecraft:portal ~ ~1 ~ 0.5 1 0.5 0.5 40",
 ])
 
