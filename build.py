@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 21                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 22                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -88,7 +88,7 @@ TOD_ABZUG_PROZENT = 10
 
 STILL_TICKS = 80                       # Stillstand, bis ein Gegner anfaengt zu graben (4 s)
 GRAB_WEICH, GRAB_MITTEL, GRAB_HART = 40, 100, 200   # zusaetzliche Ticks je Materialklasse
-FEST_TICKS = 400                       # 20 s ohne Annaeherung an den naechsten Spieler: der Gegner taucht neben ihm auf
+EINGEBAUT_TICKS = 600                  # 30 s Stillstand UND undurchgrabbarer Block Richtung Spieler (Obsidian, Portalrahmen): erst dann taucht der Gegner neben ihm auf
 
 # Bosse: nacht -> (mob-Typ, Name, Leben, Faehigkeit)
 BOSSE = {
@@ -1349,21 +1349,12 @@ fn("gegner/einer", [
     "execute unless score @s nw.pz = @s nw.qz run scoreboard players set @s nw.still 0",
     "scoreboard players operation @s nw.qx = @s nw.px", "scoreboard players operation @s nw.qy = @s nw.py", "scoreboard players operation @s nw.qz = @s nw.pz",
     # Kommt der Gegner dem naechsten Spieler laenger nicht naeher (egal ob er dabei herumlaeuft), taucht er neben ihm auf
-    "execute store result score #ppx nw.tmp run data get entity @p Pos[0]",
-    "execute store result score #ppy nw.tmp run data get entity @p Pos[1]",
-    "execute store result score #ppz nw.tmp run data get entity @p Pos[2]",
-    "scoreboard players operation #ppx nw.tmp -= @s nw.px", "scoreboard players operation #ppy nw.tmp -= @s nw.py", "scoreboard players operation #ppz nw.tmp -= @s nw.pz",
-    "execute if score #ppx nw.tmp matches ..-1 run scoreboard players operation #ppx nw.tmp *= #-1 nw.const",
-    "execute if score #ppy nw.tmp matches ..-1 run scoreboard players operation #ppy nw.tmp *= #-1 nw.const",
-    "execute if score #ppz nw.tmp matches ..-1 run scoreboard players operation #ppz nw.tmp *= #-1 nw.const",
-    "scoreboard players operation #ppx nw.tmp += #ppy nw.tmp", "scoreboard players operation #ppx nw.tmp += #ppz nw.tmp",
-    "execute unless score @s nw.dmin matches 0.. run scoreboard players set @s nw.dmin 9999",
-    "execute if score #ppx nw.tmp < @s nw.dmin run scoreboard players operation @s nw.dmin = #ppx nw.tmp",
-    "execute if score #ppx nw.tmp < @s nw.dmin run scoreboard players set @s nw.fest 0",
-    "execute unless score #ppx nw.tmp < @s nw.dmin run scoreboard players add @s nw.fest 1",
-    "execute if score #ppx nw.tmp matches ..3 run scoreboard players set @s nw.fest 0",
-    f"execute if score @s nw.fest matches {FEST_TICKS}.. run return run function {NS}:gegner/festgefahren",
+    f"execute if score @s nw.still matches {EINGEBAUT_TICKS}.. if entity @a run function {NS}:gegner/eingebaut",
     f"execute if score @s nw.still matches {STILL_TICKS}.. if entity @a run function {NS}:gegner/blockiert",
+])
+# Komplett eingebaut: lange still und der Block Richtung Spieler ist weder Luft noch grabbar (Obsidian, Portalrahmen, Grundgestein)
+fn("gegner/eingebaut", [
+    f"execute facing entity @p feet rotated ~ 0 positioned ^ ^ ^1 unless block ~ ~ ~ minecraft:air unless block ~ ~ ~ #{NS}:grabbar run function {NS}:gegner/festgefahren",
 ])
 fn("gegner/blockiert", [
     f"execute facing entity @p feet rotated ~ 0 positioned ^ ^ ^1 run function {NS}:gegner/graben",
