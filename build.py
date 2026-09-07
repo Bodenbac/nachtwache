@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 22                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 24                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -34,7 +34,7 @@ def zwerg_item(lvl):
             '{text:"Mines the Source on his own. Coins go to you, drops into his pack.",color:"gray",italic:false},'
             '{text:"Right-click: open his pack, buy speed. Break him: he jumps back into your inventory.",color:"gray",italic:false},'
             f'{{text:"Speed: one block every {sek} s (level {lvl})",color:"aqua",italic:false}}]')
-    return (f'minecraft:zombie_spawn_egg[{modell}custom_name={{text:"Dwarf",color:"aqua",italic:false}},custom_data={{nw_zwerg:1b,lvl:{lvl}}},'
+    return (f'minecraft:zombie_spawn_egg[{modell}custom_name={{text:"Fraggle",color:"aqua",italic:false}},custom_data={{nw_zwerg:1b,lvl:{lvl}}},'
             f'entity_data={{id:"minecraft:marker",Tags:["nw.zwerg_neu","nw.lvl{lvl}"]}},lore={lore}]')
 
 QUELL = (0, 64, 0)                     # der One Block
@@ -71,9 +71,9 @@ RAMPE = (3, 64, -6)                    # Trichter der Lieferrampe
 SPAWN = (0, 64, 3)
 TRUHE = (2, 64, 2)
 
-TAG_TEILER = 4                         # Uhr: am Tag alle 4 Ticks +5  (Tag dauert 8 Minuten)
-NACHT_TEILER = 7                       # Uhr: nachts alle 7 Ticks +5 (Nacht laeuft bis 23000 in ca. 12 Minuten und bleibt dann stehen, bis alle Gegner tot sind)
-UHR_SCHRITT = 5
+# Uhr: die Spielzeit laeuft mit ZAEHLER/NENNER Zeiteinheiten je Tick (Akkumulator, dadurch fluessig). Tag = 13500 Einheiten.
+TAG_ZAEHLER, TAG_NENNER = 45, 32       # 1,40625 je Tick -> Tag genau 8 Minuten (Luis, 07.09.2026)
+NACHT_ZAEHLER, NACHT_NENNER = 5, 7     # 0,714 je Tick -> Nacht bis 23000 in ca. 11,7 Minuten, dann steht die Uhr, bis alle Gegner tot sind
 NACHT_START, TAG_START = 13000, 23500  # Uhrzeiten fuer Strasse auf / Strasse weg
 
 WELLE_BASIS, WELLE_PRO_NACHT = 4, 2    # Groesse = 4 + 2*Nacht (+ Nacht*Nacht/WELLE_QUADRAT, 0 = aus) * Phasenfaktor/10. Luis: Nacht 1 = 6, dann +2 je Nacht
@@ -129,7 +129,7 @@ SONDERITEMS = {
     "TRANK_STAERKE":   ("minecraft:potion", 1, '[potion_contents={potion:"minecraft:strength"}]'),
     "TRANK_NACHTSICHT":("minecraft:potion", 1, '[potion_contents={potion:"minecraft:long_night_vision"}]'),
 }
-for _n, _l in [("SHARPNESS", 3), ("PROTECTION", 3), ("MENDING", 1), ("UNBREAKING", 3), ("POWER", 3), ("INFINITY", 1), ("FLAME", 1), ("EFFICIENCY", 3), ("LOOTING", 3)]:
+for _n, _l in [("SHARPNESS", 3), ("SHARPNESS", 5), ("PROTECTION", 3), ("PROTECTION", 4), ("MENDING", 1), ("UNBREAKING", 3), ("POWER", 3), ("POWER", 5), ("INFINITY", 1), ("FLAME", 1), ("EFFICIENCY", 3), ("EFFICIENCY", 5), ("LOOTING", 3)]:
     SONDERITEMS[f"BUCH_{_n}_{_l}"] = ("minecraft:enchanted_book", 1,
                                       '[stored_enchantments={"minecraft:%s":%d}]' % (_n.lower(), _l))
 
@@ -495,12 +495,12 @@ setzen += [
     "$" + _display("nw.zwerg_a", "dwarf_arm", "$(yaw)"),
     f"function {NS}:zwerg/symbol",
     "playsound minecraft:entity.villager.work_toolsmith neutral @a ~ ~ ~ 1 0.8",
-    "tellraw @a[distance=..12] " + J([txt("The dwarf takes his place at the Source. Right-click him for his pack.", "aqua")]),
+    "tellraw @a[distance=..12] " + J([txt("Fraggle takes his place at the Source. Right-click him for his pack.", "aqua")]),
 ]
 fn("zwerg/setzen", setzen)
 fn("zwerg/zurueck", [
     f"execute as @p[distance=..10] run give @s {zwerg_item(0)}",
-    "tellraw @p[distance=..10] " + J([txt("[Dwarf] ", "aqua"), txt("Put me right next to the Source, on a free block. I need to see it.", "gray")]),
+    "tellraw @p[distance=..10] " + J([txt("[Fraggle] ", "aqua"), txt("Put me right next to the Source, on a free block. I need to see it.", "gray")]),
     "kill @s",
 ])
 fn("zwerg/einer", [
@@ -518,7 +518,7 @@ schlag = [
     "scoreboard players set @s nw.zwerg_t 0",
     f"execute unless block {qx} {qy} {qz} #{NS}:quell run return 0",
     "execute store result score #voll nw.tmp2 run data get block ~ ~ ~ Items",
-    "execute if score #voll nw.tmp2 matches 27.. run return run title @a[distance=..8] actionbar " + J([txt("The dwarf's pack is full.", "red")]),
+    "execute if score #voll nw.tmp2 matches 27.. run return run title @a[distance=..8] actionbar " + J([txt("Fraggle's pack is full.", "red")]),
     f"execute as @e[type=item_display,tag=nw.zwerg_a,distance=..0.1] run data merge entity @s {{start_interpolation:0,interpolation_duration:2,transformation:{_arm_transform(-75)}}}",
     f"playsound minecraft:block.stone.hit block @a {qx} {qy} {qz} 1 0.8",
 ]
@@ -551,13 +551,13 @@ fn("zwerg/upgrade", [
 ])
 fn("zwerg/upgrade_kauf", [
     f"clear @s {ZWERG_UP_PRED}",
-    f"execute if score #lvl nw.tmp2 matches {ZWERG_MAX}.. run return run tellraw @s " + J([txt("[Dwarf] ", "aqua"), txt("Faster than this I will not go.", "gray")]),
-    "execute if score #konto nw.konto < #up nw.tmp2 run tellraw @s " + J([txt("[Dwarf] ", "aqua"), txt("Not enough coins. ", "gray"), {"score": {"name": "#up", "objective": "nw.tmp2"}, "color": "gold"}, txt(" needed.", "gray")]),
+    f"execute if score #lvl nw.tmp2 matches {ZWERG_MAX}.. run return run tellraw @s " + J([txt("[Fraggle] ", "aqua"), txt("Faster than this I will not go.", "gray")]),
+    "execute if score #konto nw.konto < #up nw.tmp2 run tellraw @s " + J([txt("[Fraggle] ", "aqua"), txt("Not enough coins. ", "gray"), {"score": {"name": "#up", "objective": "nw.tmp2"}, "color": "gold"}, txt(" needed.", "gray")]),
     "execute if score #konto nw.konto < #up nw.tmp2 run return run playsound minecraft:entity.villager.no neutral @s ~ ~ ~ 1 1",
     "scoreboard players operation #konto nw.konto -= #up nw.tmp2",
     "scoreboard players add #lvl nw.tmp2 1",
     "playsound minecraft:block.anvil.use block @s ~ ~ ~ 0.6 1.2",
-    "tellraw @s " + J([txt("[Dwarf] ", "aqua"), txt("Sharper. Level ", "gray"), {"score": {"name": "#lvl", "objective": "nw.tmp2"}, "color": "aqua"}, txt(".", "gray")]),
+    "tellraw @s " + J([txt("[Fraggle] ", "aqua"), txt("Sharper. Level ", "gray"), {"score": {"name": "#lvl", "objective": "nw.tmp2"}, "color": "aqua"}, txt(".", "gray")]),
 ])
 kaputt = [
     "kill @e[type=item_display,tag=nw.zwerg_k,distance=..0.1]", "kill @e[type=item_display,tag=nw.zwerg_a,distance=..0.1]",
@@ -567,7 +567,7 @@ kaputt = [
 for l in range(ZWERG_MAX + 1):
     kaputt.append(f"execute if score @s nw.zwerg matches {l} as @p[distance=..10] run give @s {zwerg_item(l)}")
 kaputt += [
-    "tellraw @p[distance=..10] " + J([txt("[Dwarf] ", "aqua"), txt("Packing up. I am in your inventory.", "gray")]),
+    "tellraw @p[distance=..10] " + J([txt("[Fraggle] ", "aqua"), txt("Packing up. I am in your inventory.", "gray")]),
     "playsound minecraft:entity.item.pickup player @p[distance=..10] ~ ~ ~ 1 0.8",
     "kill @s",
 ]
@@ -784,7 +784,10 @@ fn("hilfe", [
 # ----------------------------------------------------------------------------
 sx, sy, sz = SAMMLER_POS
 rx, ry, rz = RAMPE
-preise = read_csv("preise.csv")
+# Ankaufspreise: preise_abgeleitet.csv (alle Gegenstaende, aus preise.csv plus Spielrezepten, python3 preise_ableiten.py),
+# falls die fehlt nur preise.csv
+preise = read_csv("preise_abgeleitet.csv") if (TAB / "preise_abgeleitet.csv").exists() else read_csv("preise.csv")
+preise = [r for r in preise if int(r["wert"]) >= 1]
 angebot = read_csv("angebot.csv")
 sprueche = read_csv("sprueche.csv")
 
@@ -993,16 +996,22 @@ for r in angebot:
 fn("sammler/geben", ["$give @s $(item) $(n)"])
 
 # Verkaufen: Fass am Tresen, alle 5 Ticks; Lieferrampe (Trichter) jede Sekunde zu 80 Prozent
+# Preis je Gegenstand als eigene Funktion preis/<item>: Fach lesen, Namensraum abschneiden, Funktion mit dem Namen aufrufen.
+for r in preise:
+    fn(f"preis/{r['item']}", [f"scoreboard players set #w nw.tmp2 {int(r['wert'])}"])
+fn("sammler/preis", ["$function nachtwache:preis/$(id)"])
 def verkauf_funktionen(name, pos, slots, prozent):
     x, y, z = pos
     lines = [f"execute unless items block {x} {y} {z} container.* * run return 0"]
     for slot in range(slots):
-        for r in preise:
-            lines.append(f"execute if items block {x} {y} {z} container.{slot} minecraft:{r['item']} run function {NS}:sammler/{name}_slot {{slot:{slot},wert:{int(r['wert'])}}}")
+        lines.append(f"execute if items block {x} {y} {z} container.{slot} * run function {NS}:sammler/{name}_slot {{slot:{slot}}}")
     fn(f"sammler/{name}", lines)
     fn(f"sammler/{name}_slot", [
         f"$execute store result score #n nw.tmp run data get block {x} {y} {z} Items[{{Slot:$(slot)b}}].count",
-        "$scoreboard players set #w nw.tmp2 $(wert)",
+        f"$data modify storage nachtwache:tmp id set string block {x} {y} {z} Items[{{Slot:$(slot)b}}].id 10",
+        "scoreboard players set #w nw.tmp2 0",
+        f"function {NS}:sammler/preis with storage nachtwache:tmp",
+        "execute if score #w nw.tmp2 matches ..0 run return 0",
         "scoreboard players operation #gain nw.tmp = #n nw.tmp", "scoreboard players operation #gain nw.tmp *= #w nw.tmp2",
         f"scoreboard players set #pz nw.tmp2 {prozent}", "scoreboard players operation #gain nw.tmp *= #pz nw.tmp2", "scoreboard players operation #gain nw.tmp /= #100 nw.const",
         "execute if score #gain nw.tmp matches ..0 run return 0",     # zu wenig fuer einen Splitter: liegen lassen, bis mehr da ist
@@ -1021,15 +1030,18 @@ fn("uhr/tick", [
     "execute unless entity @a run return 0",          # Zeit laeuft nur, wenn jemand auf dem Server ist
     "scoreboard players set #tagphase nw.tmp 1",
     f"execute if score #zeit nw.zeit matches {NACHT_START}..{TAG_START - 1} run scoreboard players set #tagphase nw.tmp 0",
-    "scoreboard players operation #m nw.tmp = #tick nw.tick",
-    f"execute if score #tagphase nw.tmp matches 1 run scoreboard players operation #m nw.tmp %= #{TAG_TEILER} nw.const",
-    f"execute if score #tagphase nw.tmp matches 0 run scoreboard players operation #m nw.tmp %= #{NACHT_TEILER} nw.const",
-    "execute unless score #m nw.tmp matches 0 run return 0",
+    # Akkumulator: je Tick ZAEHLER dazu, je volle NENNER eine Zeiteinheit
+    f"execute if score #tagphase nw.tmp matches 1 run scoreboard players add #uhr_akku nw.tmp2 {TAG_ZAEHLER}",
+    f"execute if score #tagphase nw.tmp matches 1 run scoreboard players set #uhr_nenner nw.tmp2 {TAG_NENNER}",
+    f"execute if score #tagphase nw.tmp matches 0 run scoreboard players add #uhr_akku nw.tmp2 {NACHT_ZAEHLER}",
+    f"execute if score #tagphase nw.tmp matches 0 run scoreboard players set #uhr_nenner nw.tmp2 {NACHT_NENNER}",
+    "execute unless score #uhr_akku nw.tmp2 >= #uhr_nenner nw.tmp2 run return 0",
+    "scoreboard players operation #schritt nw.tmp2 = #uhr_akku nw.tmp2", "scoreboard players operation #schritt nw.tmp2 /= #uhr_nenner nw.tmp2",
+    "scoreboard players operation #uhr_akku nw.tmp2 %= #uhr_nenner nw.tmp2",
     # Nacht: ab 23000 bleibt die Uhr stehen, solange noch Gegner leben. Sind alle tot, springt sie auf den Morgen.
     f"execute if score #status nw.status matches 1 if score #gegner nw.gegner matches 0 if score #zeit nw.zeit matches {NACHT_START + 300}.. run function {NS}:nacht/alles_tot",
     "execute if score #status nw.status matches 1 if score #zeit nw.zeit matches 23000.. if score #gegner nw.gegner matches 1.. run return run function nachtwache:nacht/haelt",
-    f"execute if score #tagphase nw.tmp matches 1 run scoreboard players add #zeit nw.zeit {UHR_SCHRITT}",
-    f"execute if score #tagphase nw.tmp matches 0 run scoreboard players add #zeit nw.zeit {UHR_SCHRITT}",
+    "scoreboard players operation #zeit nw.zeit += #schritt nw.tmp2",
     # nach dem Sieg bleibt es Tag
     f"execute if score #modus nw.status matches 3 if score #zeit nw.zeit matches 12000.. run scoreboard players set #zeit nw.zeit 0",
     "execute if score #zeit nw.zeit matches 24000.. run scoreboard players remove #zeit nw.zeit 24000",
@@ -1058,10 +1070,10 @@ fn("uhr/anzeige", [
     "scoreboard players operation #rest nw.tmp2 -= #zeit nw.zeit",
     "execute if score #rest nw.tmp2 matches ..0 run scoreboard players add #rest nw.tmp2 24000",
     "execute store result bossbar nw:uhr value run scoreboard players get #rest nw.tmp2",
-    # echte Sekunden = rest * 3 / (5 * 20)
+    # echte Sekunden = rest * NENNER / (ZAEHLER * 20)
     "scoreboard players operation #usek nw.tmp2 = #rest nw.tmp2",
-    f"scoreboard players operation #usek nw.tmp2 *= #{TAG_TEILER} nw.const",
-    "scoreboard players operation #usek nw.tmp2 /= #100 nw.const",
+    f"scoreboard players set #uhr_n nw.tmp2 {TAG_NENNER}", "scoreboard players operation #usek nw.tmp2 *= #uhr_n nw.tmp2",
+    f"scoreboard players set #uhr_z nw.tmp2 {TAG_ZAEHLER * 20}", "scoreboard players operation #usek nw.tmp2 /= #uhr_z nw.tmp2",
     "scoreboard players operation #umin nw.tmp2 = #usek nw.tmp2",
     "scoreboard players set #sechzig nw.tmp2 60",
     "scoreboard players operation #umin nw.tmp2 /= #sechzig nw.tmp2",
