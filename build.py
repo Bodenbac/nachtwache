@@ -18,8 +18,23 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 10                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 11                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
+
+ZWERG_TAKT = 300                        # Ticks je Schlag auf Stufe 0 (15 s)
+ZWERG_STUFE_TICKS = 20                  # je Upgrade eine Sekunde schneller
+ZWERG_MAX = 12                          # 12 Upgrades -> 3 s
+ZWERG_UPGRADE_PREIS = 250               # mal (Stufe + 1)
+def zwerg_item(lvl):
+    """Der Zwerg als Gegenstand (Spawn-Ei, das einen Marker mit Stufen-Tag setzt)."""
+    modell = 'item_model="nachtwache:dwarf",' if RESSOURCENPAKET else ""
+    sek = (ZWERG_TAKT - lvl * ZWERG_STUFE_TICKS) // 20
+    lore = ('[{text:"Place him right next to the Source, he must face it.",color:"gray",italic:false},'
+            '{text:"Mines the Source on his own. Coins go to you, drops into his pack.",color:"gray",italic:false},'
+            '{text:"Right-click: open his pack, buy speed. Break him: he jumps back into your inventory.",color:"gray",italic:false},'
+            f'{{text:"Speed: one block every {sek} s (level {lvl})",color:"aqua",italic:false}}]')
+    return (f'minecraft:zombie_spawn_egg[{modell}custom_name={{text:"Dwarf",color:"aqua",italic:false}},custom_data={{nw_zwerg:1b,lvl:{lvl}}},'
+            f'entity_data={{id:"minecraft:marker",Tags:["nw.zwerg_neu","nw.lvl{lvl}"]}},lore={lore}]')
 
 QUELL = (0, 64, 0)                     # der One Block
 # Sieben Stufen des Quells: (Block, Farbe, Abbauten bis zur naechsten Stufe, Splitter je Abbau, Mob-Chance, Mob)
@@ -212,6 +227,7 @@ w("minecraft/tags/function/tick.json", {"values": [f"{NS}:tick"]})
 w(f"{NS}/tags/block/weich.json", {"values": WEICH})
 w(f"{NS}/tags/block/mittel.json", {"values": MITTEL})
 w(f"{NS}/tags/block/hart.json", {"values": HART})
+w(f"{NS}/tags/block/quell.json", {"values": [st[0] for st in STUFEN]})
 for p, c in MOB_CHANCE.items():
     w(f"{NS}/predicate/quell_mob_{p}.json", {"condition": "minecraft:random_chance", "chance": c})
 
@@ -222,7 +238,7 @@ OBJEKTIVE = [(f"nw.mined{i+1}", "minecraft.mined:" + st[0].replace("minecraft:",
     ("nw.tode", "deathCount"),
     ("nw.px", "dummy"), ("nw.py", "dummy"), ("nw.pz", "dummy"), ("nw.qx", "dummy"), ("nw.qy", "dummy"), ("nw.qz", "dummy"),
     ("nw.still", "dummy"), ("nw.kills", "dummy"), ("nw.verdient", "dummy"), ("nw.anzeige", "dummy"), ("nw.const", "dummy"),
-    ("nw.boss", "dummy"), ("nw.upgrade", "dummy"), ("nw.laterne", "dummy"), ("nw.schlaf", "dummy"), ("nw.fest", "dummy"), ("nw.dmin", "dummy"),
+    ("nw.boss", "dummy"), ("nw.upgrade", "dummy"), ("nw.laterne", "dummy"), ("nw.zwerg", "dummy"), ("nw.zwerg_t", "dummy"), ("nw.schlaf", "dummy"), ("nw.fest", "dummy"), ("nw.dmin", "dummy"),
 ]
 
 # ---- load ------------------------------------------------------------------
@@ -235,7 +251,7 @@ load += [
     "bossbar add nw:uhr \"Day\"", "bossbar set nw:uhr color green", "bossbar set nw:uhr style notched_6", "bossbar set nw:uhr max 13500",
     "bossbar add nw:boss \"Boss\"", "bossbar set nw:boss color purple", "bossbar set nw:boss style progress", "bossbar set nw:boss visible false",
 ]
-for k in [-1, 2, 3, 4, 5, 7, 10, 16, 20, 100, 200, 1000, 6000]:
+for k in [-1, 2, 3, 4, 5, 7, 10, 16, 20, 100, 200, 250, 1000, 6000]:
     load.append(f"scoreboard players set #{k} nw.const {k}")
 load += [
     f"execute unless score #init nw.status matches 1 run function {NS}:init",
@@ -273,7 +289,7 @@ init = [
     "scoreboard players set #konto nw.konto 0", "scoreboard players set #abbau nw.abbau 0", "scoreboard players set #phase nw.phase 1",
     "scoreboard players set #nacht nw.nacht 0", "scoreboard players set #gegner nw.gegner 0", "scoreboard players set #status nw.status 0",
     "scoreboard players set #modus nw.status 0", "scoreboard players set #finale nw.status 0", "scoreboard players set #kills nw.kills 0",
-    "scoreboard players set #verdient nw.verdient 0", "scoreboard players set #tode nw.tode 0", "scoreboard players set #glocke nw.upgrade 0", "scoreboard players set #kontrakt nw.upgrade 0", "kill @e[type=marker,tag=nw.laterne]",
+    "scoreboard players set #verdient nw.verdient 0", "scoreboard players set #tode nw.tode 0", "scoreboard players set #glocke nw.upgrade 0", "scoreboard players set #kontrakt nw.upgrade 0", "kill @e[type=marker,tag=nw.laterne]", "kill @e[tag=nw.zwerg]", "kill @e[tag=nw.zwerg_k]", "kill @e[tag=nw.zwerg_a]",
     "scoreboard players set #boss nw.boss 0",
     f"forceload add -20 -20 20 100",
     f"function {NS}:welt/startinsel", f"function {NS}:welt/stand", f"function {NS}:welt/gegnerinsel",
@@ -431,6 +447,127 @@ fn("laterne/halten", [       # Strasse wird alle 2 Ticks neu gesetzt: Stuetze un
     "execute unless block ~ ~ ~ minecraft:soul_lantern run setblock ~ ~ ~ minecraft:soul_lantern",
 ])
 fn("laterne/sekunde", [f"execute as @e[type=marker,tag=nw.laterne] at @s run function {NS}:laterne/eine"])
+
+# ----------------------------------------------------------------------------
+# Der Zwerg: Marker (Logik) + zwei item_displays (Koerper, Axt-Arm) + unsichtbares Fass (Rucksack, 26 Faecher + Upgrade-Symbol)
+# ----------------------------------------------------------------------------
+import math as _m
+qx, qy, qz = QUELL
+ZWERG_UP_PRED = "*[custom_data~{nw_zwerg_up:1b}]"
+def _quat_x(grad):
+    a = _m.radians(grad); return (round(_m.sin(a / 2), 5), 0, 0, round(_m.cos(a / 2), 5))
+def _arm_transform(grad):
+    """Drehung des Arms um die Schulter (Modellkoordinaten 1.5, 9, 7.5 -> Blockkoordinaten um die Mitte)."""
+    px, py, pz = (1.5 - 8) / 16, (9 - 8) / 16, (7.5 - 8) / 16
+    a = _m.radians(grad); c, s = _m.cos(a), _m.sin(a)
+    ry, rz = py * c - pz * s, py * s + pz * c          # R * p
+    tx, ty, tz = 0, round(py - ry, 5), round(pz - rz, 5)
+    q = _quat_x(grad)
+    return f"{{left_rotation:[{q[0]}f,{q[1]}f,{q[2]}f,{q[3]}f],translation:[{tx}f,{ty}f,{tz}f],scale:[1f,1f,1f],right_rotation:[0f,0f,0f,1f]}}"
+def _display(tag, modell, yaw):
+    return (f'summon minecraft:item_display ~ ~ ~ {{Tags:["{tag}"],Rotation:[{yaw}f,0f],item_display:"none",interpolation_duration:2,'
+            f'item:{{id:"minecraft:stick",count:1,components:{{"minecraft:item_model":"nachtwache:{modell}"}}}}}}')
+fn("zwerg/tick", [
+    f"execute as @e[type=marker,tag=nw.zwerg_neu] at @s run function {NS}:zwerg/neu",
+    f"execute as @e[type=marker,tag=nw.zwerg] at @s run function {NS}:zwerg/einer",
+])
+neu = [
+    "tag @s remove nw.zwerg_neu",
+    "execute align xyz positioned ~0.5 ~0.5 ~0.5 run tp @s ~ ~ ~",
+    f"execute positioned {qx+0.5} {qy+0.5} {qz+0.5} unless entity @s[distance=..1.9] run return run function {NS}:zwerg/zurueck",
+    f"execute unless block ~ ~ ~ minecraft:air run return run function {NS}:zwerg/zurueck",
+]
+for dx in (-1, 0, 1):
+    for dz in (-1, 0, 1):
+        if dx == 0 and dz == 0: continue
+        yaw = round(_m.degrees(_m.atan2(-dx, dz)), 1)      # Modell-Vorderseite (-z) zeigt zum Quell
+        neu.append(f"execute positioned {qx+dx+0.5} {qy+0.5} {qz+dz+0.5} if entity @s[distance=..0.01] run function {NS}:zwerg/setzen {{yaw:{yaw}}}")
+fn("zwerg/neu", neu)
+setzen = ["tag @s add nw.zwerg", "scoreboard players set @s nw.zwerg 0", "scoreboard players set @s nw.zwerg_t 0"]
+setzen += [f"execute if entity @s[tag=nw.lvl{l}] run scoreboard players set @s nw.zwerg {l}" for l in range(1, ZWERG_MAX + 1)]
+setzen += [
+    "setblock ~ ~ ~ minecraft:barrel[facing=down]",
+    "$" + _display("nw.zwerg_k", "dwarf_body", "$(yaw)"),
+    "$" + _display("nw.zwerg_a", "dwarf_arm", "$(yaw)"),
+    f"function {NS}:zwerg/symbol",
+    "playsound minecraft:entity.villager.work_toolsmith neutral @a ~ ~ ~ 1 0.8",
+    "tellraw @a[distance=..12] " + J([txt("The dwarf takes his place at the Source. Right-click him for his pack.", "aqua")]),
+]
+fn("zwerg/setzen", setzen)
+fn("zwerg/zurueck", [
+    f"execute as @p[distance=..10] run give @s {zwerg_item(0)}",
+    "tellraw @p[distance=..10] " + J([txt("[Dwarf] ", "aqua"), txt("Put me right next to the Source, on a free block. I need to see it.", "gray")]),
+    "kill @s",
+])
+fn("zwerg/einer", [
+    f"execute unless block ~ ~ ~ minecraft:barrel run return run function {NS}:zwerg/kaputt",
+    "scoreboard players add @s nw.zwerg_t 1",
+    "scoreboard players operation #iv nw.tmp2 = @s nw.zwerg",
+    f"scoreboard players operation #iv nw.tmp2 *= #{ZWERG_STUFE_TICKS} nw.const",
+    f"scoreboard players set #takt nw.tmp2 {ZWERG_TAKT}",
+    "scoreboard players operation #takt nw.tmp2 -= #iv nw.tmp2",
+    f"execute if score @s nw.zwerg_t >= #takt nw.tmp2 run function {NS}:zwerg/schlag",
+    f"execute if score @s nw.zwerg_t matches 6 as @e[type=item_display,tag=nw.zwerg_a,distance=..0.1] run data merge entity @s {{start_interpolation:0,interpolation_duration:8,transformation:{_arm_transform(0)}}}",
+    f"execute unless items block ~ ~ ~ container.26 {ZWERG_UP_PRED} run function {NS}:zwerg/upgrade",
+])
+schlag = [
+    "scoreboard players set @s nw.zwerg_t 0",
+    f"execute unless block {qx} {qy} {qz} #{NS}:quell run return 0",
+    "execute store result score #voll nw.tmp2 run data get block ~ ~ ~ Items",
+    "execute if score #voll nw.tmp2 matches 27.. run return run title @a[distance=..8] actionbar " + J([txt("The dwarf's pack is full.", "red")]),
+    f"execute as @e[type=item_display,tag=nw.zwerg_a,distance=..0.1] run data merge entity @s {{start_interpolation:0,interpolation_duration:2,transformation:{_arm_transform(-75)}}}",
+    f"playsound minecraft:block.stone.hit block @a {qx} {qy} {qz} 1 0.8",
+]
+for i, st in enumerate(STUFEN):
+    schlag.append(f'execute if score #phase nw.phase matches {i+1} run particle minecraft:block{{block_state:"{st[0]}"}} {qx+0.5} {qy+0.5} {qz+0.5} 0.3 0.3 0.3 0 12')
+schlag.append(f"function {NS}:zwerg/abbau")
+fn("zwerg/schlag", schlag)
+symbol = []
+for l in range(ZWERG_MAX + 1):
+    sek = (ZWERG_TAKT - l * ZWERG_STUFE_TICKS) // 20
+    if l < ZWERG_MAX:
+        preis = ZWERG_UPGRADE_PREIS * (l + 1)
+        it = (f'minecraft:iron_pickaxe[custom_data={{nw_zwerg_up:1b}},custom_name={{text:"Upgrade speed",color:"yellow",italic:false}},'
+              f'lore=[{{text:"Now: one block every {sek} s (level {l})",color:"gray",italic:false}},'
+              f'[{{text:"Next: {sek-1} s for {preis} ",color:"gold",italic:false}},{{text:"{COIN}",color:"white",italic:false}}],'
+              f'{{text:"Take this to buy",color:"dark_gray",italic:false}}]]')
+    else:
+        it = (f'minecraft:netherite_pickaxe[custom_data={{nw_zwerg_up:1b}},custom_name={{text:"Max speed",color:"yellow",italic:false}},'
+              f'lore=[{{text:"One block every {sek} s (level {l})",color:"gray",italic:false}}]]')
+    symbol.append(f"execute if score @s nw.zwerg matches {l} run item replace block ~ ~ ~ container.26 with {it}")
+fn("zwerg/symbol", symbol)
+fn("zwerg/upgrade", [
+    "scoreboard players operation #lvl nw.tmp2 = @s nw.zwerg",
+    "scoreboard players operation #up nw.tmp2 = #lvl nw.tmp2", "scoreboard players add #up nw.tmp2 1",
+    f"scoreboard players operation #up nw.tmp2 *= #{ZWERG_UPGRADE_PREIS} nw.const",
+    f"execute as @a[distance=..8] store result score @s nw.tmp run clear @s {ZWERG_UP_PRED} 0",
+    f"execute as @a[distance=..8,scores={{nw.tmp=1..}}] run function {NS}:zwerg/upgrade_kauf",
+    "scoreboard players operation @s nw.zwerg = #lvl nw.tmp2",
+    f"function {NS}:zwerg/symbol",
+])
+fn("zwerg/upgrade_kauf", [
+    f"clear @s {ZWERG_UP_PRED}",
+    f"execute if score #lvl nw.tmp2 matches {ZWERG_MAX}.. run return run tellraw @s " + J([txt("[Dwarf] ", "aqua"), txt("Faster than this I will not go.", "gray")]),
+    "execute if score #konto nw.konto < #up nw.tmp2 run tellraw @s " + J([txt("[Dwarf] ", "aqua"), txt("Not enough coins. ", "gray"), {"score": {"name": "#up", "objective": "nw.tmp2"}, "color": "gold"}, txt(" needed.", "gray")]),
+    "execute if score #konto nw.konto < #up nw.tmp2 run return run playsound minecraft:entity.villager.no neutral @s ~ ~ ~ 1 1",
+    "scoreboard players operation #konto nw.konto -= #up nw.tmp2",
+    "scoreboard players add #lvl nw.tmp2 1",
+    "playsound minecraft:block.anvil.use block @s ~ ~ ~ 0.6 1.2",
+    "tellraw @s " + J([txt("[Dwarf] ", "aqua"), txt("Sharper. Level ", "gray"), {"score": {"name": "#lvl", "objective": "nw.tmp2"}, "color": "aqua"}, txt(".", "gray")]),
+])
+kaputt = [
+    "kill @e[type=item_display,tag=nw.zwerg_k,distance=..0.1]", "kill @e[type=item_display,tag=nw.zwerg_a,distance=..0.1]",
+    'kill @e[type=item,distance=..2.5,nbt={Item:{id:"minecraft:barrel"}}]',
+    'kill @e[type=item,distance=..2.5,nbt={Item:{components:{"minecraft:custom_data":{nw_zwerg_up:1b}}}}]',
+]
+for l in range(ZWERG_MAX + 1):
+    kaputt.append(f"execute if score @s nw.zwerg matches {l} as @p[distance=..10] run give @s {zwerg_item(l)}")
+kaputt += [
+    "tellraw @p[distance=..10] " + J([txt("[Dwarf] ", "aqua"), txt("Packing up. I am in your inventory.", "gray")]),
+    "playsound minecraft:entity.item.pickup player @p[distance=..10] ~ ~ ~ 1 0.8",
+    "kill @s",
+]
+fn("zwerg/kaputt", kaputt)
 fn("laterne/eine", [
     "execute unless block ~ ~ ~ minecraft:soul_lantern run return run kill @s",
     "effect give @e[tag=nw.welle,distance=..8] minecraft:slowness 2 1 true",
@@ -464,6 +601,7 @@ fn("tick", [
     f"execute as @a[scores={{nw.tode=1..}}] run function {NS}:spieler/tod",
     f"function {NS}:gegner/tick",
     f"function {NS}:schutz/tick",
+    f"function {NS}:zwerg/tick",
     f"execute if score #m20 nw.tmp matches 0 run function {NS}:sammler/rampe",
     f"execute if score #m20 nw.tmp matches 0 run function {NS}:schutz/sekunde",
     f"execute if score #m20 nw.tmp matches 10 run function {NS}:anzeige/aktualisieren",
@@ -491,28 +629,30 @@ for st in STUFEN:
 fn("quell/pruefen", pruefen)
 fn("quell/setzen", [f"execute if score #phase nw.phase matches {i+1} run setblock {qx} {qy} {qz} {st[0]}" for i, st in enumerate(STUFEN)])
 
-abbau = [
-    "scoreboard players set #wer nw.tmp 1",
+def abbau_lines(wer, loot_ziel, mit_anzeige):
+  abbau = [
+    f"scoreboard players set #wer nw.tmp {wer}",
     "scoreboard players add #abbau nw.abbau 1",
     "scoreboard players operation #splitter nw.tmp = #phase nw.phase",
 ]
-for p, s in SPLITTER_PRO_ABBAU.items():
+  for p, s in SPLITTER_PRO_ABBAU.items():
     abbau.append(f"execute if score #phase nw.phase matches {p} run scoreboard players set #splitter nw.tmp {s}")
-abbau += [
+  abbau += [
     "scoreboard players operation #konto nw.konto += #splitter nw.tmp",
     "scoreboard players operation #verdient nw.verdient += #splitter nw.tmp",
-    f"playsound minecraft:block.amethyst_block.break player @s ~ ~ ~ 0.6 0.7",
-]
-for p in range(1, ANZ_STUFEN + 1):
+    f"playsound minecraft:block.amethyst_block.break player @a ~ ~ ~ 0.6 0.7",
+  ]
+  for p in range(1, ANZ_STUFEN + 1):
     abbau.append(f"execute if score #phase nw.phase matches {p} if predicate {NS}:quell_mob_{p} run function {NS}:quell/mob_{p}")
-    abbau.append(f"execute if score #phase nw.phase matches {p} unless score #mobda nw.tmp matches 1 run loot give @s loot {NS}:quell/phase{p}")
-abbau += [
-    "scoreboard players reset #mobda nw.tmp",
-    f'title @s actionbar {J([txt("+", "gold"), {"score": {"name": "#splitter", "objective": "nw.tmp"}, "color": "gold"}, txt(" ", "gray"), coin(), txt("   mined ", "gray"), {"score": {"name": "#abbau", "objective": "nw.abbau"}, "color": "gray"}])}',
-]
-for i, g in enumerate(PHASEN_GRENZEN):
+    abbau.append(f"execute if score #phase nw.phase matches {p} unless score #mobda nw.tmp matches 1 run loot {loot_ziel} loot {NS}:quell/phase{p}")
+  abbau.append("scoreboard players reset #mobda nw.tmp")
+  if mit_anzeige:
+    abbau.append(f'title @s actionbar {J([txt("+", "gold"), {"score": {"name": "#splitter", "objective": "nw.tmp"}, "color": "gold"}, txt(" ", "gray"), coin(), txt("   mined ", "gray"), {"score": {"name": "#abbau", "objective": "nw.abbau"}, "color": "gray"}])}')
+  for i, g in enumerate(PHASEN_GRENZEN):
     abbau.append(f"execute if score #abbau nw.abbau matches {g} run function {NS}:quell/phase_wechsel {{phase:{i+2}}}")
-fn("quell/abbau", abbau)
+  return abbau
+fn("quell/abbau", abbau_lines(1, "give @s", True))
+fn("zwerg/abbau", abbau_lines(2, "insert ~ ~ ~", False))
 
 for p in range(1, ANZ_STUFEN + 1):
     ent, nbt = MOBS[MOB_AUS_QUELL[p]] if MOB_AUS_QUELL[p] in MOBS else (f"minecraft:{MOB_AUS_QUELL[p]}", "")
@@ -659,6 +799,7 @@ def kauf_block(slot):
 
 MODELL_GLOCKE = 'item_model="nachtwache:watch_bell",' if RESSOURCENPAKET else ""
 MODELL_KIT = 'item_model="nachtwache:kit",' if RESSOURCENPAKET else ""
+MODELL_ZWERG = 'item_model="nachtwache:dwarf",' if RESSOURCENPAKET else ""
 MODELL_LATERNE = 'item_model="nachtwache:lantern",' if RESSOURCENPAKET else ""
 MODELL_KONTRAKT = 'item_model="nachtwache:contract",' if RESSOURCENPAKET else ""
 LORE_LATERNE_L = ['{text:"Place it on the road or on your island.",color:"gray",italic:false}', '{text:"Enemies within 8 blocks are slowed.",color:"gray",italic:false}', '{text:"Burns for three nights, then goes out.",color:"gray",italic:false}']
@@ -672,6 +813,9 @@ def item_spec(spec):
     if spec in SONDERITEMS:
         iid, cnt, comp = SONDERITEMS[spec]
         return iid, comp[1:-1], cnt
+    if spec == "ZWERG":
+        g = zwerg_item(0)
+        return g[:g.index("[")], g[g.index("[") + 1:-1], 1
     if spec == "LATERNE":
         return "minecraft:soul_lantern", MODELL_LATERNE + 'custom_name={text:"Collector Lantern",color:"aqua",italic:false},custom_data={nw_laterne:1b},lore=' + LORE_LATERNE, 1
     if spec == "KONTRAKT":
@@ -703,12 +847,14 @@ def menue_item(r):
     if mx > 1:
         lore.append(f'[{{text:"Shift-click: buy {mx} for {preis * mx} ",color:"gray",italic:false}},{{text:"{COIN}",color:"white",italic:false}}]')
     comps = [f'custom_data={{nw_menu:{int(r["id"])}}}', f'custom_name={{text:"{name}",color:"white",italic:false}}', "lore=[" + ",".join(lore) + "]"]
-    if comp and not r["item"].startswith("SET:") and r["item"] not in ("GLOCKE", "LATERNE", "KONTRAKT"):
+    if comp and not r["item"].startswith("SET:") and r["item"] not in ("GLOCKE", "LATERNE", "KONTRAKT", "ZWERG"):
         comps.insert(0, comp)
     elif r["item"] == "GLOCKE" and MODELL_GLOCKE:
         comps.insert(0, MODELL_GLOCKE[:-1])
     elif r["item"] == "LATERNE" and MODELL_LATERNE:
         comps.insert(0, MODELL_LATERNE[:-1])
+    elif r["item"] == "ZWERG" and MODELL_ZWERG:
+        comps.insert(0, MODELL_ZWERG[:-1])
     elif r["item"] == "KONTRAKT" and MODELL_KONTRAKT:
         comps.insert(0, MODELL_KONTRAKT[:-1])
     elif r["item"].startswith("SET:") and MODELL_KIT:

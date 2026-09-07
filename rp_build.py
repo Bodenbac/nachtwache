@@ -8,6 +8,8 @@ Inhalt:
   - Sieben Quell-Stufen im Amethyst-Stil (Tuff, Gruen, Blau, Amethyst, Gelb, Orange, Schwarz).
   - Eigene Symbole fuer Watch Bell, Kits, Collector Lantern und Bounty Contract (item_model nachtwache:watch_bell / kit / lantern / contract).
   - Stern (U+2605) als Goldstern fuer den laufenden Kontrakt.
+  - Der Zwerg (zwerg.py): zwei 3D-Modelle fuer item_display (Koerper, Axt-Arm), 2D-Symbol, und das Fass mit facing=down
+    ist unsichtbar (sein Rucksack steckt im Zwerg).
   - Truhen-Oberflaeche in Daemmerungs-Toenen (gilt fuer alle Truhen, Faesser und den Laden).
   - Pack-Icon.
 
@@ -17,7 +19,7 @@ Braucht Pillow (pip install pillow). Vorlagen liegen in vorlagen/ (aus dem 1.21.
 import hashlib, json, os, shutil, zipfile
 from pathlib import Path
 from PIL import Image, ImageDraw
-import icons
+import icons, zwerg
 
 HERE = Path(__file__).resolve().parent
 VORLAGEN = HERE / "vorlagen"
@@ -153,6 +155,28 @@ def kontrakt():
         "................",
     ], {"p": (120, 90, 50), "P": (226, 206, 160), "l": (110, 90, 70), "r": (150, 20, 20), "R": (220, 60, 50)})
 
+def zwerg_icon():
+    """Der Zwerg als 2D-Symbol (Ei im Laden und in der Hand)."""
+    return pixel([
+        "....kkkkkkkk....",
+        "...kHHHHHHHHk...",
+        "..kHHHHHHHHHHk..",
+        "..kkkkkkkkkkkk..",
+        "..khhwkhhkwhhk..",
+        "..khhhhnnhhhhk..",
+        "..kbBbbnnbbBbk..",
+        "..kbbBbbbbBbbk..",
+        "..kBbbbBbbbbBk..",
+        ".kttkbbbbbbkttk.",
+        ".kttkbBbbBbkttk.",
+        ".kttkkbbbbkkttk.",
+        ".khhkttggttkhhk.",
+        "....kttttttk....",
+        "....kddkkddk....",
+        "....kkkk.kkkk...",
+    ], {"k": (28, 22, 20), "H": (150, 156, 164), "h": (222, 176, 138), "w": (250, 250, 250), "n": (196, 148, 112),
+        "b": (178, 74, 32), "B": (208, 104, 52), "t": (46, 74, 128), "g": (214, 166, 44), "d": (70, 48, 30)})
+
 def kiste():
     """Kit: Versorgungskiste, dunkles Holz, Goldband, Schloss."""
     im = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
@@ -230,6 +254,21 @@ def build(out_dir=None):
         w(nw / "textures" / "item" / f"{name}.png", img)
         w(nw / "models" / "item" / f"{name}.json", json.dumps({"parent": "minecraft:item/generated", "textures": {"layer0": f"nachtwache:item/{name}"}}))
         w(nw / "items" / f"{name}.json", json.dumps({"model": {"type": "minecraft:model", "model": f"nachtwache:item/{name}"}}))
+
+    # Der Zwerg: 3D-Modelle (Koerper, Axt-Arm) mit Textur-Atlas, 2D-Symbol, unsichtbares Fass (facing=down) als Rucksack
+    for name, elemente in (("dwarf_body", zwerg.KOERPER), ("dwarf_arm", zwerg.ARM)):
+        atlas, model = zwerg.atlas_und_modell(elemente, f"nachtwache:item/{name}")
+        w(nw / "textures" / "item" / f"{name}.png", atlas)
+        w(nw / "models" / "item" / f"{name}.json", json.dumps(model))
+        w(nw / "items" / f"{name}.json", json.dumps({"model": {"type": "minecraft:model", "model": f"nachtwache:item/{name}"}}))
+    w(nw / "textures" / "item" / "dwarf.png", zwerg_icon())
+    w(nw / "models" / "item" / "dwarf.json", json.dumps({"parent": "minecraft:item/generated", "textures": {"layer0": "nachtwache:item/dwarf"}}))
+    w(nw / "items" / "dwarf.json", json.dumps({"model": {"type": "minecraft:model", "model": "nachtwache:item/dwarf"}}))
+    w(nw / "models" / "block" / "empty.json", json.dumps({"textures": {"particle": "minecraft:block/barrel_side"}, "elements": []}))
+    fass = json.loads((VORLAGEN / "barrel.json").read_text())
+    for k in ("facing=down,open=false", "facing=down,open=true"):
+        fass["variants"][k] = {"model": "nachtwache:block/empty"}
+    w(mc / "blockstates" / "barrel.json", json.dumps(fass, indent=1))
 
     # Truhen-Oberflaeche
     w(mc / "textures" / "gui" / "container" / "generic_54.png", gui_daemmerung(VORLAGEN / "generic_54.png"))
