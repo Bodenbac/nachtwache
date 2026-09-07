@@ -26,7 +26,7 @@ phasen,item,gewicht,min,max
 2-7,melon,1,1,1
 2-7,string,2,1,2
 2-7,mossy_cobblestone,2,1,1
-2,KISTE_1,2,1,1
+2,KISTE_1,1,1,1
 3-7,gold_ore,4,1,1
 3-7,redstone_ore,5,1,1
 3-7,lapis_ore,4,1,1
@@ -39,7 +39,7 @@ phasen,item,gewicht,min,max
 3-7,pig_spawn_egg,1,1,1
 3-7,bamboo,2,1,1
 3-7,sweet_berries,2,1,2
-3,KISTE_2,2,1,1
+3,KISTE_2,1,1,1
 5-7,diamond_ore,3,1,1
 5-7,emerald_ore,2,1,1
 5-7,nether_wart,2,1,1
@@ -50,7 +50,7 @@ phasen,item,gewicht,min,max
 5-7,magma_block,2,1,1
 5-7,nether_quartz_ore,3,1,1
 5-7,blackstone,4,1,2
-5,KISTE_3,2,1,1
+5,KISTE_3,1,1,1
 6-7,end_stone,5,1,2
 6-7,chorus_flower,1,1,1
 6-7,purpur_block,2,1,1
@@ -59,15 +59,15 @@ phasen,item,gewicht,min,max
 6-7,sculk,2,1,1
 6-7,ender_pearl,1,1,1
 6-7,shulker_shell,1,1,1
-6-7,KISTE_4,2,1,1
+6-7,KISTE_4,1,1,1
 7,diamond_ore,4,1,1
 7,ancient_debris,2,1,1
 7,emerald_ore,3,1,1
 7,netherite_scrap,1,1,1
-7,KISTE_4,3,1,1
+7,KISTE_4,1,1,1
 7,enchanted_golden_apple,1,1,1
 4-7,raw_gold,2,1,1
 4-7,amethyst_shard,3,1,2
 4-7,glass,3,1,2
 4-7,bookshelf,1,1,1
-4,KISTE_2,2,1,1
+4,KISTE_2,1,1,1
