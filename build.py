@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 35                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 36                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -523,8 +523,10 @@ fn("zwerg/displays", ["$" + _display("nw.zwerg_k", "dwarf_body", "$(yaw)"), "$" 
 fn("zwerg/neu", neu)
 setzen = ["tag @s add nw.zwerg", "scoreboard players set @s nw.zwerg 0", "scoreboard players set @s nw.zwerg_t 0"]
 setzen += [f"execute if entity @s[tag=nw.lvl{l}] run scoreboard players set @s nw.zwerg {l}" for l in range(1, ZWERG_MAX + 1)]
+# Ausrichtung im Schachbrettmuster, damit zwei benachbarte Zwerge nie eine Doppeltruhe bilden
+setzen += [f"execute positioned {qx+dx+0.5} {qy+0.5} {qz+dz+0.5} if entity @s[distance=..0.01] run setblock {qx+dx} {qy} {qz+dz} minecraft:trapped_chest[facing={'north' if (dx+dz) % 2 == 0 else 'east'},type=single]"
+           for dx in (-1, 0, 1) for dz in (-1, 0, 1) if (dx, dz) != (0, 0)]
 setzen += [
-    "setblock ~ ~ ~ minecraft:barrel[facing=down]",
     f"function {NS}:zwerg/zeichnen",
     f"function {NS}:zwerg/symbol",
     "playsound minecraft:entity.villager.work_toolsmith neutral @a ~ ~ ~ 1 0.8",
@@ -538,7 +540,7 @@ fn("zwerg/zurueck", [
     "kill @s",
 ])
 fn("zwerg/einer", [
-    f"execute unless block ~ ~ ~ minecraft:barrel run return run function {NS}:zwerg/kaputt",
+    f"execute unless block ~ ~ ~ minecraft:trapped_chest run return run function {NS}:zwerg/kaputt",
     "scoreboard players add @s nw.zwerg_t 1",
     "scoreboard players operation #iv nw.tmp2 = @s nw.zwerg",
     f"scoreboard players operation #iv nw.tmp2 *= #{ZWERG_STUFE_TICKS} nw.const",
@@ -595,7 +597,7 @@ fn("zwerg/upgrade_kauf", [
 ])
 kaputt = [
     "kill @e[type=item_display,tag=nw.zwerg_k,distance=..0.1]", "kill @e[type=item_display,tag=nw.zwerg_a,distance=..0.1]",
-    'kill @e[type=item,distance=..2.5,nbt={Item:{id:"minecraft:barrel"}}]',
+    'kill @e[type=item,distance=..2.5,nbt={Item:{id:"minecraft:trapped_chest"}}]',
     'kill @e[type=item,distance=..2.5,nbt={Item:{components:{"minecraft:custom_data":{nw_zwerg_up:1b}}}}]',
 ]
 for l in range(ZWERG_MAX + 1):

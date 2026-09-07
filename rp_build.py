@@ -264,11 +264,11 @@ def build(out_dir=None):
     w(nw / "textures" / "item" / "dwarf.png", zwerg_icon())
     w(nw / "models" / "item" / "dwarf.json", json.dumps({"parent": "minecraft:item/generated", "textures": {"layer0": "nachtwache:item/dwarf"}}))
     w(nw / "items" / "dwarf.json", json.dumps({"model": {"type": "minecraft:model", "model": "nachtwache:item/dwarf"}}))
-    w(nw / "models" / "block" / "empty.json", json.dumps({"textures": {"particle": "minecraft:block/barrel_side"}, "elements": []}))
-    fass = json.loads((VORLAGEN / "barrel.json").read_text())
-    for k in ("facing=down,open=false", "facing=down,open=true"):
-        fass["variants"][k] = {"model": "nachtwache:block/empty"}
-    w(mc / "blockstates" / "barrel.json", json.dumps(fass, indent=1))
+    # Fraggles Rucksack ist eine Fallentruhe: unsichtbar durch leere Textur. Truhen sind keine vollen Bloecke,
+    # deshalb bleiben die Flaechen der Nachbarbloecke sichtbar (mit einem Fass entstanden Loecher in der Welt).
+    leer = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    for name in ("trapped", "trapped_left", "trapped_right"):
+        w(mc / "textures" / "entity" / "chest" / f"{name}.png", leer)
 
     # Truhen-Oberflaeche
     w(mc / "textures" / "gui" / "container" / "generic_54.png", gui_daemmerung(VORLAGEN / "generic_54.png"))
