@@ -71,6 +71,8 @@ Das schreibt `out/nachtwache/`, `out/nachtwache.zip` und `out/nachtwache-rp.zip`
 /function nachtwache:admin/phase {p:3}     Quellphase setzen
 /function nachtwache:admin/neustart        alles auf null, Inseln neu gesetzt (eigene Bauten bleiben)
 /trigger night set 10                      laufende Welle weg, Nacht 10 startet sofort (Boss inklusive), Tag nw.admin
+/trigger money set 5000                    Coins aufs Konto (negativ zieht ab)
+/trigger endnight                          alle Gegner weg, Nacht sofort zu Ende (kein Bonus)
 /trigger boss set 10                       nur den Boss der Nacht 10 rufen (5, 10, 15, 20, 25, 30)
 /trigger fraggle set 90                    Blickrichtung aller Zwerge drehen (1 = 0, 90, 180, 270 Grad), sofort neu gezeichnet
 /trigger reset                             kompletter Neuanfang: fragt nach, dann innerhalb 60 s

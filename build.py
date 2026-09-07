@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 32                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 34                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -256,7 +256,7 @@ OBJEKTIVE = [(f"nw.mined{i+1}", "minecraft.mined:" + st[0].replace("minecraft:",
     ("nw.tode", "deathCount"),
     ("nw.px", "dummy"), ("nw.py", "dummy"), ("nw.pz", "dummy"), ("nw.qx", "dummy"), ("nw.qy", "dummy"), ("nw.qz", "dummy"),
     ("nw.still", "dummy"), ("nw.kills", "dummy"), ("nw.verdient", "dummy"), ("nw.anzeige", "dummy"), ("nw.const", "dummy"),
-    ("nw.boss", "dummy"), ("nw.upgrade", "dummy"), ("nw.laterne", "dummy"), ("nw.zwerg", "dummy"), ("nw.zwerg_t", "dummy"), ("reset", "trigger"), ("yes", "trigger"), ("night", "trigger"), ("boss", "trigger"), ("fraggle", "trigger"), ("nw.schlaf", "dummy"), ("nw.fest", "dummy"), ("nw.dmin", "dummy"),
+    ("nw.boss", "dummy"), ("nw.upgrade", "dummy"), ("nw.laterne", "dummy"), ("nw.zwerg", "dummy"), ("nw.zwerg_t", "dummy"), ("reset", "trigger"), ("yes", "trigger"), ("night", "trigger"), ("boss", "trigger"), ("fraggle", "trigger"), ("endnight", "trigger"), ("money", "trigger"), ("nw.schlaf", "dummy"), ("nw.fest", "dummy"), ("nw.dmin", "dummy"),
 ]
 
 # ---- load ------------------------------------------------------------------
@@ -644,6 +644,9 @@ fn("tick", [
     f"execute as @a[tag=nw.admin,scores={{night=1..}}] run function {NS}:admin/night_trigger",
     f"execute as @a[tag=nw.admin,scores={{boss=1..}}] run function {NS}:admin/boss_trigger",
     f"execute as @a[tag=nw.admin,scores={{fraggle=1..}}] run function {NS}:admin/fraggle_trigger",
+    f"execute as @a[tag=nw.admin,scores={{endnight=1..}}] run function {NS}:admin/endnight_trigger",
+    f"execute as @a[tag=nw.admin,scores={{money=1..}}] run function {NS}:admin/money_trigger",
+    f"execute as @a[tag=nw.admin,scores={{money=..-1}}] run function {NS}:admin/money_trigger",
     f"execute if score #m20 nw.tmp matches 0 run function {NS}:sammler/rampe",
     f"execute if score #m20 nw.tmp matches 0 run function {NS}:schutz/sekunde",
     f"execute if score #m20 nw.tmp matches 10 run function {NS}:anzeige/aktualisieren",
@@ -1281,7 +1284,7 @@ fn("nacht/ende", [
     "effect give @e[tag=nw.welle] minecraft:glowing infinite 0 true",
     # Ueberlebende auf der Gegnerinsel zur Strassenmuendung
     f"execute as @e[tag=nw.welle,x=-30,y=0,z={GEGNER_Z - GEGNER_RADIUS - 1},dx=60,dy=200,dz=40] run tp @s {STRASSENMUND[0]} {STRASSENMUND[1]} {STRASSENMUND[2]}",
-    f"execute if score #gegner nw.gegner matches 0 run function {NS}:nacht/bonus",
+    f"execute if score #gegner nw.gegner matches 0 unless score #stumm nw.status matches 1 run function {NS}:nacht/bonus",
     f"execute if score #gegner nw.gegner matches 1.. run tellraw @a {J([txt('Dawn breaks. ', 'gray'), {'score': {'name': '#gegner', 'objective': 'nw.gegner'}, 'color': 'red'}, txt(' enemies are still alive. They glow, and they are coming.', 'gray')])}",
     f"execute if score #gegner nw.gegner matches 1.. run playsound minecraft:entity.zombie.ambient hostile @a ~ ~ ~ 1 0.5",
     f"function {NS}:sammler/spruch/morgen",
@@ -1393,6 +1396,8 @@ gt += [
     f"execute if score #glocke nw.upgrade matches 1 if score #glocke_geklingelt nw.upgrade matches 0 if entity @e[tag=nw.welle,x=-4,y=55,z={STRASSE_Z[0]},dx=8,dy=20,dz=25] run function {NS}:gegner/glocke",
 ]
 fn("gegner/tick", gt)
+# Nach einem Admin-Kill kein Kopfgeld: Vorzaehler auf null
+fn("gegner/vergessen", [f"scoreboard players set #p_{t} nw.tmp2 0" for t in KOPFGELD])
 # Endermen sind von Haus aus neutral: jede Sekunde auf den naechsten Spieler wuetend machen
 fn("gegner/enderman_wut", [        # 1.21.11: angry_at (UUID) und anger_end_time (Spielzeit, absolut)
     "execute unless entity @e[type=enderman,tag=nw.welle] run return 0",
@@ -1477,7 +1482,7 @@ fn("schutz/tick", [
 fn("schutz/sekunde", [
     f"function {NS}:welt/stand",
     *[f"tag @a[name={n}] add nw.admin" for n in ADMINS],
-    "scoreboard players enable @a[tag=nw.admin] reset", "scoreboard players enable @a[tag=nw.admin] yes", "scoreboard players enable @a[tag=nw.admin] night", "scoreboard players enable @a[tag=nw.admin] boss", "scoreboard players enable @a[tag=nw.admin] fraggle",
+    "scoreboard players enable @a[tag=nw.admin] reset", "scoreboard players enable @a[tag=nw.admin] yes", "scoreboard players enable @a[tag=nw.admin] night", "scoreboard players enable @a[tag=nw.admin] boss", "scoreboard players enable @a[tag=nw.admin] fraggle", "scoreboard players enable @a[tag=nw.admin] endnight", "scoreboard players enable @a[tag=nw.admin] money",
     f"function {NS}:laterne/sekunde",
     f"function {NS}:gegner/enderman_wut",
     # Sammler fehlt laenger als 5 s (nicht nur beim Start, wenn die Entities noch nicht geladen sind)? Dann neu.
@@ -1562,7 +1567,7 @@ fn("admin/reset_ja", reset_ja)
 fn("admin/night_trigger", [
     "scoreboard players operation #n nw.tmp = @s night", "scoreboard players set @s night 0", "scoreboard players enable @s night",
     f"execute unless score #n nw.tmp matches 1..{LETZTE_NACHT} run return run tellraw @s " + J([txt(f"[Nightwatch] /trigger night set <1..{LETZTE_NACHT}>", "yellow")]),
-    "kill @e[tag=nw.welle]", "scoreboard players set #gegner nw.gegner 0", "scoreboard players set #boss nw.boss 0", "bossbar set nw:boss visible false",
+    "kill @e[tag=nw.welle]", f"function {NS}:gegner/vergessen", "scoreboard players set #gegner nw.gegner 0", "scoreboard players set #boss nw.boss 0", "bossbar set nw:boss visible false",
     "scoreboard players set #status nw.status 0", "scoreboard players set #nacht_haelt nw.status 0",
     "scoreboard players operation #nacht nw.nacht = #n nw.tmp", "scoreboard players remove #nacht nw.nacht 1",
     f"scoreboard players set #zeit nw.zeit {NACHT_START}",
@@ -1575,6 +1580,23 @@ fn("admin/fraggle_trigger", [
     f"execute as @e[type=marker,tag=nw.zwerg] at @s run function {NS}:zwerg/zeichnen",
     "tellraw @s " + J([txt("[Nightwatch] Fraggle turned by ", "yellow"), {"score": {"name": "#zoff", "objective": "nw.status"}, "color": "yellow"}, txt(" degrees (all dwarves redrawn).", "yellow")]),
 ])
+# /trigger endnight: alle Gegner weg, Nacht sofort beendet (ohne Bonus)
+fn("admin/endnight_trigger", [
+    "scoreboard players set @s endnight 0", "scoreboard players enable @s endnight",
+    "kill @e[tag=nw.welle]", f"function {NS}:gegner/vergessen", "scoreboard players set #gegner nw.gegner 0", "scoreboard players set #boss nw.boss 0", "bossbar set nw:boss visible false",
+    f"scoreboard players set #zeit nw.zeit {TAG_START}",
+    "scoreboard players set #stumm nw.status 1",
+    f"execute if score #status nw.status matches 1 run function {NS}:nacht/ende",
+    "scoreboard players set #stumm nw.status 0",
+    "tellraw @a " + J([txt("[Nightwatch] Night ended by an admin.", "yellow")]),
+])
+# /trigger money set N: N Coins aufs Konto (negativ zieht ab)
+fn("admin/money_trigger", [
+    "scoreboard players operation #n nw.tmp = @s money", "scoreboard players set @s money 0", "scoreboard players enable @s money",
+    "scoreboard players operation #konto nw.konto += #n nw.tmp",
+    "execute if score #konto nw.konto matches ..-1 run scoreboard players set #konto nw.konto 0",
+    "tellraw @a " + J([txt("[Nightwatch] Account changed by ", "yellow"), {"score": {"name": "#n", "objective": "nw.tmp"}, "color": "gold"}, txt(" ", "yellow"), coin(), txt(" (admin).", "yellow")]),
+])
 # /trigger boss set N: nur den Boss der Nacht N rufen (alter Boss weg)
 boss_trigger = [
     "scoreboard players operation #n nw.tmp = @s boss", "scoreboard players set @s boss 0", "scoreboard players enable @s boss",
@@ -1586,7 +1608,7 @@ boss_trigger.append("tellraw @s " + J([txt("[Nightwatch] /trigger boss set <" + 
 fn("admin/boss_trigger", boss_trigger)
 fn("admin/zeit_nacht", [f"scoreboard players set #zeit nw.zeit {NACHT_START - 50}", "tellraw @a " + J([txt("[Nightwatch] Night is coming.", "yellow")])])
 fn("admin/zeit_tag", [f"scoreboard players set #zeit nw.zeit {TAG_START - 50}", "tellraw @a " + J([txt("[Nightwatch] Day is coming.", "yellow")])])
-fn("admin/welle_toeten", ["kill @e[tag=nw.welle]", "tellraw @a " + J([txt("[Nightwatch] Wave removed.", "yellow")])])
+fn("admin/welle_toeten", ["kill @e[tag=nw.welle]", f"function {NS}:gegner/vergessen", "tellraw @a " + J([txt("[Nightwatch] Wave removed.", "yellow")])])
 fn("admin/splitter", ["$scoreboard players add #konto nw.konto $(n)", "tellraw @a " + J([txt("[Nightwatch] Coins credited.", "yellow")])])
 # Admin-Phasenwechsel: Abbauzaehler auf den Anfang der Stufe heben, sonst zeigt die Anzeige Minus-Prozent
 admin_phase = ["$function nachtwache:quell/phase_wechsel {phase:$(p)}"]
