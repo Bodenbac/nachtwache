@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 29                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 30                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -482,7 +482,8 @@ def _arm_transform(grad):
     q = _quat_x(grad)
     return f"{{left_rotation:[{q[0]}f,{q[1]}f,{q[2]}f,{q[3]}f],translation:[{tx}f,{ty}f,{tz}f],scale:[1f,1f,1f],right_rotation:[0f,0f,0f,1f]}}"
 def _display(tag, modell, yaw):
-    return (f'summon minecraft:item_display ~ ~ ~ {{Tags:["{tag}"],Rotation:[{yaw}f,0f],item_display:"none",interpolation_duration:2,'
+    # brightness fest: die Displays stecken im (unsichtbaren) Fass, dort ist Lichtwert 0 und das Modell waere schwarz
+    return (f'summon minecraft:item_display ~ ~ ~ {{Tags:["{tag}"],Rotation:[{yaw}f,0f],item_display:"none",interpolation_duration:2,brightness:{{sky:15,block:15}},'
             f'item:{{id:"minecraft:stick",count:1,components:{{"minecraft:item_model":"nachtwache:{modell}"}}}}}}')
 fn("zwerg/tick", [
     f"execute as @e[type=marker,tag=nw.zwerg_neu] at @s run function {NS}:zwerg/neu",
@@ -497,7 +498,9 @@ neu = [
 for dx in (-1, 0, 1):
     for dz in (-1, 0, 1):
         if dx == 0 and dz == 0: continue
-        yaw = round(_m.degrees(_m.atan2(-dx, dz)), 1)      # Modell-Vorderseite (-z) zeigt zum Quell
+        # Display-Entity: bei yaw 0 zeigt die Modell-Nordseite (-z, das Gesicht) nach Norden, also entgegen der Blickrichtung
+        # des Entities. Deshalb 180 Grad drauf, damit das Gesicht zum Quell zeigt.
+        yaw = round((_m.degrees(_m.atan2(-dx, dz)) + 180) % 360, 1)
         neu.append(f"execute positioned {qx+dx+0.5} {qy+0.5} {qz+dz+0.5} if entity @s[distance=..0.01] run function {NS}:zwerg/setzen {{yaw:{yaw}}}")
 fn("zwerg/neu", neu)
 setzen = ["tag @s add nw.zwerg", "scoreboard players set @s nw.zwerg 0", "scoreboard players set @s nw.zwerg_t 0"]
