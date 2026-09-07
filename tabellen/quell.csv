@@ -2,11 +2,10 @@
 # gewicht = relative Haeufigkeit innerhalb der Phase. min/max = Anzahl pro Abbau.
 # Stufen 1 bis 7 (Grau, Gruen, Blau, Lila, Gelb, Orange, Schwarz). KISTE_1 bis KISTE_4 sind vorgefuellte Truhen (Inhalt in build.py, KISTEN).
 phasen,item,gewicht,min,max
-1-7,dirt,20,1,2
+1-7,dirt,30,1,2
 1-7,stone,18,1,2
 1-7,cobblestone,8,1,1
-1-7,oak_log,12,1,1
-1-7,dark_oak_log,4,1,1
+1-7,oak_planks,6,1,2
 1-7,sand,10,1,2
 1-7,gravel,8,1,1
 1-7,coarse_dirt,3,1,1
