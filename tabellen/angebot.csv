@@ -2,103 +2,104 @@
 # max = wie viel ein Shift-Klick kauft (Standard 64, bei Werkzeug und Sets 1).
 # item: normale Item-ID, Kurzname aus SONDERITEMS (Tranke, Buecher) oder SET:<a:n;b:n> fuer eine gefuellte Truhe.
 # id muss eindeutig und stabil bleiben.
-id,stufe,name,preis,max,item
-1,1,Dirt,2,64,dirt
-2,1,Cobblestone,2,64,cobblestone
-3,1,Stone,3,64,stone
-4,1,Sand,10,64,sand
-5,1,Gravel,10,64,gravel
-6,1,Oak Log,50,64,oak_log
-7,1,Oak Planks,15,64,oak_planks
-12,1,Bread,50,64,bread
-13,1,Apple,30,64,apple
-15,1,Water Bucket,1500,1,water_bucket
-16,1,Lava Bucket,1500,1,lava_bucket
-21,1,Oak Sapling,4000,64,oak_sapling
-22,1,Wheat Seeds,200,64,wheat_seeds
-23,1,Stone Pickaxe,30,1,stone_pickaxe
-24,1,Stone Sword,30,1,stone_sword
-25,1,Stone Axe,30,1,stone_axe
-26,1,Stone Shovel,20,1,stone_shovel
-29,1,Iron Ingot,50,64,iron_ingot
-141,1,Bone,35,64,bone
-30,1,Collector Lantern,300,1,LATERNE
-31,1,Bounty Contract,150,1,KONTRAKT
-62,1,Obsidian,500,64,obsidian
-50,1,End Portal Frame,2500,64,end_portal_frame
-49,1,Fraggle the Dwarf,10000,1,ZWERG
-130,1,Coal,15,64,coal
-131,1,Diamond,1000,64,diamond
-40,2,Arrow,3,64,arrow
-42,2,Redstone,10,64,redstone
-45,2,Steak,100,64,cooked_beef
-46,2,Leather,30,64,leather
-47,2,String,10,64,string
-61,3,Gold Ingot,100,64,gold_ingot
-63,3,Enchanting Table,4000,1,enchanting_table
-64,3,Bookshelf,150,64,bookshelf
-65,3,Lapis Lazuli,20,64,lapis_lazuli
-67,3,Potion of Healing II,150,1,TRANK_HEILUNG
-68,3,Potion of Strength,200,1,TRANK_STAERKE
-69,3,Potion of Night Vision (long),100,1,TRANK_NACHTSICHT
-72,3,Observer,60,64,observer
-74,3,Slimeball,30,64,slime_ball
-75,3,TNT,200,64,tnt
-76,3,Cobweb,20,64,cobweb
-77,3,Magma Block,20,64,magma_block
-101,5,Bottle o' Enchanting,50,64,experience_bottle
-102,5,Ender Pearl,100,16,ender_pearl
-103,5,Totem of Undying,1500,1,totem_of_undying
-104,5,Elytra,5000,1,elytra
-105,5,Iron Golem Egg,2000,1,iron_golem_spawn_egg
-80,4,Copper Ingot,20,64,copper_ingot
-81,4,Amethyst Shard,40,64,amethyst_shard
-82,4,Quartz,25,64,quartz
-83,4,Glowstone Dust,30,64,glowstone_dust
-84,4,Blaze Rod,120,64,blaze_rod
-85,4,Nether Wart,60,64,nether_wart
-86,4,Honeycomb,40,64,honeycomb
-87,4,Sea Lantern,120,64,sea_lantern
-88,4,Sponge,300,64,sponge
-89,4,Name Tag,200,1,name_tag
-90,4,Saddle,300,1,saddle
-110,6,Ghast Tear,300,64,ghast_tear
-111,6,Phantom Membrane,150,64,phantom_membrane
-112,6,Shulker Shell,800,64,shulker_shell
-113,6,Dragon's Breath,400,64,dragon_breath
-114,6,Wither Skeleton Skull,1500,64,wither_skeleton_skull
-115,6,Sculk Sensor,300,64,sculk_sensor
-116,6,Heart of the Sea,2500,1,heart_of_the_sea
-117,6,Enchanted Golden Apple,3000,64,enchanted_golden_apple
-120,7,Netherite Scrap,600,64,netherite_scrap
-121,7,Netherite Upgrade Template,1500,1,netherite_upgrade_smithing_template
-124,7,Trident,2000,1,trident
-125,7,Beacon,8000,1,beacon
-150,1,Book: Sharpness IV,9000,1,BUCH_SHARPNESS_4
-151,1,Book: Sharpness V,15000,1,BUCH_SHARPNESS_5
-152,1,Book: Protection III,6000,1,BUCH_PROTECTION_3
-153,1,Book: Protection IV,14000,1,BUCH_PROTECTION_4
-154,1,Book: Efficiency IV,8000,1,BUCH_EFFICIENCY_4
-155,1,Book: Efficiency V,12000,1,BUCH_EFFICIENCY_5
-156,1,Book: Fortune II,6000,1,BUCH_FORTUNE_2
-157,1,Book: Fortune III,12000,1,BUCH_FORTUNE_3
-158,1,Book: Looting II,4000,1,BUCH_LOOTING_2
-159,1,Book: Looting III,8000,1,BUCH_LOOTING_3
-160,1,Book: Unbreaking II,3000,1,BUCH_UNBREAKING_2
-161,1,Book: Unbreaking III,5000,1,BUCH_UNBREAKING_3
-162,1,Book: Power IV (bow),8000,1,BUCH_POWER_4
-163,1,Book: Power V (bow),12000,1,BUCH_POWER_5
-164,1,Book: Punch I (bow),2000,1,BUCH_PUNCH_1
-165,1,Book: Punch II (bow),4000,1,BUCH_PUNCH_2
-166,1,Book: Fire Aspect I,3000,1,BUCH_FIRE_ASPECT_1
-167,1,Book: Fire Aspect II,6000,1,BUCH_FIRE_ASPECT_2
-168,1,Book: Knockback I,1500,1,BUCH_KNOCKBACK_1
-169,1,Book: Knockback II,3000,1,BUCH_KNOCKBACK_2
-170,1,Book: Sweeping Edge II,2000,1,BUCH_SWEEPING_EDGE_2
-171,1,Book: Sweeping Edge III,4000,1,BUCH_SWEEPING_EDGE_3
-172,1,Book: Feather Falling III,3000,1,BUCH_FEATHER_FALLING_3
-173,1,Book: Feather Falling IV,6000,1,BUCH_FEATHER_FALLING_4
-174,1,Book: Silk Touch,8000,1,BUCH_SILK_TOUCH_1
-175,1,Book: Mending,10000,1,BUCH_MENDING_1
-176,1,Book: Infinity (bow),8000,1,BUCH_INFINITY_1
-177,1,Book: Flame (bow),5000,1,BUCH_FLAME_1
+# kat = Reiter im Laden: BLOCKS, MINERALS, FOOD, TOOLS, BREW, BOOKS, SPECIAL
+id,stufe,name,preis,max,item,kat
+1,1,Dirt,2,64,dirt,BLOCKS
+2,1,Cobblestone,2,64,cobblestone,BLOCKS
+3,1,Stone,3,64,stone,BLOCKS
+4,1,Sand,10,64,sand,BLOCKS
+5,1,Gravel,10,64,gravel,BLOCKS
+6,1,Oak Log,50,64,oak_log,BLOCKS
+7,1,Oak Planks,15,64,oak_planks,BLOCKS
+12,1,Bread,50,64,bread,FOOD
+13,1,Apple,30,64,apple,FOOD
+15,1,Water Bucket,500,1,water_bucket,TOOLS
+16,1,Lava Bucket,500,1,lava_bucket,TOOLS
+21,3,Oak Sapling,4000,64,oak_sapling,FOOD
+22,3,Wheat Seeds,200,64,wheat_seeds,FOOD
+23,1,Stone Pickaxe,30,1,stone_pickaxe,TOOLS
+24,1,Stone Sword,30,1,stone_sword,TOOLS
+25,1,Stone Axe,30,1,stone_axe,TOOLS
+26,1,Stone Shovel,20,1,stone_shovel,TOOLS
+29,1,Iron Ingot,50,64,iron_ingot,MINERALS
+141,1,Bone,35,64,bone,MINERALS
+30,1,Collector Lantern,300,1,LATERNE,SPECIAL
+31,1,Bounty Contract,150,1,KONTRAKT,SPECIAL
+62,1,Obsidian,500,64,obsidian,BLOCKS
+50,1,End Portal Frame,2500,64,end_portal_frame,BLOCKS
+49,1,Fraggle the Dwarf,10000,1,ZWERG,SPECIAL
+130,1,Coal,15,64,coal,MINERALS
+131,1,Diamond,1000,64,diamond,MINERALS
+40,2,Arrow,3,64,arrow,TOOLS
+42,2,Redstone,10,64,redstone,TOOLS
+45,2,Steak,100,64,cooked_beef,FOOD
+46,2,Leather,30,64,leather,MINERALS
+47,2,String,10,64,string,MINERALS
+61,3,Gold Ingot,100,64,gold_ingot,MINERALS
+63,3,Enchanting Table,4000,1,enchanting_table,BREW
+64,3,Bookshelf,150,64,bookshelf,BLOCKS
+65,3,Lapis Lazuli,20,64,lapis_lazuli,MINERALS
+67,3,Potion of Healing II,150,1,TRANK_HEILUNG,BREW
+68,3,Potion of Strength,200,1,TRANK_STAERKE,BREW
+69,3,Potion of Night Vision (long),100,1,TRANK_NACHTSICHT,BREW
+72,3,Observer,60,64,observer,TOOLS
+74,3,Slimeball,30,64,slime_ball,MINERALS
+75,3,TNT,200,64,tnt,TOOLS
+76,3,Cobweb,20,64,cobweb,BLOCKS
+77,3,Magma Block,20,64,magma_block,BLOCKS
+101,5,Bottle o' Enchanting,50,64,experience_bottle,BREW
+102,5,Ender Pearl,100,16,ender_pearl,SPECIAL
+103,5,Totem of Undying,1500,1,totem_of_undying,SPECIAL
+104,5,Elytra,5000,1,elytra,SPECIAL
+105,5,Iron Golem Egg,2000,1,iron_golem_spawn_egg,SPECIAL
+80,4,Copper Ingot,20,64,copper_ingot,MINERALS
+81,4,Amethyst Shard,40,64,amethyst_shard,MINERALS
+82,4,Quartz,25,64,quartz,MINERALS
+83,4,Glowstone Dust,30,64,glowstone_dust,BLOCKS
+84,4,Blaze Rod,120,64,blaze_rod,BREW
+85,4,Nether Wart,60,64,nether_wart,BREW
+86,4,Honeycomb,40,64,honeycomb,BLOCKS
+87,4,Sea Lantern,120,64,sea_lantern,BLOCKS
+88,4,Sponge,300,64,sponge,BLOCKS
+89,4,Name Tag,200,1,name_tag,TOOLS
+90,4,Saddle,300,1,saddle,TOOLS
+110,6,Ghast Tear,300,64,ghast_tear,BREW
+111,6,Phantom Membrane,150,64,phantom_membrane,MINERALS
+112,6,Shulker Shell,800,64,shulker_shell,MINERALS
+113,6,Dragon's Breath,400,64,dragon_breath,BREW
+114,6,Wither Skeleton Skull,1500,64,wither_skeleton_skull,SPECIAL
+115,6,Sculk Sensor,300,64,sculk_sensor,TOOLS
+116,6,Heart of the Sea,2500,1,heart_of_the_sea,SPECIAL
+117,6,Enchanted Golden Apple,3000,64,enchanted_golden_apple,FOOD
+120,7,Netherite Scrap,600,64,netherite_scrap,MINERALS
+121,7,Netherite Upgrade Template,1500,1,netherite_upgrade_smithing_template,MINERALS
+124,7,Trident,2000,1,trident,SPECIAL
+125,7,Beacon,8000,1,beacon,SPECIAL
+150,1,Book: Sharpness IV,2200,1,BUCH_SHARPNESS_4,BOOKS
+151,1,Book: Sharpness V,3800,1,BUCH_SHARPNESS_5,BOOKS
+152,1,Book: Protection III,1500,1,BUCH_PROTECTION_3,BOOKS
+153,1,Book: Protection IV,3500,1,BUCH_PROTECTION_4,BOOKS
+154,1,Book: Efficiency IV,2000,1,BUCH_EFFICIENCY_4,BOOKS
+155,1,Book: Efficiency V,3000,1,BUCH_EFFICIENCY_5,BOOKS
+156,1,Book: Fortune II,1500,1,BUCH_FORTUNE_2,BOOKS
+157,1,Book: Fortune III,3000,1,BUCH_FORTUNE_3,BOOKS
+158,1,Book: Looting II,1000,1,BUCH_LOOTING_2,BOOKS
+159,1,Book: Looting III,2000,1,BUCH_LOOTING_3,BOOKS
+160,1,Book: Unbreaking II,800,1,BUCH_UNBREAKING_2,BOOKS
+161,1,Book: Unbreaking III,1200,1,BUCH_UNBREAKING_3,BOOKS
+162,1,Book: Power IV (bow),2000,1,BUCH_POWER_4,BOOKS
+163,1,Book: Power V (bow),3000,1,BUCH_POWER_5,BOOKS
+164,1,Book: Punch I (bow),500,1,BUCH_PUNCH_1,BOOKS
+165,1,Book: Punch II (bow),1000,1,BUCH_PUNCH_2,BOOKS
+166,1,Book: Fire Aspect I,800,1,BUCH_FIRE_ASPECT_1,BOOKS
+167,1,Book: Fire Aspect II,1500,1,BUCH_FIRE_ASPECT_2,BOOKS
+168,1,Book: Knockback I,400,1,BUCH_KNOCKBACK_1,BOOKS
+169,1,Book: Knockback II,800,1,BUCH_KNOCKBACK_2,BOOKS
+170,1,Book: Sweeping Edge II,500,1,BUCH_SWEEPING_EDGE_2,BOOKS
+171,1,Book: Sweeping Edge III,1000,1,BUCH_SWEEPING_EDGE_3,BOOKS
+172,1,Book: Feather Falling III,800,1,BUCH_FEATHER_FALLING_3,BOOKS
+173,1,Book: Feather Falling IV,1500,1,BUCH_FEATHER_FALLING_4,BOOKS
+174,1,Book: Silk Touch,2000,1,BUCH_SILK_TOUCH_1,BOOKS
+175,1,Book: Mending,2500,1,BUCH_MENDING_1,BOOKS
+176,1,Book: Infinity (bow),2000,1,BUCH_INFINITY_1,BOOKS
+177,1,Book: Flame (bow),1200,1,BUCH_FLAME_1,BOOKS

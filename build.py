@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 37                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 38                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -302,6 +302,13 @@ fn("migration", [
     f"function {NS}:sammler/kaufmenue",
     f"scoreboard players set #zoff nw.status {ZWERG_YAW_VERSATZ}",
     f"execute as @e[type=marker,tag=nw.zwerg] at @s run function {NS}:zwerg/zeichnen",
+    # Starttruhe und Brunnen aus aelteren Fassungen abraeumen (Luis 07.09.2026), nur die eigenen Bloecke
+    f"execute if block {TRUHE[0]} {TRUHE[1]} {TRUHE[2]} minecraft:chest run setblock {TRUHE[0]} {TRUHE[1]} {TRUHE[2]} minecraft:air destroy",
+    "fill -1 64 4 1 64 6 minecraft:air replace minecraft:cobblestone_wall",
+    "fill -1 65 4 1 65 6 minecraft:air replace minecraft:oak_fence",
+    "setblock 0 66 5 minecraft:air",
+    "fill -1 63 4 1 63 6 minecraft:grass_block replace minecraft:cobblestone",
+    "fill -1 63 4 1 63 6 minecraft:grass_block replace minecraft:water",
     f"clear @a minecraft:echo_shard[custom_data~{{nw_splitter:1b}}]", f"clear @a minecraft:prismarine_crystals[custom_data~{{nw_buendel:1b}}]",
     "kill @e[type=item,x=-6,y=60,z=-10,dx=12,dy=10,dz=8]",
     "tellraw @a " + J([txt("[Nightwatch] Stall and Collector updated to the current version.", "yellow")]),
@@ -351,14 +358,8 @@ start += [
     "setblock -4 69 -1 minecraft:stripped_dark_oak_log", "setblock -5 68 -1 minecraft:stripped_dark_oak_log[axis=x]",
     "setblock -3 67 -1 minecraft:stripped_dark_oak_log[axis=x]", "setblock -3 67 0 minecraft:stripped_dark_oak_log[axis=z]",
     "setblock -4 70 -1 minecraft:dark_oak_leaves[persistent=true]",
-    # Brunnen (Respawn)
-    "fill -1 63 4 1 63 6 minecraft:cobblestone", "setblock 0 63 5 minecraft:water",
-    "fill -1 64 4 1 64 6 minecraft:cobblestone_wall", "setblock 0 64 5 minecraft:air",
-    "setblock 0 66 5 minecraft:oak_slab", "setblock -1 65 4 minecraft:oak_fence", "setblock 1 65 6 minecraft:oak_fence",
     # Lichter
     "setblock 5 64 3 minecraft:soul_lantern", "setblock -5 64 4 minecraft:soul_lantern", "setblock 3 64 -6 minecraft:air",
-    # Starttruhe
-    f'setblock {TRUHE[0]} {TRUHE[1]} {TRUHE[2]} minecraft:chest[facing=west]{{Items:[{{Slot:0b,id:"minecraft:water_bucket",count:1}},{{Slot:1b,id:"minecraft:lava_bucket",count:1}},{{Slot:2b,id:"minecraft:oak_sapling",count:1}},{{Slot:3b,id:"minecraft:bone_meal",count:4}},{{Slot:4b,id:"minecraft:bread",count:4}},{{Slot:5b,id:"minecraft:torch",count:8}},{{Slot:6b,id:"minecraft:wooden_pickaxe",count:1}}]}}',
 ]
 fn("welt/startinsel", start)
 
@@ -935,7 +936,6 @@ KAUF_B = (0, 64, -5)       # Truhenhaelfte mit den Feldern 27..53 (unten)       
 VERKAUF = (1, 64, -5)      # Fass
 REITER_SLOTS = 9           # oberste Reihe: Reiter (Starter, Tier 2..7, Books)
 PLATZ_PRO_REITER = 45      # fuenf Reihen Ware je Reiter
-REITER_BUCH = ANZ_STUFEN + 1
 
 def kauf_block(slot):
     return (KAUF_A if slot < 27 else KAUF_B), slot % 27
@@ -1004,16 +1004,25 @@ def menue_item(r):
         comps.insert(0, MODELL_KIT[:-1])
     return f"{iid}[{','.join(comps)}]"
 
+# Reiter des Ladens: feste Kategorien, die sich mit jeder Quellstufe weiter fuellen (Luis 07.09.2026)
+KATEGORIEN = [
+    ("BLOCKS",   "Building Blocks",  "minecraft:stone"),
+    ("MINERALS", "Minerals & Drops", "minecraft:iron_ingot"),
+    ("FOOD",     "Food & Farming",   "minecraft:bread"),
+    ("TOOLS",    "Tools & Redstone", "minecraft:redstone"),
+    ("BREW",     "Brewing & Magic",  "minecraft:brewing_stand"),
+    ("BOOKS",    "Enchanted Books",  "minecraft:enchanted_book"),
+    ("SPECIAL",  "Special",          "minecraft:nether_star"),
+]
 def reiter_liste(phase):
     """Reiter der Kaufen-Truhe fuer eine Quellstufe: [(idx, slot, name, tab-item, zeilen)].
-    Starter = Stufe 1, dann ein Reiter je freigeschalteter Stufe, rechts aussen Books (alle BUCH_-Angebote)."""
+    Ein Reiter je Kategorie, sichtbar sobald er in dieser Stufe mindestens ein Angebot hat."""
     out = []
-    for p in range(1, phase + 1):
-        rows = [r for r in angebot if int(r["stufe"]) == p and not r["item"].startswith("BUCH_")]
-        if p > 1 and not rows: continue                 # Stufe ohne neue Ware bekommt keinen Reiter
-        out.append((p, p - 1, "Starter" if p == 1 else f"Tier {p}", STUFEN[p - 1][0], rows))
-    rows = [r for r in angebot if r["item"].startswith("BUCH_") and int(r["stufe"]) <= phase]
-    out.append((REITER_BUCH, 8, "Books", "minecraft:enchanted_book", rows))
+    for i, (key, name, icon) in enumerate(KATEGORIEN, 1):
+        rows = sorted((r for r in angebot if r["kat"] == key and int(r["stufe"]) <= phase),
+                      key=lambda r: (int(r["stufe"]), int(r["id"])))
+        if not rows: continue
+        out.append((i, len(out), name, icon, rows))
     return out
 
 def reiter_item(idx, name, iid, aktiv):
@@ -1035,13 +1044,13 @@ for p in range(1, ANZ_STUFEN + 1):
             lines.append(f"item replace block {blk[0]} {blk[1]} {blk[2]} container.{ls} with {belegt.get(slot, 'minecraft:air')}")
         fn(f"sammler/kaufmenue_{p}_{idx}", lines)
 
-# #seite nw.status = aktiver Reiter (1 = Starter, 2..7 = Stufe, REITER_BUCH = Books); gesperrte Stufe -> Starter
+# #seite nw.status = aktiver Reiter (1..7 = Kategorie); leerer Reiter -> erster Reiter
 kaufmenue = ["execute unless score #seite nw.status matches 1.. run scoreboard players set #seite nw.status 1"]
 for p in range(1, ANZ_STUFEN + 1):
     gueltig = {idx for idx, _, _, _, _ in reiter_liste(p)}
-    for idx in range(2, REITER_BUCH + 2):
+    for idx in range(2, len(KATEGORIEN) + 2):
         if idx not in gueltig:
-            kaufmenue.append(f"execute if score #phase nw.phase matches {p} if score #seite nw.status matches {idx}{'..' if idx > REITER_BUCH else ''} run scoreboard players set #seite nw.status 1")
+            kaufmenue.append(f"execute if score #phase nw.phase matches {p} if score #seite nw.status matches {idx}{'..' if idx > len(KATEGORIEN) else ''} run scoreboard players set #seite nw.status 1")
     for idx, _, _, _, _ in reiter_liste(p):
         kaufmenue.append(f"execute if score #phase nw.phase matches {p} if score #seite nw.status matches {idx} run function {NS}:sammler/kaufmenue_{p}_{idx}")
 fn("sammler/kaufmenue", kaufmenue)
@@ -1091,7 +1100,7 @@ for p in range(1, ANZ_STUFEN + 1):
             blk, ls = kauf_block(slot)
             kauf_tick.append(f"execute if score #phase nw.phase matches {p} if score #seite nw.status matches {idx} unless items block {blk[0]} {blk[1]} {blk[2]} container.{ls} *[custom_data~{{nw_menu:{9000 + ridx}}}] run function {NS}:sammler/reiter/{ridx}")
 fn("sammler/kauf_tick", kauf_tick)
-for idx in list(range(1, ANZ_STUFEN + 1)) + [REITER_BUCH]:
+for idx in range(1, len(KATEGORIEN) + 1):
     fn(f"sammler/reiter/{idx}", [
         f"clear @a[x={KAUF_A[0]},y={KAUF_A[1]},z={KAUF_A[2]},distance=..8] *[custom_data~{{nw_menu:{9000 + idx}}}]",
         f"scoreboard players set #seite nw.status {idx}",
@@ -1673,6 +1682,13 @@ fn("admin/fraggle_trigger", [
     "execute if score #zoff nw.status matches 1 run scoreboard players set #zoff nw.status 0",
     f"scoreboard players set #zoff nw.status {ZWERG_YAW_VERSATZ}",
     f"execute as @e[type=marker,tag=nw.zwerg] at @s run function {NS}:zwerg/zeichnen",
+    # Starttruhe und Brunnen aus aelteren Fassungen abraeumen (Luis 07.09.2026), nur die eigenen Bloecke
+    f"execute if block {TRUHE[0]} {TRUHE[1]} {TRUHE[2]} minecraft:chest run setblock {TRUHE[0]} {TRUHE[1]} {TRUHE[2]} minecraft:air destroy",
+    "fill -1 64 4 1 64 6 minecraft:air replace minecraft:cobblestone_wall",
+    "fill -1 65 4 1 65 6 minecraft:air replace minecraft:oak_fence",
+    "setblock 0 66 5 minecraft:air",
+    "fill -1 63 4 1 63 6 minecraft:grass_block replace minecraft:cobblestone",
+    "fill -1 63 4 1 63 6 minecraft:grass_block replace minecraft:water",
     "tellraw @s " + J([txt("[Nightwatch] Fraggle turned by ", "yellow"), {"score": {"name": "#zoff", "objective": "nw.status"}, "color": "yellow"}, txt(" degrees (all dwarves redrawn).", "yellow")]),
 ])
 # /trigger endnight: alle Gegner weg, Nacht sofort beendet (ohne Bonus)
