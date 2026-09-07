@@ -76,7 +76,7 @@ Das schreibt `out/nachtwache/`, `out/nachtwache.zip` und `out/nachtwache-rp.zip`
 
 ## Getestet (06.09.2026, Vanilla-Server 1.21.11 mit Testbot)
 
-Weltbau beim ersten Laden, Quell-Abbau mit Gutschrift und Magnet, Kaufen-Truhe (Klick und Shift-Klick), Verkaufsfass (nur Ware, Werkzeug bleibt liegen), Lieferrampe mit Restmenge, Nachtstart mit Straße und Welle (Nacht 1 = 2 Zombies), Gegner laufen über die Straße zum Spieler, Kopfgeld beim Tod eines Gegners, Tagesanbruch mit Straßenabbau und Glühen, Bettregel in beide Richtungen, Durchbruch durch eine Steinwand, alle sechs Bosse, Finale mit Sieg und Statistik, Todesabzug.
+Weltbau beim ersten Laden, Quell-Abbau mit Gutschrift und Magnet, Kaufen-Truhe (Klick und Shift-Klick), Verkaufsfass (nur Ware, Werkzeug bleibt liegen), Lieferrampe mit Restmenge, Nachtstart mit Straße und Welle (Nacht 1 = 6 Zombies), Gegner laufen über die Straße zum Spieler, Kopfgeld beim Tod eines Gegners, Tagesanbruch mit Straßenabbau und Glühen, Bettregel in beide Richtungen, Durchbruch durch eine Steinwand, alle sechs Bosse, Finale mit Sieg und Statistik, Todesabzug.
 
 ## Bekannte Grenzen
 

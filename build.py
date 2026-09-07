@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 16                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 17                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -76,8 +76,9 @@ NACHT_TEILER = 7                       # Uhr: nachts alle 7 Ticks +5 (Nacht laeu
 UHR_SCHRITT = 5
 NACHT_START, TAG_START = 13000, 23500  # Uhrzeiten fuer Strasse auf / Strasse weg
 
-WELLE_BASIS, WELLE_PRO_NACHT = 1, 1    # Groesse = (1 + 1*Nacht) * Phasenfaktor, Nacht 1 = 2
-PHASEN_FAKTOR = {1: 10, 2: 12, 3: 14, 4: 17, 5: 20, 6: 23, 7: 26}   # in Zehnteln
+WELLE_BASIS, WELLE_PRO_NACHT = 4, 2    # Groesse = 4 + 2*Nacht (+ Nacht*Nacht/WELLE_QUADRAT, 0 = aus) * Phasenfaktor/10. Luis: Nacht 1 = 6, dann +2 je Nacht
+WELLE_QUADRAT = 0                      # quadratischer Anteil, 0 = aus
+PHASEN_FAKTOR = {1: 10, 2: 10, 3: 10, 4: 10, 5: 10, 6: 10, 7: 10}   # Wellengroesse je Quellstufe in Zehnteln (10 = keine Aenderung); Luis will exakte Zahlen, daher aus   # in Zehnteln
 LETZTE_NACHT = 30
 BONUS_PRO_NACHT = 16                    # Splitter fuer eine komplett getoetete Welle (mal Nacht)
 KOPFGELD = {"zombie": 6, "husk": 6, "skeleton": 9, "spider": 9, "cave_spider": 6, "creeper": 15, "enderman": 20,
@@ -254,7 +255,7 @@ load += [
     "bossbar add nw:uhr \"Day\"", "bossbar set nw:uhr color green", "bossbar set nw:uhr style notched_6", "bossbar set nw:uhr max 13500",
     "bossbar add nw:boss \"Boss\"", "bossbar set nw:boss color purple", "bossbar set nw:boss style progress", "bossbar set nw:boss visible false",
 ]
-for k in [-1, 2, 3, 4, 5, 7, 10, 16, 20, 100, 200, 250, 1000, 6000]:
+for k in [-1, 2, 3, 4, 5, 6, 7, 10, 16, 20, 100, 200, 250, 1000, 6000]:
     load.append(f"scoreboard players set #{k} nw.const {k}")
 load += [
     f"execute unless score #init nw.status matches 1 run function {NS}:init",
@@ -1113,6 +1114,9 @@ welle = [
     "scoreboard players operation #anz nw.tmp *= #k nw.tmp2",
 ]
 welle.append(f"scoreboard players add #anz nw.tmp {WELLE_BASIS}")
+if WELLE_QUADRAT:
+    welle += ["scoreboard players operation #q nw.tmp2 = #nacht nw.nacht", "scoreboard players operation #q nw.tmp2 *= #nacht nw.nacht",
+              f"scoreboard players operation #q nw.tmp2 /= #{WELLE_QUADRAT} nw.const", "scoreboard players operation #anz nw.tmp += #q nw.tmp2"]
 for p, f in PHASEN_FAKTOR.items():
     welle.append(f"execute if score #phase nw.phase matches {p} run scoreboard players set #f nw.tmp2 {f}")
 welle += [
