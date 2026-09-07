@@ -18,9 +18,10 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 15                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 16                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
+ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
 ZWERG_TAKT = 300                        # Ticks je Schlag auf Stufe 0 (15 s)
 ZWERG_STUFE_TICKS = 20                  # je Upgrade eine Sekunde schneller
 ZWERG_MAX = 12                          # 12 Upgrades -> 3 s
@@ -240,7 +241,7 @@ OBJEKTIVE = [(f"nw.mined{i+1}", "minecraft.mined:" + st[0].replace("minecraft:",
     ("nw.tode", "deathCount"),
     ("nw.px", "dummy"), ("nw.py", "dummy"), ("nw.pz", "dummy"), ("nw.qx", "dummy"), ("nw.qy", "dummy"), ("nw.qz", "dummy"),
     ("nw.still", "dummy"), ("nw.kills", "dummy"), ("nw.verdient", "dummy"), ("nw.anzeige", "dummy"), ("nw.const", "dummy"),
-    ("nw.boss", "dummy"), ("nw.upgrade", "dummy"), ("nw.laterne", "dummy"), ("nw.zwerg", "dummy"), ("nw.zwerg_t", "dummy"), ("nw.schlaf", "dummy"), ("nw.fest", "dummy"), ("nw.dmin", "dummy"),
+    ("nw.boss", "dummy"), ("nw.upgrade", "dummy"), ("nw.laterne", "dummy"), ("nw.zwerg", "dummy"), ("nw.zwerg_t", "dummy"), ("reset", "trigger"), ("yes", "trigger"), ("nw.schlaf", "dummy"), ("nw.fest", "dummy"), ("nw.dmin", "dummy"),
 ]
 
 # ---- load ------------------------------------------------------------------
@@ -604,6 +605,8 @@ fn("tick", [
     f"function {NS}:gegner/tick",
     f"function {NS}:schutz/tick",
     f"function {NS}:zwerg/tick",
+    f"execute as @a[tag=nw.admin,scores={{reset=1..}}] run function {NS}:admin/reset_trigger",
+    f"execute as @a[tag=nw.admin,scores={{yes=1..}}] run function {NS}:admin/yes_trigger",
     f"execute if score #m20 nw.tmp matches 0 run function {NS}:sammler/rampe",
     f"execute if score #m20 nw.tmp matches 0 run function {NS}:schutz/sekunde",
     f"execute if score #m20 nw.tmp matches 10 run function {NS}:anzeige/aktualisieren",
@@ -1411,6 +1414,8 @@ fn("schutz/tick", [
 ])
 fn("schutz/sekunde", [
     f"function {NS}:welt/stand",
+    *[f"tag @a[name={n}] add nw.admin" for n in ADMINS],
+    "scoreboard players enable @a[tag=nw.admin] reset", "scoreboard players enable @a[tag=nw.admin] yes",
     f"function {NS}:laterne/sekunde",
     f"function {NS}:gegner/enderman_wut",
     # Sammler fehlt laenger als 5 s (nicht nur beim Start, wenn die Entities noch nicht geladen sind)? Dann neu.
@@ -1466,12 +1471,14 @@ fn("admin/neustart", [
 # Kompletter Neuanfang (nur Op): Welt im Spielbereich leer, Spieler leer, dann normaler Neustart. Zwei Schritte, damit nichts aus Versehen passiert.
 RESET_X, RESET_Z = (-48, 47), (-48, 127)
 RESET_Y = (0, 160)
+fn("admin/reset_trigger", ["scoreboard players set @s reset 0", "scoreboard players enable @s reset", f"function {NS}:admin/reset"])
+fn("admin/yes_trigger", ["scoreboard players set @s yes 0", "scoreboard players enable @s yes", f"function {NS}:admin/reset_ja"])
 fn("admin/reset", [
     "scoreboard players operation #reset_frist nw.status = #tick nw.tick", "scoreboard players add #reset_frist nw.status 1200",
-    "tellraw @a " + J([txt("[Nightwatch] FULL RESET requested: every block in the play area, all inventories, coins, night, tier. ", "red"), txt("Run ", "gray"), txt("/function nachtwache:admin/reset_ja", "yellow"), txt(" within 60 seconds to confirm.", "gray")]),
+    "tellraw @a " + J([txt("[Nightwatch] FULL RESET requested: every block in the play area, all inventories, coins, night, tier. ", "red"), txt("Type ", "gray"), txt("/trigger yes", "yellow"), txt(" within 60 seconds to confirm.", "gray")]),
 ])
 reset_ja = [
-    "execute unless score #reset_frist nw.status >= #tick nw.tick run return run tellraw @a " + J([txt("[Nightwatch] No reset pending. Run admin/reset first.", "yellow")]),
+    "execute unless score #reset_frist nw.status >= #tick nw.tick run return run tellraw @a " + J([txt("[Nightwatch] No reset pending. Type /trigger reset first.", "yellow")]),
     "scoreboard players set #reset_frist nw.status 0",
     "tellraw @a " + J([txt("[Nightwatch] Resetting the world. This takes a moment.", "red")]),
     "gamemode survival @a", "clear @a", "experience set @a 0 points", "experience set @a 0 levels", "effect clear @a",
