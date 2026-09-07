@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 36                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 37                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -27,16 +27,27 @@ ZWERG_STUFE_TICKS = 20                  # je Upgrade eine Sekunde schneller
 ZWERG_MAX = 12                          # 12 Upgrades -> 3 s
 ZWERG_YAW_VERSATZ = 0                  # Blickrichtungs-Versatz (Luis 07.09.2026: mit 180 schaute er weg vom Quell)
 ZWERG_UPGRADE_PREIS = 250               # mal (Stufe + 1)
-def zwerg_item(lvl):
-    """Der Zwerg als Gegenstand (Spawn-Ei, das einen Marker mit Stufen-Tag setzt)."""
+# Rucksack: Truhe mit 27 Faechern. 0..23 sind Lager, 24 Alles verkaufen, 25 groesserer Rucksack, 26 Tempo.
+# Freigeschaltet sind je nach Rucksackstufe 9, 18 oder 24 Faecher, der Rest ist mit einer Scheibe gesperrt.
+ZWERG_SLOT_SELL, ZWERG_SLOT_BP, ZWERG_SLOT_UP = 24, 25, 26
+ZWERG_LAGER = 24
+ZWERG_BP_FAECHER = [9, 18, 24]
+ZWERG_BP_PREIS = [1500, 4000]           # Stufe 0 -> 1, Stufe 1 -> 2
+ZWERG_BP_MAX = len(ZWERG_BP_PREIS)
+ZWERG_SPERRE = ('minecraft:gray_stained_glass_pane[custom_data={nw_zwerg_lock:1b},'
+                'custom_name={text:"Locked",color:"dark_gray",italic:false},'
+                'lore=[{text:"Buy a bigger pack to use this slot",color:"dark_gray",italic:false}]]')
+def zwerg_item(lvl, bp=0):
+    """Der Zwerg als Gegenstand (Spawn-Ei, das einen Marker mit Stufen-Tags setzt)."""
     modell = 'item_model="nachtwache:dwarf",' if RESSOURCENPAKET else ""
     sek = (ZWERG_TAKT - lvl * ZWERG_STUFE_TICKS) // 20
     lore = ('[{text:"Place him right next to the Source, he must face it.",color:"gray",italic:false},'
             '{text:"Mines the Source on his own. Coins go to you, drops into his pack.",color:"gray",italic:false},'
-            '{text:"Right-click: open his pack, buy speed. Break him: he jumps back into your inventory.",color:"gray",italic:false},'
-            f'{{text:"Speed: one block every {sek} s (level {lvl})",color:"aqua",italic:false}}]')
-    return (f'minecraft:zombie_spawn_egg[{modell}custom_name={{text:"Fraggle",color:"aqua",italic:false}},custom_data={{nw_zwerg:1b,lvl:{lvl}}},'
-            f'entity_data={{id:"minecraft:marker",Tags:["nw.zwerg_neu","nw.lvl{lvl}"]}},lore={lore}]')
+            '{text:"Right-click: open his pack, buy speed and space, sell everything.",color:"gray",italic:false},'
+            f'{{text:"Speed: one block every {sek} s (level {lvl})",color:"aqua",italic:false}},'
+            f'{{text:"Pack: {ZWERG_BP_FAECHER[bp]} slots (level {bp})",color:"aqua",italic:false}}]')
+    return (f'minecraft:zombie_spawn_egg[{modell}custom_name={{text:"Fraggle",color:"aqua",italic:false}},custom_data={{nw_zwerg:1b,lvl:{lvl},bp:{bp}}},'
+            f'entity_data={{id:"minecraft:marker",Tags:["nw.zwerg_neu","nw.lvl{lvl}","nw.bp{bp}"]}},lore={lore}]')
 
 QUELL = (0, 64, 0)                     # der One Block
 # Sieben Stufen des Quells: (Block, Farbe, Abbauten bis zur naechsten Stufe, Splitter je Abbau, Mob-Chance, Mob)
@@ -256,7 +267,7 @@ OBJEKTIVE = [(f"nw.mined{i+1}", "minecraft.mined:" + st[0].replace("minecraft:",
     ("nw.tode", "deathCount"),
     ("nw.px", "dummy"), ("nw.py", "dummy"), ("nw.pz", "dummy"), ("nw.qx", "dummy"), ("nw.qy", "dummy"), ("nw.qz", "dummy"),
     ("nw.still", "dummy"), ("nw.kills", "dummy"), ("nw.verdient", "dummy"), ("nw.anzeige", "dummy"), ("nw.const", "dummy"),
-    ("nw.boss", "dummy"), ("nw.upgrade", "dummy"), ("nw.laterne", "dummy"), ("nw.zwerg", "dummy"), ("nw.zwerg_t", "dummy"), ("reset", "trigger"), ("yes", "trigger"), ("night", "trigger"), ("boss", "trigger"), ("fraggle", "trigger"), ("endnight", "trigger"), ("money", "trigger"), ("nw.schlaf", "dummy"), ("nw.fest", "dummy"), ("nw.dmin", "dummy"),
+    ("nw.boss", "dummy"), ("nw.upgrade", "dummy"), ("nw.laterne", "dummy"), ("nw.zwerg", "dummy"), ("nw.zwerg_t", "dummy"), ("nw.zwerg_b", "dummy"), ("reset", "trigger"), ("yes", "trigger"), ("night", "trigger"), ("boss", "trigger"), ("fraggle", "trigger"), ("endnight", "trigger"), ("money", "trigger"), ("nw.schlaf", "dummy"), ("nw.fest", "dummy"), ("nw.dmin", "dummy"),
 ]
 
 # ---- load ------------------------------------------------------------------
@@ -474,6 +485,9 @@ fn("laterne/sekunde", [f"execute as @e[type=marker,tag=nw.laterne] at @s run fun
 import math as _m
 qx, qy, qz = QUELL
 ZWERG_UP_PRED = "*[custom_data~{nw_zwerg_up:1b}]"
+ZWERG_BP_PRED = "*[custom_data~{nw_zwerg_bp:1b}]"
+ZWERG_SELL_PRED = "*[custom_data~{nw_zwerg_sell:1b}]"
+ZWERG_LOCK_PRED = "*[custom_data~{nw_zwerg_lock:1b}]"
 def _quat_x(grad):
     a = _m.radians(grad); return (round(_m.sin(a / 2), 5), 0, 0, round(_m.cos(a / 2), 5))
 def _arm_transform(grad):
@@ -521,8 +535,9 @@ zeichnen += [
 fn("zwerg/zeichnen", zeichnen)
 fn("zwerg/displays", ["$" + _display("nw.zwerg_k", "dwarf_body", "$(yaw)"), "$" + _display("nw.zwerg_a", "dwarf_arm", "$(yaw)")])
 fn("zwerg/neu", neu)
-setzen = ["tag @s add nw.zwerg", "scoreboard players set @s nw.zwerg 0", "scoreboard players set @s nw.zwerg_t 0"]
+setzen = ["tag @s add nw.zwerg", "scoreboard players set @s nw.zwerg 0", "scoreboard players set @s nw.zwerg_t 0", "scoreboard players set @s nw.zwerg_b 0"]
 setzen += [f"execute if entity @s[tag=nw.lvl{l}] run scoreboard players set @s nw.zwerg {l}" for l in range(1, ZWERG_MAX + 1)]
+setzen += [f"execute if entity @s[tag=nw.bp{b}] run scoreboard players set @s nw.zwerg_b {b}" for b in range(1, ZWERG_BP_MAX + 1)]
 # Ausrichtung im Schachbrettmuster, damit zwei benachbarte Zwerge nie eine Doppeltruhe bilden
 setzen += [f"execute positioned {qx+dx+0.5} {qy+0.5} {qz+dz+0.5} if entity @s[distance=..0.01] run setblock {qx+dx} {qy} {qz+dz} minecraft:trapped_chest[facing={'north' if (dx+dz) % 2 == 0 else 'east'},type=single]"
            for dx in (-1, 0, 1) for dz in (-1, 0, 1) if (dx, dz) != (0, 0)]
@@ -535,7 +550,8 @@ setzen += [
 fn("zwerg/setzen", setzen)
 fn("zwerg/zurueck", [
     # falsch gesetzt: zurueck ins Inventar, mit seiner Stufe (vorher kam hier immer Stufe 0 zurueck)
-    *[f"execute if entity @s[tag=nw.lvl{l}] as @p[distance=..10] run give @s {zwerg_item(l)}" for l in range(ZWERG_MAX + 1)],
+    *[f"execute if entity @s[tag=nw.lvl{l}] if entity @s[tag=nw.bp{b}] as @p[distance=..10] run give @s {zwerg_item(l, b)}"
+      for l in range(ZWERG_MAX + 1) for b in range(ZWERG_BP_MAX + 1)],
     "tellraw @p[distance=..10] " + J([txt("[Fraggle] ", "aqua"), txt("Put me right next to the Source, on a free block. I need to see it.", "gray")]),
     "kill @s",
 ])
@@ -548,13 +564,18 @@ fn("zwerg/einer", [
     "scoreboard players operation #takt nw.tmp2 -= #iv nw.tmp2",
     f"execute if score @s nw.zwerg_t >= #takt nw.tmp2 run function {NS}:zwerg/schlag",
     f"execute if score @s nw.zwerg_t matches 6 as @e[type=item_display,tag=nw.zwerg_a,distance=..0.1] run data merge entity @s {{start_interpolation:0,interpolation_duration:8,transformation:{_arm_transform(0)}}}",
-    f"execute unless items block ~ ~ ~ container.26 {ZWERG_UP_PRED} run function {NS}:zwerg/upgrade",
+    f"execute unless items block ~ ~ ~ container.{ZWERG_SLOT_UP} {ZWERG_UP_PRED} run function {NS}:zwerg/upgrade",
+    f"execute unless items block ~ ~ ~ container.{ZWERG_SLOT_BP} {ZWERG_BP_PRED} run function {NS}:zwerg/rucksack",
+    f"execute unless items block ~ ~ ~ container.{ZWERG_SLOT_SELL} {ZWERG_SELL_PRED} run function {NS}:zwerg/verkauf_alles",
+    # Sperren gehoeren nicht ins Spielerinventar, Knoepfe und Sperren jede Sekunde nachsetzen
+    f"clear @a[distance=..8] {ZWERG_LOCK_PRED}",
+    f"execute if score #m20 nw.tmp matches 11 run function {NS}:zwerg/symbol",
 ])
 schlag = [
     "scoreboard players set @s nw.zwerg_t 0",
     f"execute unless block {qx} {qy} {qz} #{NS}:quell run return 0",
     "execute store result score #voll nw.tmp2 run data get block ~ ~ ~ Items",
-    "execute if score #voll nw.tmp2 matches 27.. run return run title @a[distance=..8] actionbar " + J([txt("Fraggle's pack is full.", "red")]),
+    "execute if score #voll nw.tmp2 matches 27.. run return run title @a[distance=..8] actionbar " + J([txt("Fraggle's pack is full. Sell it or buy a bigger one.", "red")]),
     f"execute as @e[type=item_display,tag=nw.zwerg_a,distance=..0.1] run data merge entity @s {{start_interpolation:0,interpolation_duration:2,transformation:{_arm_transform(-75)}}}",
     f"playsound minecraft:block.stone.hit block @a {qx} {qy} {qz} 1 0.8",
 ]
@@ -574,7 +595,30 @@ for l in range(ZWERG_MAX + 1):
     else:
         it = (f'minecraft:netherite_pickaxe[custom_data={{nw_zwerg_up:1b}},custom_name={{text:"Max speed",color:"yellow",italic:false}},'
               f'lore=[{{text:"One block every {sek} s (level {l})",color:"gray",italic:false}}]]')
-    symbol.append(f"execute if score @s nw.zwerg matches {l} run item replace block ~ ~ ~ container.26 with {it}")
+    symbol.append(f"execute if score @s nw.zwerg matches {l} run item replace block ~ ~ ~ container.{ZWERG_SLOT_UP} with {it}")
+for b in range(ZWERG_BP_MAX + 1):
+    faecher = ZWERG_BP_FAECHER[b]
+    if b < ZWERG_BP_MAX:
+        preis = ZWERG_BP_PREIS[b]
+        dazu = ZWERG_BP_FAECHER[b + 1] - faecher
+        it = (f'minecraft:bundle[custom_data={{nw_zwerg_bp:1b}},custom_name={{text:"Bigger pack",color:"yellow",italic:false}},'
+              f'lore=[{{text:"Now: {faecher} slots (level {b})",color:"gray",italic:false}},'
+              f'[{{text:"Next: {dazu} more slots for {preis} ",color:"gold",italic:false}},{{text:"{COIN}",color:"white",italic:false}}],'
+              f'{{text:"Take this to buy",color:"dark_gray",italic:false}}]]')
+    else:
+        it = (f'minecraft:shulker_shell[custom_data={{nw_zwerg_bp:1b}},custom_name={{text:"Full pack",color:"yellow",italic:false}},'
+              f'lore=[{{text:"{faecher} slots (level {b})",color:"gray",italic:false}}]]')
+    symbol.append(f"execute if score @s nw.zwerg_b matches {b} run item replace block ~ ~ ~ container.{ZWERG_SLOT_BP} with {it}")
+    # gesperrte Faecher fuellen, freigeschaltete nur dann leeren, wenn dort noch eine Sperre liegt
+    for slot in range(ZWERG_LAGER):
+        if slot >= faecher:
+            symbol.append(f"execute if score @s nw.zwerg_b matches {b} run item replace block ~ ~ ~ container.{slot} with {ZWERG_SPERRE}")
+        else:
+            symbol.append(f"execute if score @s nw.zwerg_b matches {b} if items block ~ ~ ~ container.{slot} {ZWERG_LOCK_PRED} run item replace block ~ ~ ~ container.{slot} with minecraft:air")
+verkaufsknopf = ('minecraft:emerald[custom_data={nw_zwerg_sell:1b},custom_name={text:"Sell everything",color:"yellow",italic:false},'
+                 'lore=[{text:"Sells the whole pack at the Collector price",color:"gray",italic:false},'
+                 '{text:"Take this to sell",color:"dark_gray",italic:false}]]')
+symbol.append(f"item replace block ~ ~ ~ container.{ZWERG_SLOT_SELL} with {verkaufsknopf}")
 fn("zwerg/symbol", symbol)
 fn("zwerg/upgrade", [
     "scoreboard players operation #lvl nw.tmp2 = @s nw.zwerg",
@@ -595,13 +639,60 @@ fn("zwerg/upgrade_kauf", [
     "playsound minecraft:block.anvil.use block @s ~ ~ ~ 0.6 1.2",
     "tellraw @s " + J([txt("[Fraggle] ", "aqua"), txt("Sharper. Level ", "gray"), {"score": {"name": "#lvl", "objective": "nw.tmp2"}, "color": "aqua"}, txt(".", "gray")]),
 ])
+# Groesserer Rucksack (Knopf in Fach 25)
+fn("zwerg/rucksack", [
+    "scoreboard players operation #bp nw.tmp2 = @s nw.zwerg_b",
+    *[f"execute if score #bp nw.tmp2 matches {b} run scoreboard players set #bpp nw.tmp2 {ZWERG_BP_PREIS[b]}" for b in range(ZWERG_BP_MAX)],
+    f"execute as @a[distance=..8] store result score @s nw.tmp run clear @s {ZWERG_BP_PRED} 0",
+    f"execute as @a[distance=..8,scores={{nw.tmp=1..}}] run function {NS}:zwerg/rucksack_kauf",
+    "scoreboard players operation @s nw.zwerg_b = #bp nw.tmp2",
+    f"function {NS}:zwerg/symbol",
+])
+fn("zwerg/rucksack_kauf", [
+    f"clear @s {ZWERG_BP_PRED}",
+    f"execute if score #bp nw.tmp2 matches {ZWERG_BP_MAX}.. run return run tellraw @s " + J([txt("[Fraggle] ", "aqua"), txt("The pack holds no more.", "gray")]),
+    "execute if score #konto nw.konto < #bpp nw.tmp2 run tellraw @s " + J([txt("[Fraggle] ", "aqua"), txt("Not enough coins. ", "gray"), {"score": {"name": "#bpp", "objective": "nw.tmp2"}, "color": "gold"}, txt(" needed.", "gray")]),
+    "execute if score #konto nw.konto < #bpp nw.tmp2 run return run playsound minecraft:entity.villager.no neutral @s ~ ~ ~ 1 1",
+    "scoreboard players operation #konto nw.konto -= #bpp nw.tmp2",
+    "scoreboard players add #bp nw.tmp2 1",
+    "playsound minecraft:block.wool.place block @s ~ ~ ~ 0.8 1.2",
+    "tellraw @s " + J([txt("[Fraggle] ", "aqua"), txt("More room. Pack level ", "gray"), {"score": {"name": "#bp", "objective": "nw.tmp2"}, "color": "aqua"}, txt(".", "gray")]),
+])
+# Alles verkaufen (Knopf in Fach 24): Lagerfaecher zu Sammlerpreisen, Sperren und Knoepfe bleiben liegen
+verkauf_alles = [f"clear @a[distance=..8] {ZWERG_SELL_PRED}", "scoreboard players set #erloes nw.tmp2 0"]
+for slot in range(ZWERG_LAGER):
+    verkauf_alles.append(f"execute if items block ~ ~ ~ container.{slot} * unless items block ~ ~ ~ container.{slot} {ZWERG_LOCK_PRED} run function {NS}:zwerg/verkauf_fach {{slot:{slot}}}")
+verkauf_alles += [
+    "execute if score #erloes nw.tmp2 matches 1.. run playsound minecraft:entity.villager.trade neutral @a[distance=..12] ~ ~ ~ 0.8 1",
+    "execute if score #erloes nw.tmp2 matches 1.. run tellraw @a[distance=..12] " + J([txt("[Fraggle] ", "aqua"), txt("Pack sold: +", "gray"), {"score": {"name": "#erloes", "objective": "nw.tmp2"}, "color": "gold"}, txt(" ", "gray"), coin()]),
+    "execute if score #erloes nw.tmp2 matches ..0 run tellraw @a[distance=..12] " + J([txt("[Fraggle] ", "aqua"), txt("Nothing worth selling in here.", "gray")]),
+    f"function {NS}:zwerg/symbol",
+]
+fn("zwerg/verkauf_alles", verkauf_alles)
+fn("zwerg/verkauf_fach", [
+    "$execute store result score #n nw.tmp run data get block ~ ~ ~ Items[{Slot:$(slot)b}].count",
+    "$data modify storage nachtwache:tmp id set string block ~ ~ ~ Items[{Slot:$(slot)b}].id 10",
+    "scoreboard players set #w nw.tmp2 0",
+    f"function {NS}:sammler/preis with storage nachtwache:tmp",
+    "execute if score #w nw.tmp2 matches ..0 run return 0",
+    "scoreboard players operation #gain nw.tmp = #n nw.tmp", "scoreboard players operation #gain nw.tmp *= #w nw.tmp2",
+    "execute if score #gain nw.tmp matches ..0 run return 0",
+    "scoreboard players operation #konto nw.konto += #gain nw.tmp", "scoreboard players operation #verdient nw.verdient += #gain nw.tmp",
+    "scoreboard players operation #erloes nw.tmp2 += #gain nw.tmp",
+    "$item replace block ~ ~ ~ container.$(slot) with minecraft:air",
+])
+
 kaputt = [
     "kill @e[type=item_display,tag=nw.zwerg_k,distance=..0.1]", "kill @e[type=item_display,tag=nw.zwerg_a,distance=..0.1]",
     'kill @e[type=item,distance=..2.5,nbt={Item:{id:"minecraft:trapped_chest"}}]',
     'kill @e[type=item,distance=..2.5,nbt={Item:{components:{"minecraft:custom_data":{nw_zwerg_up:1b}}}}]',
+    'kill @e[type=item,distance=..2.5,nbt={Item:{components:{"minecraft:custom_data":{nw_zwerg_bp:1b}}}}]',
+    'kill @e[type=item,distance=..2.5,nbt={Item:{components:{"minecraft:custom_data":{nw_zwerg_sell:1b}}}}]',
+    'kill @e[type=item,distance=..2.5,nbt={Item:{components:{"minecraft:custom_data":{nw_zwerg_lock:1b}}}}]',
 ]
 for l in range(ZWERG_MAX + 1):
-    kaputt.append(f"execute if score @s nw.zwerg matches {l} as @p[distance=..10] run give @s {zwerg_item(l)}")
+    for b in range(ZWERG_BP_MAX + 1):
+        kaputt.append(f"execute if score @s nw.zwerg matches {l} if score @s nw.zwerg_b matches {b} as @p[distance=..10] run give @s {zwerg_item(l, b)}")
 kaputt += [
     "tellraw @p[distance=..10] " + J([txt("[Fraggle] ", "aqua"), txt("Packing up. I am in your inventory.", "gray")]),
     "playsound minecraft:entity.item.pickup player @p[distance=..10] ~ ~ ~ 1 0.8",
