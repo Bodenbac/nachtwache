@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 7                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 8                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 QUELL = (0, 64, 0)                     # der One Block
@@ -524,29 +524,30 @@ w(f"{NS}/loot_table/belohnung.json", {"pools": [{"rolls": 1, "entries": [
 # ----------------------------------------------------------------------------
 # Anzeige (Seitenleiste)
 # ----------------------------------------------------------------------------
+# Icons als Schriftzeichen aus dem Ressourcenpaket (icons.py): Muenze ●, Stufenscheiben, Mond, Zombie, Totenkopf.
+import icons
+def icon(name):
+    return {"text": icons.ZEICHEN[name] + " ", "color": "white"}
+
 fn("anzeige/aktualisieren", [
     "scoreboard players set sb_5 nw.anzeige 5", "scoreboard players set sb_4 nw.anzeige 4", "scoreboard players set sb_3 nw.anzeige 3",
     "scoreboard players set sb_2 nw.anzeige 2", "scoreboard players set sb_1 nw.anzeige 1",
-    "scoreboard players display name sb_5 nw.anzeige " + J([coin(), txt(" Coins  ", "gold"), {"score": {"name": "#konto", "objective": "nw.konto"}, "color": "yellow", "bold": True}]),
+    "scoreboard players display name sb_5 nw.anzeige " + J([icon("coin"), txt("Coins  ", "gold"), {"score": {"name": "#konto", "objective": "nw.konto"}, "color": "yellow", "bold": True}]),
     f"function {NS}:anzeige/stufe",
-    "scoreboard players display name sb_3 nw.anzeige " + J([txt("Night  ", "red"), {"score": {"name": "#nacht", "objective": "nw.nacht"}, "color": "white"}]),
-    "scoreboard players display name sb_2 nw.anzeige " + J([txt("Enemies  ", "dark_red"), {"score": {"name": "#gegner", "objective": "nw.gegner"}, "color": "white", "bold": True}]),
-    "scoreboard players display name sb_1 nw.anzeige " + J([txt("Deaths  ", "dark_gray"), {"score": {"name": "#tode", "objective": "nw.tode"}, "color": "gray"}]),
+    "scoreboard players display name sb_3 nw.anzeige " + J([icon("moon"), txt("Night  ", "red"), {"score": {"name": "#nacht", "objective": "nw.nacht"}, "color": "white"}]),
+    "scoreboard players display name sb_2 nw.anzeige " + J([icon("zombie"), txt("Enemies  ", "dark_red"), {"score": {"name": "#gegner", "objective": "nw.gegner"}, "color": "white", "bold": True}]),
+    "scoreboard players display name sb_1 nw.anzeige " + J([icon("skull"), txt("Deaths  ", "dark_gray"), {"score": {"name": "#tode", "objective": "nw.tode"}, "color": "gray"}]),
 ])
 
 
 FARBE_EN = {"Grau": "Gray", "Gruen": "Green", "Blau": "Blue", "Lila": "Purple", "Gelb": "Yellow", "Orange": "Orange", "Schwarz": "Black"}
-# Stufenzeile: "Phase 3 Blau  [|||||.....] 620/1500"
-def balken(n):
-    return "[" + "|" * n + "." * (10 - n) + "]"
+# Stufenzeile: "<Scheibe> Tier 3  41%  620/1500", letzte Stufe "<Scheibe> Tier 7  max"
 stufe = []
 for i, st in enumerate(STUFEN):
     p = i + 1
-    farbe = {"Grau": "gray", "Gruen": "green", "Blau": "blue", "Lila": "light_purple", "Gelb": "yellow", "Orange": "gold", "Schwarz": "dark_gray"}[st[1]]
     if p < ANZ_STUFEN:
         start = PHASEN_GRENZEN[i - 1] if i > 0 else 0
         ziel = PHASEN_GRENZEN[i]
-        # Fortschritt innerhalb der Stufe
         stufe.append(f"execute if score #phase nw.phase matches {p} run scoreboard players set #st_start nw.tmp2 {start}")
         stufe.append(f"execute if score #phase nw.phase matches {p} run scoreboard players set #st_ziel nw.tmp2 {ziel}")
     else:
@@ -555,20 +556,22 @@ for i, st in enumerate(STUFEN):
 stufe += [
     "scoreboard players operation #st_hab nw.tmp2 = #abbau nw.abbau", "scoreboard players operation #st_hab nw.tmp2 -= #st_start nw.tmp2",
     "scoreboard players operation #st_soll nw.tmp2 = #st_ziel nw.tmp2", "scoreboard players operation #st_soll nw.tmp2 -= #st_start nw.tmp2",
-    "scoreboard players operation #st_b nw.tmp2 = #st_hab nw.tmp2", "scoreboard players operation #st_b nw.tmp2 *= #10 nw.const",
-    "execute if score #st_soll nw.tmp2 matches 1.. run scoreboard players operation #st_b nw.tmp2 /= #st_soll nw.tmp2",
-    "execute if score #st_soll nw.tmp2 matches ..0 run scoreboard players set #st_b nw.tmp2 10",
-    "execute if score #st_b nw.tmp2 matches 11.. run scoreboard players set #st_b nw.tmp2 10",
+    "scoreboard players operation #st_pct nw.tmp2 = #st_hab nw.tmp2", "scoreboard players operation #st_pct nw.tmp2 *= #100 nw.const",
+    "execute if score #st_soll nw.tmp2 matches 1.. run scoreboard players operation #st_pct nw.tmp2 /= #st_soll nw.tmp2",
+    "execute if score #st_soll nw.tmp2 matches ..0 run scoreboard players set #st_pct nw.tmp2 100",
+    "execute if score #st_pct nw.tmp2 matches 101.. run scoreboard players set #st_pct nw.tmp2 100",
+    "execute if score #st_pct nw.tmp2 matches ..-1 run scoreboard players set #st_pct nw.tmp2 0",
+    "execute if score #st_hab nw.tmp2 matches ..-1 run scoreboard players set #st_hab nw.tmp2 0",
 ]
 for i, st in enumerate(STUFEN):
     p = i + 1
     farbe = {"Grau": "gray", "Gruen": "green", "Blau": "blue", "Lila": "light_purple", "Gelb": "yellow", "Orange": "gold", "Schwarz": "dark_gray"}[st[1]]
-    for n in range(11):
-        if p < ANZ_STUFEN:
-            comp = [txt(f"Tier {p} {FARBE_EN[st[1]]} ", farbe), txt(balken(n) + " ", "white"), {"score": {"name": "#st_hab", "objective": "nw.tmp2"}, "color": "gray"}, txt("/", "gray"), {"score": {"name": "#st_soll", "objective": "nw.tmp2"}, "color": "gray"}]
-        else:
-            comp = [txt(f"Tier {p} {FARBE_EN[st[1]]} ", farbe), txt(balken(10) + " max", "white")]
-        stufe.append(f"execute if score #phase nw.phase matches {p} if score #st_b nw.tmp2 matches {n} run scoreboard players display name sb_4 nw.anzeige " + J(comp))
+    if p < ANZ_STUFEN:
+        comp = [icon(f"tier{p}"), txt(f"Tier {p}  ", farbe), {"score": {"name": "#st_pct", "objective": "nw.tmp2"}, "color": "white"}, txt("%  ", "white"),
+                {"score": {"name": "#st_hab", "objective": "nw.tmp2"}, "color": "gray"}, txt("/", "gray"), {"score": {"name": "#st_soll", "objective": "nw.tmp2"}, "color": "gray"}]
+    else:
+        comp = [icon(f"tier{p}"), txt(f"Tier {p}  ", farbe), txt("max", "white")]
+    stufe.append(f"execute if score #phase nw.phase matches {p} run scoreboard players display name sb_4 nw.anzeige " + J(comp))
 fn("anzeige/stufe", stufe)
 
 # Hilfe
@@ -1210,7 +1213,12 @@ fn("admin/zeit_nacht", [f"scoreboard players set #zeit nw.zeit {NACHT_START - 50
 fn("admin/zeit_tag", [f"scoreboard players set #zeit nw.zeit {TAG_START - 50}", "tellraw @a " + J([txt("[Nightwatch] Day is coming.", "yellow")])])
 fn("admin/welle_toeten", ["kill @e[tag=nw.welle]", "tellraw @a " + J([txt("[Nightwatch] Wave removed.", "yellow")])])
 fn("admin/splitter", ["$scoreboard players add #konto nw.konto $(n)", "tellraw @a " + J([txt("[Nightwatch] Coins credited.", "yellow")])])
-fn("admin/phase", ["$function nachtwache:quell/phase_wechsel {phase:$(p)}"])
+# Admin-Phasenwechsel: Abbauzaehler auf den Anfang der Stufe heben, sonst zeigt die Anzeige Minus-Prozent
+admin_phase = ["$function nachtwache:quell/phase_wechsel {phase:$(p)}"]
+for i, g in enumerate(PHASEN_GRENZEN):
+    admin_phase.append(f"execute if score #phase nw.phase matches {i + 2} if score #abbau nw.abbau matches ..{g - 1} run scoreboard players set #abbau nw.abbau {g}")
+admin_phase.append(f"function {NS}:anzeige/aktualisieren")
+fn("admin/phase", admin_phase)
 
 # ----------------------------------------------------------------------------
 # Schreiben

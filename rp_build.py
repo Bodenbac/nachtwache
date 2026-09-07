@@ -3,8 +3,8 @@
 Baut das Ressourcenpaket (Client-Seite) fuer Nachtwache: out/nachtwache-rp.zip
 
 Inhalt:
-  - Muenz-Symbol: das Zeichen ● (U+25CF) wird in der Standardschrift durch eine Muenzgrafik ersetzt.
-    Ohne Ressourcenpaket bleibt es ein Punkt, mit Paket eine Muenze (nichts geht kaputt).
+  - Icons der Seitenleiste als Schriftzeichen (icons.py): Muenze = ● (U+25CF, ohne Paket ein Punkt),
+    Stufenscheiben U+E001..E007, Mond U+E010, Zombie U+E011, Totenkopf U+E012 (ohne Paket leere Kaestchen).
   - Sieben Quell-Stufen im Amethyst-Stil (Tuff, Gruen, Blau, Amethyst, Gelb, Orange, Schwarz).
   - Eigene Symbole fuer Watch Bell und Kits (item_model nachtwache:watch_bell / nachtwache:kit).
   - Truhen-Oberflaeche in Daemmerungs-Toenen (gilt fuer alle Truhen, Faesser und den Laden).
@@ -16,6 +16,7 @@ Braucht Pillow (pip install pillow). Vorlagen liegen in vorlagen/ (aus dem 1.21.
 import hashlib, json, os, shutil, zipfile
 from pathlib import Path
 from PIL import Image, ImageDraw
+import icons
 
 HERE = Path(__file__).resolve().parent
 VORLAGEN = HERE / "vorlagen"
@@ -61,20 +62,7 @@ def umfaerben(src, stops):
     return out
 
 def muenze(size=16):
-    """Goldmuenze mit dunklem Rand, Glanzpunkt und Praegung."""
-    im = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    d = ImageDraw.Draw(im)
-    d.ellipse((0, 0, size - 1, size - 1), fill=(96, 62, 10, 255))          # Rand
-    d.ellipse((1, 1, size - 2, size - 2), fill=(222, 172, 40, 255))        # Koerper
-    d.ellipse((3, 3, size - 4, size - 4), outline=(160, 112, 20, 255))     # innerer Ring
-    d.ellipse((5, 5, size - 6, size - 6), fill=(238, 196, 70, 255))        # Zentrum
-    # Praegung: kleiner Kreis wie der Quell
-    d.ellipse((6, 6, size - 7, size - 7), fill=(176, 122, 24, 255))
-    d.point((7, 7), fill=(255, 236, 150, 255))
-    # Glanz oben links, Schatten unten rechts
-    d.line((3, 2, 5, 2), fill=(255, 240, 170, 255)); d.point((2, 3), fill=(255, 240, 170, 255))
-    d.line((10, 13, 12, 13), fill=(150, 100, 20, 255)); d.point((13, 12), fill=(150, 100, 20, 255))
-    return im
+    return icons.muenze()
 
 def glocke():
     """Watch Bell: Bronzeglocke an rotem Seil, Schallwellen links und rechts (Pixelbild)."""
@@ -145,7 +133,7 @@ def pack_icon():
     d = ImageDraw.Draw(im)
     for i in range(40):
         d.point(((i * 37) % 128, (i * 53) % 90), fill=(90, 80, 110, 255))
-    m = muenze(16).resize((80, 80), Image.NEAREST)
+    m = muenze(16).crop((0, 0, 16, 14)).resize((80, 70), Image.NEAREST)
     im.alpha_composite(m, (24, 30))
     return im
 
@@ -169,10 +157,13 @@ def build(out_dir=None):
         "description": [{"text": "Nachtwache", "color": "gold"}, {"text": " – coins, tiers, Collector", "color": "gray"}]}}, indent=2))
     w(rp / "pack.png", pack_icon())
 
-    # Muenze in der Standardschrift (● = U+25CF). 16 px Grafik bei Hoehe 8 -> halbe Skalierung, feiner.
-    w(nw / "textures" / "font" / "coin.png", muenze(16))
-    w(mc / "font" / "default.json", json.dumps({"providers": [
-        {"type": "bitmap", "file": "nachtwache:font/coin.png", "ascent": 7, "height": 8, "chars": ["●"]},
+    # Icons in der Standardschrift: Muenze = ● (U+25CF), Stufen U+E001..E007, Mond/Zombie/Totenkopf U+E010..E012.
+    # 16 px Grafik bei Hoehe 8 -> halbe Skalierung, gezeichnet in 14 Zeilen = 7 px, Grundlinie wie die Buchstaben.
+    provider = []
+    for name, fn in icons.ALLE.items():
+        w(nw / "textures" / "font" / f"{name}.png", fn())
+        provider.append({"type": "bitmap", "file": f"nachtwache:font/{name}.png", "ascent": 7, "height": 8, "chars": [icons.ZEICHEN[name]]})
+    w(mc / "font" / "default.json", json.dumps({"providers": provider + [
         {"type": "reference", "id": "minecraft:include/space"},
         {"type": "reference", "id": "minecraft:include/default", "filter": {"uniform": False}},
         {"type": "reference", "id": "minecraft:include/unifont"},
@@ -192,11 +183,14 @@ def build(out_dir=None):
     w(mc / "textures" / "gui" / "container" / "generic_54.png", gui_daemmerung(VORLAGEN / "generic_54.png"))
 
     zpath = out_dir / "nachtwache-rp.zip"
+    # Feste Zeitstempel: gleiche Inhalte -> gleiche SHA1 (sonst muss server.properties bei jedem Build nachgezogen werden)
     with zipfile.ZipFile(zpath, "w", zipfile.ZIP_DEFLATED) as z:
-        for root, _, fs in os.walk(rp):
+        for root, _, fs in sorted(os.walk(rp)):
             for f in sorted(fs):
                 full = Path(root) / f
-                z.write(full, full.relative_to(rp))
+                zi = zipfile.ZipInfo(str(full.relative_to(rp)).replace(os.sep, "/"), date_time=(2026, 1, 1, 0, 0, 0))
+                zi.compress_type = zipfile.ZIP_DEFLATED
+                z.writestr(zi, full.read_bytes())
     sha1 = hashlib.sha1(zpath.read_bytes()).hexdigest()
     (out_dir / "nachtwache-rp.sha1").write_text(sha1 + "\n")
     print(f"Ressourcenpaket -> {zpath}  sha1 {sha1}")

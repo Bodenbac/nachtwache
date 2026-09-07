@@ -4,3 +4,4 @@ vorlagen/
 build.py.bak
 __pycache__/
 server.log
+_to_delete/
