@@ -65,7 +65,7 @@ barrel,Barrel,25,rezept
 basalt,Basalt,2,basis
 beacon,Beacon,3713,rezept
 bee_nest,Bee Nest,30,basis
-beef,Raw Beef,6,basis
+beef,Raw Beef,25,basis
 beehive,Beehive,37,rezept
 beetroot,Beetroot,2,basis
 beetroot_seeds,Beetroot Seeds,2,muster
@@ -204,7 +204,7 @@ cherry_trapdoor,Cherry Trapdoor,17,rezept
 cherry_wood,Cherry Wood,22,rezept
 chest,Chest,27,rezept
 chest_minecart,Minecart with Chest,152,rezept
-chicken,Raw Chicken,5,basis
+chicken,Raw Chicken,15,basis
 chipped_anvil,Chipped Anvil,1,rest
 chiseled_bookshelf,Chiseled Bookshelf,27,rezept
 chiseled_copper,Chiseled Copper,13,rezept
@@ -239,19 +239,19 @@ cobblestone_stairs,Cobblestone Stairs,1,rest
 cobblestone_wall,Cobblestone Wall,1,rest
 cobweb,Cobweb,5,basis
 cocoa_beans,Cocoa Beans,3,basis
-cod,Raw Cod,4,basis
+cod,Raw Cod,8,basis
 cod_bucket,Bucket of Cod,80,basis
 comparator,Redstone Comparator,30,rezept
 compass,Compass,92,rezept
 composter,Composter,16,rezept
 conduit,Conduit,815,rezept
-cooked_beef,Steak,25,basis
-cooked_chicken,Cooked Chicken,12,basis
-cooked_cod,Cooked Cod,5,rezept
-cooked_mutton,Cooked Mutton,12,basis
-cooked_porkchop,Cooked Porkchop,12,basis
-cooked_rabbit,Cooked Rabbit,7,rezept
-cooked_salmon,Cooked Salmon,5,rezept
+cooked_beef,Steak,40,basis
+cooked_chicken,Cooked Chicken,25,basis
+cooked_cod,Cooked Cod,15,basis
+cooked_mutton,Cooked Mutton,25,basis
+cooked_porkchop,Cooked Porkchop,40,basis
+cooked_rabbit,Cooked Rabbit,20,basis
+cooked_salmon,Cooked Salmon,15,basis
 cookie,Cookie,2,rezept
 copper_bars,Copper Bars,3,rezept
 copper_block,Block of Copper,50,basis
@@ -718,7 +718,7 @@ music_disc_strad,Music Disc,30,muster
 music_disc_tears,Music Disc,30,muster
 music_disc_wait,Music Disc,30,muster
 music_disc_ward,Music Disc,30,muster
-mutton,Raw Mutton,5,basis
+mutton,Raw Mutton,15,basis
 mycelium,Mycelium,3,basis
 name_tag,Name Tag,50,muster
 nautilus_shell,Nautilus Shell,30,basis
@@ -880,7 +880,7 @@ polished_tuff_stairs,Polished Tuff Stairs,1,rest
 polished_tuff_wall,Polished Tuff Wall,1,rest
 popped_chorus_fruit,Popped Chorus Fruit,10,rezept
 poppy,Poppy,2,muster
-porkchop,Raw Porkchop,5,basis
+porkchop,Raw Porkchop,25,basis
 potato,Potato,3,basis
 potion,Potion,20,muster
 potted_acacia_sapling,Potted Acacia Sapling,20,muster
@@ -965,10 +965,10 @@ quartz_bricks,Quartz Bricks,27,rezept
 quartz_pillar,Quartz Pillar,27,rezept
 quartz_slab,Quartz Slab,14,rezept
 quartz_stairs,Quartz Stairs,27,rezept
-rabbit,Raw Rabbit,5,basis
+rabbit,Raw Rabbit,12,basis
 rabbit_foot,Rabbit's Foot,20,basis
 rabbit_hide,Rabbit Hide,3,basis
-rabbit_stew,Rabbit Stew,21,rezept
+rabbit_stew,Rabbit Stew,36,rezept
 rail,Rail,9,rezept
 raiser_armor_trim_smithing_template,Smithing Template,300,rezept
 raw_copper,Raw Copper,3,basis
@@ -1023,7 +1023,7 @@ rooted_dirt,Rooted Dirt,1,basis
 rose_bush,Rose Bush,2,muster
 rotten_flesh,Rotten Flesh,1,basis
 saddle,Saddle,49,rezept
-salmon,Raw Salmon,4,basis
+salmon,Raw Salmon,8,basis
 salmon_bucket,Bucket of Salmon,80,basis
 sand,Sand,3,basis
 sandstone,Sandstone,4,basis

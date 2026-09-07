@@ -47,14 +47,14 @@ egg,Egg,2
 feather,Feather,2
 white_wool,White Wool,4
 leather,Leather,8
-beef,Beef,6
-cooked_beef,Cooked Beef,25
-mutton,Mutton,5
-cooked_mutton,Cooked Mutton,12
-porkchop,Porkchop,5
-cooked_porkchop,Cooked Porkchop,12
-chicken,Chicken,5
-cooked_chicken,Cooked Chicken,12
+beef,Beef,25
+cooked_beef,Cooked Beef,40
+mutton,Mutton,15
+cooked_mutton,Cooked Mutton,25
+porkchop,Porkchop,25
+cooked_porkchop,Cooked Porkchop,40
+chicken,Chicken,15
+cooked_chicken,Cooked Chicken,25
 coal_ore,Coal Ore,5
 coal,Coal,6
 coal_block,Coal Block,60
@@ -125,9 +125,9 @@ turtle_scute,Turtle Scute,20
 armadillo_scute,Armadillo Scute,20
 rabbit_hide,Rabbit Hide,3
 rabbit_foot,Rabbit's Foot,20
-rabbit,Raw Rabbit,5
-cod,Raw Cod,4
-salmon,Raw Salmon,4
+rabbit,Raw Rabbit,12
+cod,Raw Cod,8
+salmon,Raw Salmon,8
 tropical_fish,Tropical Fish,6
 pufferfish,Pufferfish,6
 kelp,Kelp,1
@@ -198,3 +198,6 @@ bone_block,Bone Block,10
 cobweb,Cobweb,5
 bee_nest,Bee Nest,30
 wither_rose,Wither Rose,15
+cooked_rabbit,Cooked Rabbit,20
+cooked_cod,Cooked Cod,15
+cooked_salmon,Cooked Salmon,15
