@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 24                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 25                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -129,9 +129,21 @@ SONDERITEMS = {
     "TRANK_STAERKE":   ("minecraft:potion", 1, '[potion_contents={potion:"minecraft:strength"}]'),
     "TRANK_NACHTSICHT":("minecraft:potion", 1, '[potion_contents={potion:"minecraft:long_night_vision"}]'),
 }
-for _n, _l in [("SHARPNESS", 3), ("SHARPNESS", 5), ("PROTECTION", 3), ("PROTECTION", 4), ("MENDING", 1), ("UNBREAKING", 3), ("POWER", 3), ("POWER", 5), ("INFINITY", 1), ("FLAME", 1), ("EFFICIENCY", 3), ("EFFICIENCY", 5), ("LOOTING", 3)]:
-    SONDERITEMS[f"BUCH_{_n}_{_l}"] = ("minecraft:enchanted_book", 1,
-                                      '[stored_enchantments={"minecraft:%s":%d}]' % (_n.lower(), _l))
+BUECHER = [  # (Verzauberung, [Stufen], Name, [Preise]) fuer den Reiter Books: Hoechststufe und eine darunter
+    ("SHARPNESS", [4, 5], "Sharpness", [9000, 15000]), ("PROTECTION", [3, 4], "Protection", [6000, 14000]),
+    ("EFFICIENCY", [4, 5], "Efficiency", [8000, 12000]), ("FORTUNE", [2, 3], "Fortune", [6000, 12000]),
+    ("LOOTING", [2, 3], "Looting", [4000, 8000]), ("UNBREAKING", [2, 3], "Unbreaking", [3000, 5000]),
+    ("POWER", [4, 5], "Power (bow)", [8000, 12000]), ("PUNCH", [1, 2], "Punch (bow)", [2000, 4000]),
+    ("FIRE_ASPECT", [1, 2], "Fire Aspect", [3000, 6000]), ("KNOCKBACK", [1, 2], "Knockback", [1500, 3000]),
+    ("SWEEPING_EDGE", [2, 3], "Sweeping Edge", [2000, 4000]), ("FEATHER_FALLING", [3, 4], "Feather Falling", [3000, 6000]),
+    ("SILK_TOUCH", [1], "Silk Touch", [8000]), ("MENDING", [1], "Mending", [10000]),
+    ("INFINITY", [1], "Infinity (bow)", [8000]), ("FLAME", [1], "Flame (bow)", [5000]),
+]
+ROEMISCH = {1: "I", 2: "II", 3: "III", 4: "IV", 5: "V"}
+for _n, _ls, _, _ in BUECHER:
+    for _l in _ls:
+        SONDERITEMS[f"BUCH_{_n}_{_l}"] = ("minecraft:enchanted_book", 1,
+                                          '[stored_enchantments={"minecraft:%s":%d}]' % (_n.lower(), _l))
 
 # Vorgefuellte Kisten aus dem Quell (Name -> Liste von (item, anzahl))
 KISTEN = {
@@ -800,8 +812,9 @@ sprueche = read_csv("sprueche.csv")
 KAUF_A = (-1, 64, -5)      # Truhenhaelfte mit den Feldern 0..26 (oben im Fenster)   -> type=right bei facing=south
 KAUF_B = (0, 64, -5)       # Truhenhaelfte mit den Feldern 27..53 (unten)            -> type=left
 VERKAUF = (1, 64, -5)      # Fass
-SEITE_SLOT = 53            # letztes Feld: Blaettern
-PLATZ_PRO_SEITE = 53
+REITER_SLOTS = 9           # oberste Reihe: Reiter (Starter, Tier 2..7, Books)
+PLATZ_PRO_REITER = 45      # fuenf Reihen Ware je Reiter
+REITER_BUCH = ANZ_STUFEN + 1
 
 def kauf_block(slot):
     return (KAUF_A if slot < 27 else KAUF_B), slot % 27
@@ -870,31 +883,46 @@ def menue_item(r):
         comps.insert(0, MODELL_KIT[:-1])
     return f"{iid}[{','.join(comps)}]"
 
-def seiten(phase):
-    rows = [r for r in angebot if int(r["stufe"]) <= phase]
-    return [rows[i:i + PLATZ_PRO_SEITE] for i in range(0, max(len(rows), 1), PLATZ_PRO_SEITE)]
+def reiter_liste(phase):
+    """Reiter der Kaufen-Truhe fuer eine Quellstufe: [(idx, slot, name, tab-item, zeilen)].
+    Starter = Stufe 1, dann ein Reiter je freigeschalteter Stufe, rechts aussen Books (alle BUCH_-Angebote)."""
+    out = []
+    for p in range(1, phase + 1):
+        rows = [r for r in angebot if int(r["stufe"]) == p and not r["item"].startswith("BUCH_")]
+        if p > 1 and not rows: continue                 # Stufe ohne neue Ware bekommt keinen Reiter
+        out.append((p, p - 1, "Starter" if p == 1 else f"Tier {p}", STUFEN[p - 1][0], rows))
+    rows = [r for r in angebot if r["item"].startswith("BUCH_") and int(r["stufe"]) <= phase]
+    out.append((REITER_BUCH, 8, "Books", "minecraft:enchanted_book", rows))
+    return out
 
-BLAETTERN = 'minecraft:arrow[custom_data={nw_menu:9001},custom_name={text:"Next page",color:"yellow",italic:false}]'
+def reiter_item(idx, name, iid, aktiv):
+    glanz = "enchantment_glint_override=true," if aktiv else ""
+    hint = "Open" if aktiv else "Click to open"
+    return f'{iid}[{glanz}custom_data={{nw_menu:{9000 + idx}}},custom_name={{text:"{name}",color:"yellow",italic:false}},lore=[{{text:"{hint}",color:"gray",italic:false}}]]'
 
 for p in range(1, ANZ_STUFEN + 1):
-    for si, rows in enumerate(seiten(p), 1):
+    reiter = reiter_liste(p)
+    for idx, _, _, _, rows in reiter:
         lines = []
+        belegt = {}
+        for ridx, slot, name, iid, _ in reiter:
+            belegt[slot] = reiter_item(ridx, name, iid, ridx == idx)
+        for i, r in enumerate(rows[:PLATZ_PRO_REITER]):
+            belegt[REITER_SLOTS + i] = menue_item(r)
         for slot in range(54):
             blk, ls = kauf_block(slot)
-            if slot < len(rows):
-                lines.append(f"item replace block {blk[0]} {blk[1]} {blk[2]} container.{ls} with {menue_item(rows[slot])}")
-            elif slot == SEITE_SLOT and len(seiten(p)) > 1:
-                lines.append(f"item replace block {blk[0]} {blk[1]} {blk[2]} container.{ls} with {BLAETTERN}")
-            else:
-                lines.append(f"item replace block {blk[0]} {blk[1]} {blk[2]} container.{ls} with minecraft:air")
-        fn(f"sammler/kaufmenue_{p}_{si}", lines)
+            lines.append(f"item replace block {blk[0]} {blk[1]} {blk[2]} container.{ls} with {belegt.get(slot, 'minecraft:air')}")
+        fn(f"sammler/kaufmenue_{p}_{idx}", lines)
 
+# #seite nw.status = aktiver Reiter (1 = Starter, 2..7 = Stufe, REITER_BUCH = Books); gesperrte Stufe -> Starter
 kaufmenue = ["execute unless score #seite nw.status matches 1.. run scoreboard players set #seite nw.status 1"]
 for p in range(1, ANZ_STUFEN + 1):
-    n = len(seiten(p))
-    kaufmenue.append(f"execute if score #phase nw.phase matches {p} if score #seite nw.status matches {n + 1}.. run scoreboard players set #seite nw.status 1")
-    for si in range(1, n + 1):
-        kaufmenue.append(f"execute if score #phase nw.phase matches {p} if score #seite nw.status matches {si} run function {NS}:sammler/kaufmenue_{p}_{si}")
+    gueltig = {idx for idx, _, _, _, _ in reiter_liste(p)}
+    for idx in range(2, REITER_BUCH + 2):
+        if idx not in gueltig:
+            kaufmenue.append(f"execute if score #phase nw.phase matches {p} if score #seite nw.status matches {idx}{'..' if idx > REITER_BUCH else ''} run scoreboard players set #seite nw.status 1")
+    for idx, _, _, _, _ in reiter_liste(p):
+        kaufmenue.append(f"execute if score #phase nw.phase matches {p} if score #seite nw.status matches {idx} run function {NS}:sammler/kaufmenue_{p}_{idx}")
 fn("sammler/kaufmenue", kaufmenue)
 
 # Tresen (Truhen und Fass nur setzen, wenn sie fehlen, sonst waere der Inhalt weg)
@@ -930,22 +958,25 @@ fn("sammler/glocke_an", [
     "tellraw @a " + J([txt("The watch bell is active. It rings when something steps onto the road.", "gold")]),
 ])
 
-# Kaufen: jeden Tick pruefen, ob ein Symbol aus der Truhe genommen wurde
+# Kaufen: jeden Tick pruefen, ob ein Symbol (Ware oder Reiter) aus der Truhe genommen wurde
 kauf_tick = [f"execute unless entity @a[x={KAUF_A[0]},y={KAUF_A[1]},z={KAUF_A[2]},distance=..8] run return 0"]
 for p in range(1, ANZ_STUFEN + 1):
-    for si, rows in enumerate(seiten(p), 1):
-        for slot, r in enumerate(rows):
+    reiter = reiter_liste(p)
+    for idx, _, _, _, rows in reiter:
+        for i, r in enumerate(rows[:PLATZ_PRO_REITER]):
+            blk, ls = kauf_block(REITER_SLOTS + i)
+            kauf_tick.append(f"execute if score #phase nw.phase matches {p} if score #seite nw.status matches {idx} unless items block {blk[0]} {blk[1]} {blk[2]} container.{ls} *[custom_data~{{nw_menu:{int(r['id'])}}}] run function {NS}:sammler/kauf/{int(r['id'])}")
+        for ridx, slot, _, _, _ in reiter:
             blk, ls = kauf_block(slot)
-            kauf_tick.append(f"execute if score #phase nw.phase matches {p} if score #seite nw.status matches {si} unless items block {blk[0]} {blk[1]} {blk[2]} container.{ls} *[custom_data~{{nw_menu:{int(r['id'])}}}] run function {NS}:sammler/kauf/{int(r['id'])}")
-        if len(seiten(p)) > 1:
-            blk, ls = kauf_block(SEITE_SLOT)
-            kauf_tick.append(f"execute if score #phase nw.phase matches {p} if score #seite nw.status matches {si} unless items block {blk[0]} {blk[1]} {blk[2]} container.{ls} *[custom_data~{{nw_menu:9001}}] run function {NS}:sammler/blaettern")
+            kauf_tick.append(f"execute if score #phase nw.phase matches {p} if score #seite nw.status matches {idx} unless items block {blk[0]} {blk[1]} {blk[2]} container.{ls} *[custom_data~{{nw_menu:{9000 + ridx}}}] run function {NS}:sammler/reiter/{ridx}")
 fn("sammler/kauf_tick", kauf_tick)
-fn("sammler/blaettern", [
-    "clear @a[x=-1,y=64,z=-5,distance=..8] *[custom_data~{nw_menu:9001}]",
-    "scoreboard players add #seite nw.status 1",
-    f"function {NS}:sammler/kaufmenue",
-])
+for idx in list(range(1, ANZ_STUFEN + 1)) + [REITER_BUCH]:
+    fn(f"sammler/reiter/{idx}", [
+        f"clear @a[x={KAUF_A[0]},y={KAUF_A[1]},z={KAUF_A[2]},distance=..8] *[custom_data~{{nw_menu:{9000 + idx}}}]",
+        f"scoreboard players set #seite nw.status {idx}",
+        f"playsound minecraft:ui.button.click master @a[x={KAUF_A[0]},y={KAUF_A[1]},z={KAUF_A[2]},distance=..8] ~ ~ ~ 0.5 1.4",
+        f"function {NS}:sammler/kaufmenue",
+    ])
 
 for r in angebot:
     rid, preis, mx, name = int(r["id"]), int(r["preis"]), int(r["max"]), r["name"]

@@ -29,19 +29,6 @@ id,stufe,name,preis,max,item
 49,1,Fraggle the Dwarf,10000,1,ZWERG
 130,1,Coal,15,64,coal
 131,1,Diamond,1000,64,diamond
-132,1,Book: Sharpness III,6000,1,BUCH_SHARPNESS_3
-133,1,Book: Protection III,6000,1,BUCH_PROTECTION_3
-134,1,Book: Unbreaking III,5000,1,BUCH_UNBREAKING_3
-135,1,Book: Efficiency III,5000,1,BUCH_EFFICIENCY_3
-136,1,Book: Looting III,6000,1,BUCH_LOOTING_3
-137,1,Book: Power III (bow),5000,1,BUCH_POWER_3
-138,1,Book: Flame,5000,1,BUCH_FLAME_1
-139,1,Book: Infinity,8000,1,BUCH_INFINITY_1
-140,1,Book: Mending,10000,1,BUCH_MENDING_1
-142,1,Book: Sharpness V,15000,1,BUCH_SHARPNESS_5
-143,1,Book: Protection IV,14000,1,BUCH_PROTECTION_4
-144,1,Book: Efficiency V,12000,1,BUCH_EFFICIENCY_5
-145,1,Book: Power V (bow),12000,1,BUCH_POWER_5
 40,2,Arrow,3,64,arrow
 42,2,Redstone,10,64,redstone
 45,2,Steak,100,64,cooked_beef
@@ -68,3 +55,31 @@ id,stufe,name,preis,max,item
 121,7,Netherite Upgrade Template,1500,1,netherite_upgrade_smithing_template
 124,7,Trident,2000,1,trident
 125,7,Beacon,8000,1,beacon
+150,1,Book: Sharpness IV,9000,1,BUCH_SHARPNESS_4
+151,1,Book: Sharpness V,15000,1,BUCH_SHARPNESS_5
+152,1,Book: Protection III,6000,1,BUCH_PROTECTION_3
+153,1,Book: Protection IV,14000,1,BUCH_PROTECTION_4
+154,1,Book: Efficiency IV,8000,1,BUCH_EFFICIENCY_4
+155,1,Book: Efficiency V,12000,1,BUCH_EFFICIENCY_5
+156,1,Book: Fortune II,6000,1,BUCH_FORTUNE_2
+157,1,Book: Fortune III,12000,1,BUCH_FORTUNE_3
+158,1,Book: Looting II,4000,1,BUCH_LOOTING_2
+159,1,Book: Looting III,8000,1,BUCH_LOOTING_3
+160,1,Book: Unbreaking II,3000,1,BUCH_UNBREAKING_2
+161,1,Book: Unbreaking III,5000,1,BUCH_UNBREAKING_3
+162,1,Book: Power IV (bow),8000,1,BUCH_POWER_4
+163,1,Book: Power V (bow),12000,1,BUCH_POWER_5
+164,1,Book: Punch I (bow),2000,1,BUCH_PUNCH_1
+165,1,Book: Punch II (bow),4000,1,BUCH_PUNCH_2
+166,1,Book: Fire Aspect I,3000,1,BUCH_FIRE_ASPECT_1
+167,1,Book: Fire Aspect II,6000,1,BUCH_FIRE_ASPECT_2
+168,1,Book: Knockback I,1500,1,BUCH_KNOCKBACK_1
+169,1,Book: Knockback II,3000,1,BUCH_KNOCKBACK_2
+170,1,Book: Sweeping Edge II,2000,1,BUCH_SWEEPING_EDGE_2
+171,1,Book: Sweeping Edge III,4000,1,BUCH_SWEEPING_EDGE_3
+172,1,Book: Feather Falling III,3000,1,BUCH_FEATHER_FALLING_3
+173,1,Book: Feather Falling IV,6000,1,BUCH_FEATHER_FALLING_4
+174,1,Book: Silk Touch,8000,1,BUCH_SILK_TOUCH_1
+175,1,Book: Mending,10000,1,BUCH_MENDING_1
+176,1,Book: Infinity (bow),8000,1,BUCH_INFINITY_1
+177,1,Book: Flame (bow),5000,1,BUCH_FLAME_1
