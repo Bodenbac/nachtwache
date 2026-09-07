@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 27                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 28                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -254,7 +254,7 @@ OBJEKTIVE = [(f"nw.mined{i+1}", "minecraft.mined:" + st[0].replace("minecraft:",
     ("nw.tode", "deathCount"),
     ("nw.px", "dummy"), ("nw.py", "dummy"), ("nw.pz", "dummy"), ("nw.qx", "dummy"), ("nw.qy", "dummy"), ("nw.qz", "dummy"),
     ("nw.still", "dummy"), ("nw.kills", "dummy"), ("nw.verdient", "dummy"), ("nw.anzeige", "dummy"), ("nw.const", "dummy"),
-    ("nw.boss", "dummy"), ("nw.upgrade", "dummy"), ("nw.laterne", "dummy"), ("nw.zwerg", "dummy"), ("nw.zwerg_t", "dummy"), ("reset", "trigger"), ("yes", "trigger"), ("nw.schlaf", "dummy"), ("nw.fest", "dummy"), ("nw.dmin", "dummy"),
+    ("nw.boss", "dummy"), ("nw.upgrade", "dummy"), ("nw.laterne", "dummy"), ("nw.zwerg", "dummy"), ("nw.zwerg_t", "dummy"), ("reset", "trigger"), ("yes", "trigger"), ("night", "trigger"), ("boss", "trigger"), ("nw.schlaf", "dummy"), ("nw.fest", "dummy"), ("nw.dmin", "dummy"),
 ]
 
 # ---- load ------------------------------------------------------------------
@@ -620,6 +620,8 @@ fn("tick", [
     f"function {NS}:zwerg/tick",
     f"execute as @a[tag=nw.admin,scores={{reset=1..}}] run function {NS}:admin/reset_trigger",
     f"execute as @a[tag=nw.admin,scores={{yes=1..}}] run function {NS}:admin/yes_trigger",
+    f"execute as @a[tag=nw.admin,scores={{night=1..}}] run function {NS}:admin/night_trigger",
+    f"execute as @a[tag=nw.admin,scores={{boss=1..}}] run function {NS}:admin/boss_trigger",
     f"execute if score #m20 nw.tmp matches 0 run function {NS}:sammler/rampe",
     f"execute if score #m20 nw.tmp matches 0 run function {NS}:schutz/sekunde",
     f"execute if score #m20 nw.tmp matches 10 run function {NS}:anzeige/aktualisieren",
@@ -1128,7 +1130,8 @@ brackets = {}
 for r in wellen:
     brackets.setdefault((int(r["von"]), int(r["bis"])), []).append((r["mob"], int(r["gewicht"])))
 
-def summon_mob(key, extra_tags=(), pos=(0.5, 64, GEGNER_Z + 0.5)):
+SPAWN_GEGNER = (0.5, 64, GEGNER_Z - 4.5)   # Spawnpunkt der Wellen: vor dem Seelenfeuer in der Inselmitte, sonst brennen alle (Boss-Bug Nacht 10)
+def summon_mob(key, extra_tags=(), pos=SPAWN_GEGNER):
     ent, nbt = MOBS[key]
     tags = '"nw.welle"' + "".join(f',"{t}"' for t in extra_tags)
     return f"summon {ent} {pos[0]} {pos[1]} {pos[2]} {{Tags:[{tags}],{nbt}}}"
@@ -1199,7 +1202,7 @@ def boss_summon(key, name, hp, ability):
         nbt += "," + extra
     if key == "warden":   # sonst graebt er sich nach dem Auftauchen sofort wieder ein
         nbt += ',Brain:{memories:{"minecraft:dig_cooldown":{value:{},ttl:6000L}}}'
-    return f"summon {BOSS_ENTITY[key]} 0.5 64 {GEGNER_Z + 0.5} {{{nbt}}}"
+    return f"summon {BOSS_ENTITY[key]} {SPAWN_GEGNER[0]} {SPAWN_GEGNER[1]} {SPAWN_GEGNER[2]} {{{nbt}}}"
 
 for n, (key, name, hp, ability) in BOSSE.items():
     fn(f"nacht/boss_{n}", [
@@ -1293,8 +1296,9 @@ fn("nacht/boss_tick", [
     f"execute unless entity @e[tag=nw.boss] run return run function {NS}:nacht/boss_tot",
     "scoreboard players operation #m200 nw.tmp2 = #tick nw.tick", "scoreboard players operation #m200 nw.tmp2 %= #200 nw.const",
     "execute unless score #m200 nw.tmp2 matches 0 run return 0",
-    f"execute as @e[tag=nw.boss_mutter] at @s run " + summon_mob("cave_spider", pos=("~", "~", "~")),
-    f"execute as @e[tag=nw.boss_mutter] at @s run " + summon_mob("cave_spider", pos=("~", "~", "~")),
+    "execute store result score #cs nw.tmp2 if entity @e[type=cave_spider,tag=nw.welle]",
+    f"execute if score #cs nw.tmp2 matches ..7 as @e[tag=nw.boss_mutter] at @s run " + summon_mob("cave_spider", pos=("~", "~", "~")),
+    f"execute if score #cs nw.tmp2 matches ..6 as @e[tag=nw.boss_mutter] at @s run " + summon_mob("cave_spider", pos=("~", "~", "~")),
     f"execute as @e[tag=nw.boss_hexe] at @s run " + summon_mob("zombie", pos=("~", "~", "~")),
     f"execute as @e[tag=nw.boss_hexe] at @s run " + summon_mob("zombie", pos=("~", "~", "~")),
     f"function {NS}:nacht/warden_wut",
@@ -1432,7 +1436,7 @@ fn("gegner/zum_spieler", [
     f"execute at @p rotated ~ 0 positioned ^ ^ ^13 run spreadplayers ~ ~ 0 3 under 320 false @s",
     *[f"execute if entity @s[{AM_MUND}] at @p rotated ~{w} 0 positioned ^ ^ ^13 run spreadplayers ~ ~ 0 3 under 320 false @s" for w in (45, -45, 90, -90, 135, -135, 180)],
     # Insel zu klein fuer 10 Bloecke Abstand und der Spieler steht am Strassenmund: hinter ihn, so weit weg wie es geht
-    f"execute if entity @s[{AM_MUND}] if entity @p[distance=..8] at @p rotated ~180 0 positioned ^ ^ ^5 run spreadplayers ~ ~ 0 2 under 320 false @s",
+    f"execute if entity @s[{AM_MUND}] at @s if entity @p[distance=..8] at @p rotated ~180 0 positioned ^ ^ ^5 run spreadplayers ~ ~ 0 2 under 320 false @s",
     "execute at @s run particle minecraft:portal ~ ~1 ~ 0.5 1 0.5 0.5 40",
 ])
 
@@ -1451,7 +1455,7 @@ fn("schutz/tick", [
 fn("schutz/sekunde", [
     f"function {NS}:welt/stand",
     *[f"tag @a[name={n}] add nw.admin" for n in ADMINS],
-    "scoreboard players enable @a[tag=nw.admin] reset", "scoreboard players enable @a[tag=nw.admin] yes",
+    "scoreboard players enable @a[tag=nw.admin] reset", "scoreboard players enable @a[tag=nw.admin] yes", "scoreboard players enable @a[tag=nw.admin] night", "scoreboard players enable @a[tag=nw.admin] boss",
     f"function {NS}:laterne/sekunde",
     f"function {NS}:gegner/enderman_wut",
     # Sammler fehlt laenger als 5 s (nicht nur beim Start, wenn die Entities noch nicht geladen sind)? Dann neu.
@@ -1532,6 +1536,25 @@ reset_ja += [
     "tellraw @a " + J([txt("[Nightwatch] Fresh start. Day 1, tier 1, empty pockets. Nether and End are untouched.", "yellow")]),
 ]
 fn("admin/reset_ja", reset_ja)
+# /trigger night set N: laufende Welle weg, Nacht N startet sofort (Uhr auf Nachtbeginn, nacht/start zaehlt hoch)
+fn("admin/night_trigger", [
+    "scoreboard players operation #n nw.tmp = @s night", "scoreboard players set @s night 0", "scoreboard players enable @s night",
+    f"execute unless score #n nw.tmp matches 1..{LETZTE_NACHT} run return run tellraw @s " + J([txt(f"[Nightwatch] /trigger night set <1..{LETZTE_NACHT}>", "yellow")]),
+    "kill @e[tag=nw.welle]", "scoreboard players set #gegner nw.gegner 0", "scoreboard players set #boss nw.boss 0", "bossbar set nw:boss visible false",
+    "scoreboard players set #status nw.status 0", "scoreboard players set #nacht_haelt nw.status 0",
+    "scoreboard players operation #nacht nw.nacht = #n nw.tmp", "scoreboard players remove #nacht nw.nacht 1",
+    f"scoreboard players set #zeit nw.zeit {NACHT_START}",
+    "tellraw @a " + J([txt("[Nightwatch] Night ", "yellow"), {"score": {"name": "#n", "objective": "nw.tmp"}, "color": "yellow"}, txt(" starts now.", "yellow")]),
+])
+# /trigger boss set N: nur den Boss der Nacht N rufen (alter Boss weg)
+boss_trigger = [
+    "scoreboard players operation #n nw.tmp = @s boss", "scoreboard players set @s boss 0", "scoreboard players enable @s boss",
+    "kill @e[tag=nw.boss]", "scoreboard players set #boss nw.boss 0",
+]
+for n in BOSSE:
+    boss_trigger.append(f"execute if score #n nw.tmp matches {n} run return run function {NS}:nacht/boss_{n}")
+boss_trigger.append("tellraw @s " + J([txt("[Nightwatch] /trigger boss set <" + "|".join(str(n) for n in BOSSE) + ">", "yellow")]))
+fn("admin/boss_trigger", boss_trigger)
 fn("admin/zeit_nacht", [f"scoreboard players set #zeit nw.zeit {NACHT_START - 50}", "tellraw @a " + J([txt("[Nightwatch] Night is coming.", "yellow")])])
 fn("admin/zeit_tag", [f"scoreboard players set #zeit nw.zeit {TAG_START - 50}", "tellraw @a " + J([txt("[Nightwatch] Day is coming.", "yellow")])])
 fn("admin/welle_toeten", ["kill @e[tag=nw.welle]", "tellraw @a " + J([txt("[Nightwatch] Wave removed.", "yellow")])])
