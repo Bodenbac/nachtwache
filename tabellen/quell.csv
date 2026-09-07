@@ -10,13 +10,9 @@ phasen,item,gewicht,min,max
 1-7,sand,10,1,2
 1-7,gravel,8,1,1
 1-7,coarse_dirt,3,1,1
-1-7,oak_sapling,1,1,1
-1-7,wheat_seeds,1,1,1
 1-7,andesite,3,1,1
 1-7,clay,2,1,1
 1-7,apple,1,1,1
-1-7,sugar_cane,1,1,1
-1-7,cactus,1,1,1
 1-7,bone,1,1,1
 1-7,cobweb,1,1,1
 2-7,coal_ore,8,1,1

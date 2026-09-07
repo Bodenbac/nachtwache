@@ -3,36 +3,25 @@
 # item: normale Item-ID, Kurzname aus SONDERITEMS (Tranke, Buecher) oder SET:<a:n;b:n> fuer eine gefuellte Truhe.
 # id muss eindeutig und stabil bleiben.
 id,stufe,name,preis,max,item
-1,1,Dirt,1,64,dirt
-2,1,Cobblestone,1,64,cobblestone
-3,1,Stone,2,64,stone
-4,1,Sand,1,64,sand
-5,1,Gravel,1,64,gravel
-6,1,Oak Log,3,64,oak_log
-7,1,Oak Planks,1,64,oak_planks
-8,1,Oak Fence,1,64,oak_fence
-9,1,Oak Door,3,64,oak_door
-10,1,Ladder,1,64,ladder
-11,1,Torch,1,64,torch
-12,1,Bread,6,64,bread
-13,1,Apple,5,64,apple
-14,1,Bucket,15,1,bucket
-15,1,Water Bucket,30,1,water_bucket
-16,1,Lava Bucket,60,1,lava_bucket
-17,1,Chest,10,64,chest
-18,1,Crafting Table,8,1,crafting_table
-19,1,Furnace,12,1,furnace
-20,1,Bone Meal,3,64,bone_meal
-21,1,Oak Sapling,30,64,oak_sapling
-22,1,Wheat Seeds,10,64,wheat_seeds
-23,1,Stone Pickaxe,15,1,stone_pickaxe
-24,1,Stone Sword,15,1,stone_sword
-25,1,Stone Axe,15,1,stone_axe
-26,1,Stone Shovel,10,1,stone_shovel
-27,1,Shield,30,1,shield
-28,1,Watch Bell (alarm on the road),60,1,GLOCKE
-29,1,Iron Ingot,25,64,iron_ingot
-130,1,Coal,8,64,coal
+1,1,Dirt,2,64,dirt
+2,1,Cobblestone,2,64,cobblestone
+3,1,Stone,3,64,stone
+4,1,Sand,10,64,sand
+5,1,Gravel,10,64,gravel
+6,1,Oak Log,50,64,oak_log
+7,1,Oak Planks,15,64,oak_planks
+12,1,Bread,150,64,bread
+13,1,Apple,130,64,apple
+15,1,Water Bucket,1500,1,water_bucket
+16,1,Lava Bucket,1500,1,lava_bucket
+21,1,Oak Sapling,4000,64,oak_sapling
+22,1,Wheat Seeds,200,64,wheat_seeds
+23,1,Stone Pickaxe,30,1,stone_pickaxe
+24,1,Stone Sword,30,1,stone_sword
+25,1,Stone Axe,30,1,stone_axe
+26,1,Stone Shovel,20,1,stone_shovel
+29,1,Iron Ingot,50,64,iron_ingot
+130,1,Coal,15,64,coal
 131,1,Diamond,1000,64,diamond
 132,1,Book: Sharpness III,6000,1,BUCH_SHARPNESS_3
 133,1,Book: Protection III,6000,1,BUCH_PROTECTION_3
