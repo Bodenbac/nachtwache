@@ -70,6 +70,8 @@ Das schreibt `out/nachtwache/`, `out/nachtwache.zip` und `out/nachtwache-rp.zip`
 /function nachtwache:admin/splitter {n:100}   Splitter gutschreiben
 /function nachtwache:admin/phase {p:3}     Quellphase setzen
 /function nachtwache:admin/neustart        alles auf null, Inseln neu gesetzt (eigene Bauten bleiben)
+/function nachtwache:admin/reset           kompletter Neuanfang: fragt nach, dann innerhalb 60 s
+/function nachtwache:admin/reset_ja        ... bestätigen: Spielbereich (x -48..47, z -48..127, y 0..160) leer, Inventare, Enderkisten, XP, Coins, Nacht, Stufe auf null, Inseln neu. Nether und End bleiben.
 ```
 
 ## Getestet (06.09.2026, Vanilla-Server 1.21.11 mit Testbot)

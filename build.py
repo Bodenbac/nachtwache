@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 14                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 15                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ZWERG_TAKT = 300                        # Ticks je Schlag auf Stufe 0 (15 s)
@@ -1463,6 +1463,32 @@ fn("admin/neustart", [
     f"function {NS}:init",
     "tellraw @a " + J([txt("[Nightwatch] Restart. All values reset, islands rebuilt (your own builds stay).", "yellow")]),
 ])
+# Kompletter Neuanfang (nur Op): Welt im Spielbereich leer, Spieler leer, dann normaler Neustart. Zwei Schritte, damit nichts aus Versehen passiert.
+RESET_X, RESET_Z = (-48, 47), (-48, 127)
+RESET_Y = (0, 160)
+fn("admin/reset", [
+    "scoreboard players operation #reset_frist nw.status = #tick nw.tick", "scoreboard players add #reset_frist nw.status 1200",
+    "tellraw @a " + J([txt("[Nightwatch] FULL RESET requested: every block in the play area, all inventories, coins, night, tier. ", "red"), txt("Run ", "gray"), txt("/function nachtwache:admin/reset_ja", "yellow"), txt(" within 60 seconds to confirm.", "gray")]),
+])
+reset_ja = [
+    "execute unless score #reset_frist nw.status >= #tick nw.tick run return run tellraw @a " + J([txt("[Nightwatch] No reset pending. Run admin/reset first.", "yellow")]),
+    "scoreboard players set #reset_frist nw.status 0",
+    "tellraw @a " + J([txt("[Nightwatch] Resetting the world. This takes a moment.", "red")]),
+    "gamemode survival @a", "clear @a", "experience set @a 0 points", "experience set @a 0 levels", "effect clear @a",
+    "kill @e[type=item]", "kill @e[type=!player]",
+    f"tp @a {SPAWN[0]} {SPAWN[1] + 2} {SPAWN[2]}", f"spawnpoint @a {SPAWN[0]} {SPAWN[1]} {SPAWN[2]}",
+    f"forceload add {RESET_X[0]} {RESET_Z[0]} {RESET_X[1]} {RESET_Z[1]}",
+]
+reset_ja += [f"item replace entity @a enderchest.{i} with minecraft:air" for i in range(27)]
+reset_ja += [f"fill {RESET_X[0]} {y} {RESET_Z[0]} {RESET_X[1]} {y} {RESET_Z[1]} minecraft:air" for y in range(RESET_Y[0], RESET_Y[1] + 1)]
+reset_ja += [
+    "kill @e[type=!player]",
+    f"forceload remove {RESET_X[0]} {RESET_Z[0]} {RESET_X[1]} {RESET_Z[1]}",
+    "scoreboard players reset * nw.tode", "scoreboard players reset * nw.schlaf",
+    f"function {NS}:admin/neustart",
+    "tellraw @a " + J([txt("[Nightwatch] Fresh start. Day 1, tier 1, empty pockets. Nether and End are untouched.", "yellow")]),
+]
+fn("admin/reset_ja", reset_ja)
 fn("admin/zeit_nacht", [f"scoreboard players set #zeit nw.zeit {NACHT_START - 50}", "tellraw @a " + J([txt("[Nightwatch] Night is coming.", "yellow")])])
 fn("admin/zeit_tag", [f"scoreboard players set #zeit nw.zeit {TAG_START - 50}", "tellraw @a " + J([txt("[Nightwatch] Day is coming.", "yellow")])])
 fn("admin/welle_toeten", ["kill @e[tag=nw.welle]", "tellraw @a " + J([txt("[Nightwatch] Wave removed.", "yellow")])])
