@@ -51,6 +51,25 @@ id,stufe,name,preis,max,item
 103,5,Totem of Undying,1500,1,totem_of_undying
 104,5,Elytra,5000,1,elytra
 105,5,Iron Golem Egg,2000,1,iron_golem_spawn_egg
+80,4,Copper Ingot,20,64,copper_ingot
+81,4,Amethyst Shard,40,64,amethyst_shard
+82,4,Quartz,25,64,quartz
+83,4,Glowstone Dust,30,64,glowstone_dust
+84,4,Blaze Rod,120,64,blaze_rod
+85,4,Nether Wart,60,64,nether_wart
+86,4,Honeycomb,40,64,honeycomb
+87,4,Sea Lantern,120,64,sea_lantern
+88,4,Sponge,300,64,sponge
+89,4,Name Tag,200,1,name_tag
+90,4,Saddle,300,1,saddle
+110,6,Ghast Tear,300,64,ghast_tear
+111,6,Phantom Membrane,150,64,phantom_membrane
+112,6,Shulker Shell,800,64,shulker_shell
+113,6,Dragon's Breath,400,64,dragon_breath
+114,6,Wither Skeleton Skull,1500,64,wither_skeleton_skull
+115,6,Sculk Sensor,300,64,sculk_sensor
+116,6,Heart of the Sea,2500,1,heart_of_the_sea
+117,6,Enchanted Golden Apple,3000,64,enchanted_golden_apple
 120,7,Netherite Scrap,600,64,netherite_scrap
 121,7,Netherite Upgrade Template,1500,1,netherite_upgrade_smithing_template
 124,7,Trident,2000,1,trident
