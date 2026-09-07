@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 28                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 29                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -56,7 +56,8 @@ _summe = 0
 for _b, _f, _n, _s, _c, _m in STUFEN[:-1]:
     _summe += _n; PHASEN_GRENZEN.append(_summe)
 SPLITTER_PRO_ABBAU = {i + 1: st[3] for i, st in enumerate(STUFEN)}
-MOB_CHANCE = {i + 1: st[4] for i, st in enumerate(STUFEN)}
+QUELL_MOBS = False                       # Luis 07.09.2026: kein Mob aus dem Quell, die Wellen reichen
+MOB_CHANCE = {i + 1: (st[4] if QUELL_MOBS else 0.0) for i, st in enumerate(STUFEN)}
 MOB_AUS_QUELL = {i + 1: st[5] for i, st in enumerate(STUFEN)}
 
 INSEL_RADIUS = 7                       # Startinsel
