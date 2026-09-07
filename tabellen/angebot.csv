@@ -38,32 +38,22 @@ id,stufe,name,preis,max,item
 139,1,Book: Infinity,8000,1,BUCH_INFINITY_1
 140,1,Book: Mending,10000,1,BUCH_MENDING_1
 40,2,Arrow,3,64,arrow
-41,2,Hopper,300,64,hopper
 42,2,Redstone,10,64,redstone
-43,2,Iron Bars,20,64,iron_bars
-44,2,Oak Trapdoor,30,64,oak_trapdoor
 45,2,Steak,100,64,cooked_beef
 46,2,Leather,30,64,leather
 47,2,String,10,64,string
-48,2,Lava Moat Kit,3000,1,SET:lava_bucket:2;cobblestone:32
 61,3,Gold Ingot,100,64,gold_ingot
 63,3,Enchanting Table,4000,1,enchanting_table
 64,3,Bookshelf,150,64,bookshelf
 65,3,Lapis Lazuli,20,64,lapis_lazuli
-66,3,Golden Apple,900,64,golden_apple
 67,3,Potion of Healing II,150,1,TRANK_HEILUNG
 68,3,Potion of Strength,200,1,TRANK_STAERKE
 69,3,Potion of Night Vision (long),100,1,TRANK_NACHTSICHT
-70,3,Piston,110,64,piston
-71,3,Sticky Piston,150,64,sticky_piston
 72,3,Observer,60,64,observer
-73,3,Dispenser,80,64,dispenser
 74,3,Slimeball,30,64,slime_ball
 75,3,TNT,200,64,tnt
 76,3,Cobweb,20,64,cobweb
 77,3,Magma Block,20,64,magma_block
-78,3,Piston Crusher Kit,450,1,SET:sticky_piston:2;redstone:8;observer:1;lever:1
-79,3,Arrow Tower Kit,350,1,SET:dispenser:1;arrow:64;redstone:8;observer:1
 101,5,Bottle o' Enchanting,50,64,experience_bottle
 102,5,Ender Pearl,100,16,ender_pearl
 103,5,Totem of Undying,1500,1,totem_of_undying
