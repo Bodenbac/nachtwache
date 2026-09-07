@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 11                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 12                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ZWERG_TAKT = 300                        # Ticks je Schlag auf Stufe 0 (15 s)
@@ -43,7 +43,7 @@ STUFEN = [
     ("minecraft:tuff",             "Grau",    500,  1, 0.02, "zombie"),
     ("minecraft:green_concrete",   "Gruen",   1000, 2, 0.025, "zombie"),
     ("minecraft:blue_concrete",    "Blau",    1500, 3, 0.03, "skeleton"),
-    ("minecraft:budding_amethyst", "Lila",    2000, 4, 0.035, "creeper"),
+    ("minecraft:budding_amethyst", "Lila",    2000, 4, 0.035, "spider"),
     ("minecraft:yellow_concrete",  "Gelb",    3000, 5, 0.04, "witch"),
     ("minecraft:orange_concrete",  "Orange",  4000, 6, 0.045, "wither_skeleton"),
     ("minecraft:black_concrete",   "Schwarz", 0,    8, 0.05, "wither_skeleton"),
@@ -79,7 +79,7 @@ WELLE_BASIS, WELLE_PRO_NACHT = 1, 1    # Groesse = (1 + 1*Nacht) * Phasenfaktor,
 PHASEN_FAKTOR = {1: 10, 2: 12, 3: 14, 4: 17, 5: 20, 6: 23, 7: 26}   # in Zehnteln
 LETZTE_NACHT = 30
 BONUS_PRO_NACHT = 16                    # Splitter fuer eine komplett getoetete Welle (mal Nacht)
-KOPFGELD = {"zombie": 6, "husk": 6, "skeleton": 9, "spider": 9, "cave_spider": 6, "creeper": 15,
+KOPFGELD = {"zombie": 6, "husk": 6, "skeleton": 9, "spider": 9, "cave_spider": 6, "creeper": 15, "enderman": 20,
             "witch": 18, "wither_skeleton": 18, "pillager": 15, "ravager": 45, "warden": 0}
 KOPFGELD_BOSS = 150
 TOD_ABZUG_PROZENT = 10
@@ -158,6 +158,8 @@ MOBS = {
     "skeleton":        _mob("minecraft:skeleton", 'equipment:{head:%s,mainhand:{id:"minecraft:bow",count:1}},drop_chances:{head:0.0f,mainhand:0.05f}' % HELM, helm=False),
     "spider":          _mob("minecraft:spider", "", helm=False),
     "creeper":         _mob("minecraft:creeper", "", helm=False),
+    "zombie_baby":     _mob("minecraft:zombie", 'CanBreakDoors:1b,IsBaby:1b'),
+    "enderman":        _mob("minecraft:enderman", "", helm=False),
     "witch":           _mob("minecraft:witch", "", helm=False),
     "wither_skeleton": _mob("minecraft:wither_skeleton", 'equipment:{mainhand:{id:"minecraft:stone_sword",count:1}},drop_chances:{mainhand:0.05f}', helm=False),
     "pillager":        _mob("minecraft:pillager", 'equipment:{mainhand:{id:"minecraft:crossbow",count:1}},drop_chances:{mainhand:0.05f}', helm=False),
@@ -1315,6 +1317,14 @@ gt += [
     f"execute if score #glocke nw.upgrade matches 1 if score #glocke_geklingelt nw.upgrade matches 0 if entity @e[tag=nw.welle,x=-4,y=55,z={STRASSE_Z[0]},dx=8,dy=20,dz=25] run function {NS}:gegner/glocke",
 ]
 fn("gegner/tick", gt)
+# Endermen sind von Haus aus neutral: jede Sekunde auf den naechsten Spieler wuetend machen
+fn("gegner/enderman_wut", [        # 1.21.11: angry_at (UUID) und anger_end_time (Spielzeit, absolut)
+    "execute unless entity @e[type=enderman,tag=nw.welle] run return 0",
+    "execute store result score #t nw.tmp2 run time query gametime",
+    "scoreboard players add #t nw.tmp2 600",
+    "execute as @e[type=enderman,tag=nw.welle] at @s if entity @p run data modify entity @s angry_at set from entity @p UUID",
+    "execute as @e[type=enderman,tag=nw.welle] store result entity @s anger_end_time long 1 run scoreboard players get #t nw.tmp2",
+])
 fn("gegner/glocke", [
     "scoreboard players set #glocke_geklingelt nw.upgrade 1",
     "playsound minecraft:block.bell.use block @a ~ ~ ~ 2 0.7", "playsound minecraft:block.bell.resonate block @a ~ ~ ~ 2 0.7",
@@ -1402,6 +1412,7 @@ fn("schutz/tick", [
 fn("schutz/sekunde", [
     f"function {NS}:welt/stand",
     f"function {NS}:laterne/sekunde",
+    f"function {NS}:gegner/enderman_wut",
     # Sammler fehlt laenger als 5 s (nicht nur beim Start, wenn die Entities noch nicht geladen sind)? Dann neu.
     "execute if entity @e[tag=nw.villager] run scoreboard players set #fehlt nw.tmp2 0",
     "execute unless entity @e[tag=nw.villager] run scoreboard players add #fehlt nw.tmp2 1",
