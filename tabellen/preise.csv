@@ -1,0 +1,87 @@
+# Ankaufspreise des Sammlers, wert = Splitter je Stueck (Verkaufsfass und Lieferrampe).
+# Die Lieferrampe zahlt 80 Prozent. Werkzeuge, Ruestung und Waffen stehen absichtlich nicht drin,
+# die nimmt der Sammler nicht (nichts versehentlich verkaufen).
+item,name,wert
+cobblestone,Cobblestone,1
+stone,Stone,1
+dirt,Dirt,1
+coarse_dirt,Coarse Dirt,1
+sand,Sand,1
+gravel,Gravel,1
+andesite,Andesite,1
+granite,Granite,1
+diorite,Diorite,1
+deepslate,Deepslate,1
+cobbled_deepslate,Cobbled Deepslate,1
+moss_block,Moss Block,1
+mossy_cobblestone,Mossy Cobblestone,1
+oak_log,Oak Log,2
+dark_oak_log,Dark Oak Log,2
+spruce_log,Spruce Log,2
+birch_log,Birch Log,2
+oak_planks,Oak Planks,1
+crimson_stem,Crimson Stem,2
+warped_stem,Warped Stem,2
+sugar_cane,Sugar Cane,1
+cactus,Cactus,2
+wheat,Wheat,1
+bread,Bread,2
+apple,Apple,2
+carrot,Carrot,1
+potato,Potato,1
+pumpkin,Pumpkin,3
+melon_slice,Melon Slice,1
+sweet_berries,Sweet Berries,1
+egg,Egg,1
+feather,Feather,1
+white_wool,White Wool,2
+leather,Leather,3
+beef,Beef,3
+cooked_beef,Cooked Beef,3
+mutton,Mutton,2
+porkchop,Porkchop,2
+chicken,Chicken,2
+coal,Coal,3
+raw_iron,Raw Iron,4
+iron_ingot,Iron Ingot,6
+raw_copper,Raw Copper,2
+copper_ingot,Copper Ingot,3
+raw_gold,Raw Gold,8
+gold_ingot,Gold Ingot,10
+redstone,Redstone,2
+lapis_lazuli,Lapis Lazuli,2
+clay_ball,Clay Ball,1
+clay,Clay,4
+brick,Brick,2
+glass,Glass,1
+obsidian,Obsidian,6
+diamond,Diamond,40
+emerald,Emerald,25
+amethyst_shard,Amethyst Shard,3
+amethyst_block,Amethyst Block,8
+netherrack,Netherrack,1
+soul_sand,Soul Sand,1
+soul_soil,Soul Soil,1
+nether_wart,Nether Wart,3
+glowstone_dust,Glowstone Dust,2
+glowstone,Glowstone,6
+quartz,Quartz,2
+blackstone,Blackstone,1
+end_stone,End Stone,2
+purpur_block,Purpur Block,2
+chorus_fruit,Chorus Fruit,3
+sculk,Sculk,2
+string,String,2
+bone,Bone,2
+rotten_flesh,Rotten Flesh,1
+spider_eye,Spider Eye,2
+gunpowder,Gunpowder,4
+slime_ball,Slime Ball,4
+arrow,Arrow,1
+ender_pearl,Ender Pearl,10
+phantom_membrane,Phantom Membrane,6
+blaze_rod,Blaze Rod,12
+ghast_tear,Ghast Tear,25
+wither_skeleton_skull,Wither Skeleton Skull,80
+ancient_debris,Ancient Debris,100
+shulker_shell,Shulker Shell,60

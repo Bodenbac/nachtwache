@@ -1,0 +1,6 @@
+out/nachtwache/
+out/nachtwache-rp/
+vorlagen/
+build.py.bak
+__pycache__/
+server.log

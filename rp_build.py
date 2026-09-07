@@ -1,0 +1,206 @@
+#!/usr/bin/env python3
+"""
+Baut das Ressourcenpaket (Client-Seite) fuer Nachtwache: out/nachtwache-rp.zip
+
+Inhalt:
+  - Muenz-Symbol: das Zeichen ● (U+25CF) wird in der Standardschrift durch eine Muenzgrafik ersetzt.
+    Ohne Ressourcenpaket bleibt es ein Punkt, mit Paket eine Muenze (nichts geht kaputt).
+  - Sieben Quell-Stufen im Amethyst-Stil (Tuff, Gruen, Blau, Amethyst, Gelb, Orange, Schwarz).
+  - Eigene Symbole fuer Watch Bell und Kits (item_model nachtwache:watch_bell / nachtwache:kit).
+  - Truhen-Oberflaeche in Daemmerungs-Toenen (gilt fuer alle Truhen, Faesser und den Laden).
+  - Pack-Icon.
+
+Aufruf:  python3 rp_build.py          (wird auch von build.py am Ende aufgerufen)
+Braucht Pillow (pip install pillow). Vorlagen liegen in vorlagen/ (aus dem 1.21.11-Client kopiert).
+"""
+import hashlib, json, os, shutil, zipfile
+from pathlib import Path
+from PIL import Image, ImageDraw
+
+HERE = Path(__file__).resolve().parent
+VORLAGEN = HERE / "vorlagen"
+RP_MIN, RP_MAX = 75, 90              # Ressourcenpaket-Format 1.21.11 = 75
+
+# Stufenbloecke -> Farbverlauf (dunkel, mittel, hell). Reihenfolge wie STUFEN in build.py.
+STUFEN_FARBEN = {
+    "tuff":             ((52, 52, 58),   (118, 118, 126), (205, 205, 212)),
+    "green_concrete":   ((18, 66, 28),   (58, 158, 70),   (175, 242, 150)),
+    "blue_concrete":    ((18, 38, 112),  (58, 108, 222),  (165, 205, 255)),
+    "budding_amethyst": ((82, 44, 142),  (150, 100, 222), (228, 192, 255)),
+    "yellow_concrete":  ((122, 90, 8),   (232, 192, 40),  (255, 246, 172)),
+    "orange_concrete":  ((132, 48, 8),   (240, 122, 30),  (255, 212, 150)),
+    "black_concrete":   ((6, 6, 10),     (34, 30, 42),    (98, 86, 114)),
+}
+
+def verlauf(t, stops):
+    """t in 0..1 -> Farbe aus drei Stuetzstellen."""
+    a, b, c = stops
+    if t < 0.5:
+        u = t / 0.5; p, q = a, b
+    else:
+        u = (t - 0.5) / 0.5; p, q = b, c
+    return tuple(int(round(p[i] + (q[i] - p[i]) * u)) for i in range(3))
+
+def umfaerben(src, stops):
+    """Helligkeit der Vorlage auf einen Farbverlauf abbilden (Struktur bleibt, Farbe wechselt)."""
+    im = Image.open(src).convert("RGBA")
+    px = im.load()
+    lums = [0.299 * px[x, y][0] + 0.587 * px[x, y][1] + 0.114 * px[x, y][2]
+            for y in range(im.height) for x in range(im.width) if px[x, y][3] > 0]
+    lo, hi = min(lums), max(lums)
+    out = Image.new("RGBA", im.size)
+    op = out.load()
+    for y in range(im.height):
+        for x in range(im.width):
+            r, g, b, a = px[x, y]
+            if a == 0:
+                op[x, y] = (0, 0, 0, 0); continue
+            l = 0.299 * r + 0.587 * g + 0.114 * b
+            t = (l - lo) / (hi - lo) if hi > lo else 0.5
+            op[x, y] = verlauf(t, stops) + (a,)
+    return out
+
+def muenze(size=16):
+    """Goldmuenze mit dunklem Rand, Glanzpunkt und Praegung."""
+    im = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    d.ellipse((0, 0, size - 1, size - 1), fill=(96, 62, 10, 255))          # Rand
+    d.ellipse((1, 1, size - 2, size - 2), fill=(222, 172, 40, 255))        # Koerper
+    d.ellipse((3, 3, size - 4, size - 4), outline=(160, 112, 20, 255))     # innerer Ring
+    d.ellipse((5, 5, size - 6, size - 6), fill=(238, 196, 70, 255))        # Zentrum
+    # Praegung: kleiner Kreis wie der Quell
+    d.ellipse((6, 6, size - 7, size - 7), fill=(176, 122, 24, 255))
+    d.point((7, 7), fill=(255, 236, 150, 255))
+    # Glanz oben links, Schatten unten rechts
+    d.line((3, 2, 5, 2), fill=(255, 240, 170, 255)); d.point((2, 3), fill=(255, 240, 170, 255))
+    d.line((10, 13, 12, 13), fill=(150, 100, 20, 255)); d.point((13, 12), fill=(150, 100, 20, 255))
+    return im
+
+def glocke():
+    """Watch Bell: Bronzeglocke an rotem Seil, Schallwellen links und rechts (Pixelbild)."""
+    P = {".": None,
+         "s": (150, 30, 30),    # Seil
+         "S": (210, 60, 50),
+         "o": (60, 34, 14),     # Rand dunkel
+         "b": (168, 112, 40),   # Bronze
+         "B": (214, 158, 64),   # Bronze hell
+         "h": (255, 226, 150),  # Glanz
+         "k": (40, 24, 10),     # Kloeppel
+         "w": (255, 90, 70)}    # Schallwelle
+    rows = [
+        ".......ss.......",
+        ".......Ss.......",
+        "......oooo......",
+        ".....obBBbo.....",
+        ".....obhBbo.....",
+        "w....obBBbo....w",
+        ".w...obBBbo...w.",
+        "w....obBBbo....w",
+        ".w..obBBBBbo..w.",
+        "w..obbBBBBbbo..w",
+        "...obbbbbbbbo...",
+        "...oooooooooo...",
+        ".......kk.......",
+        ".......kk.......",
+        "................",
+        "................",
+    ]
+    im = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    px = im.load()
+    for y, row in enumerate(rows):
+        for x, ch in enumerate(row):
+            if P[ch]:
+                px[x, y] = P[ch] + (255,)
+    return im
+
+def kiste():
+    """Kit: Versorgungskiste, dunkles Holz, Goldband, Schloss."""
+    im = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    d.rectangle((1, 3, 14, 14), fill=(74, 46, 22, 255), outline=(38, 22, 10, 255))
+    for y in (6, 9, 12):
+        d.line((2, y, 13, y), fill=(58, 34, 16, 255))
+    d.rectangle((1, 3, 14, 5), fill=(92, 58, 28, 255), outline=(38, 22, 10, 255))   # Deckel
+    d.rectangle((6, 2, 9, 8), fill=(214, 166, 44, 255), outline=(120, 84, 12, 255)) # Goldband
+    d.rectangle((7, 5, 8, 6), fill=(60, 40, 10, 255))                                # Schloss
+    d.line((2, 4, 5, 4), fill=(122, 82, 44, 255)); d.line((10, 4, 13, 4), fill=(122, 82, 44, 255))
+    return im
+
+def gui_daemmerung(src):
+    """Truhen-Oberflaeche: Grautoene der Vorlage nach dunkelviolett-grau abbilden. Titeltext (dunkelgrau) bleibt lesbar."""
+    im = Image.open(src).convert("RGBA")
+    px = im.load()
+    stops = ((26, 22, 32), (128, 112, 140), (196, 180, 208))
+    for y in range(im.height):
+        for x in range(im.width):
+            r, g, b, a = px[x, y]
+            if a == 0:
+                continue
+            l = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+            px[x, y] = verlauf(l, stops) + (a,)
+    return im
+
+def pack_icon():
+    im = Image.new("RGBA", (128, 128), (14, 10, 20, 255))
+    d = ImageDraw.Draw(im)
+    for i in range(40):
+        d.point(((i * 37) % 128, (i * 53) % 90), fill=(90, 80, 110, 255))
+    m = muenze(16).resize((80, 80), Image.NEAREST)
+    im.alpha_composite(m, (24, 30))
+    return im
+
+def build(out_dir=None):
+    out_dir = Path(out_dir) if out_dir else HERE / "out"
+    rp = out_dir / "nachtwache-rp"
+    if rp.exists():
+        shutil.rmtree(rp)
+    mc = rp / "assets" / "minecraft"
+    nw = rp / "assets" / "nachtwache"
+
+    def w(path, content):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if isinstance(content, Image.Image):
+            content.save(path)
+        else:
+            path.write_text(content, encoding="utf-8")
+
+    w(rp / "pack.mcmeta", json.dumps({"pack": {
+        "pack_format": RP_MIN, "min_format": RP_MIN, "max_format": RP_MAX,
+        "description": [{"text": "Nachtwache", "color": "gold"}, {"text": " – coins, tiers, Collector", "color": "gray"}]}}, indent=2))
+    w(rp / "pack.png", pack_icon())
+
+    # Muenze in der Standardschrift (● = U+25CF). 16 px Grafik bei Hoehe 8 -> halbe Skalierung, feiner.
+    w(nw / "textures" / "font" / "coin.png", muenze(16))
+    w(mc / "font" / "default.json", json.dumps({"providers": [
+        {"type": "bitmap", "file": "nachtwache:font/coin.png", "ascent": 7, "height": 8, "chars": ["●"]},
+        {"type": "reference", "id": "minecraft:include/space"},
+        {"type": "reference", "id": "minecraft:include/default", "filter": {"uniform": False}},
+        {"type": "reference", "id": "minecraft:include/unifont"},
+    ]}, indent=2))
+
+    # Stufenbloecke
+    for block, stops in STUFEN_FARBEN.items():
+        w(mc / "textures" / "block" / f"{block}.png", umfaerben(VORLAGEN / "amethyst_block.png", stops))
+
+    # Eigene Item-Symbole (item_model="nachtwache:watch_bell" / "nachtwache:kit")
+    for name, img in (("watch_bell", glocke()), ("kit", kiste())):
+        w(nw / "textures" / "item" / f"{name}.png", img)
+        w(nw / "models" / "item" / f"{name}.json", json.dumps({"parent": "minecraft:item/generated", "textures": {"layer0": f"nachtwache:item/{name}"}}))
+        w(nw / "items" / f"{name}.json", json.dumps({"model": {"type": "minecraft:model", "model": f"nachtwache:item/{name}"}}))
+
+    # Truhen-Oberflaeche
+    w(mc / "textures" / "gui" / "container" / "generic_54.png", gui_daemmerung(VORLAGEN / "generic_54.png"))
+
+    zpath = out_dir / "nachtwache-rp.zip"
+    with zipfile.ZipFile(zpath, "w", zipfile.ZIP_DEFLATED) as z:
+        for root, _, fs in os.walk(rp):
+            for f in sorted(fs):
+                full = Path(root) / f
+                z.write(full, full.relative_to(rp))
+    sha1 = hashlib.sha1(zpath.read_bytes()).hexdigest()
+    (out_dir / "nachtwache-rp.sha1").write_text(sha1 + "\n")
+    print(f"Ressourcenpaket -> {zpath}  sha1 {sha1}")
+    return zpath, sha1
+
+if __name__ == "__main__":
+    build()

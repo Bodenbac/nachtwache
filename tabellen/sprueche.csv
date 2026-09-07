@@ -1,0 +1,24 @@
+# What the Collector says. event: kauf, verkauf, phase, tod, nacht, morgen, ablehnung, arm, sieg, finale
+ereignis,text
+kauf,Good choice. I keep everything.
+kauf,That will help you. For a while.
+kauf,Paid. Do not ask where it comes from.
+verkauf,Thank you. It goes with the other things.
+verkauf,More of that. I have room.
+verkauf,I take everything. Everything.
+phase,The Source runs deeper. I have new goods.
+phase,More comes up. And more comes over.
+tod,I saw you. I see everything that ends up here.
+tod,A pity. Your things are still lying there. Maybe.
+tod,It happens. It happens a lot here.
+nacht,The road is growing. They are coming.
+nacht,I would leave the lights on.
+nacht,They know where you are. They always do.
+morgen,Still here. Good. For me.
+morgen,Another day. I am counting them for you.
+ablehnung,I do not buy that.
+ablehnung,No use for that. Not yet.
+arm,Not enough coins. The Source is waiting.
+arm,Not enough. Come back when you have more.
+sieg,It is getting light. I have not seen that in a long time.
+finale,The stall is empty. I am on the road.

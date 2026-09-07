@@ -1,0 +1,43 @@
+# Zusammensetzung der Wellen nach Nacht. Innerhalb eines Nachtbereichs sind die Gewichte relativ.
+# Mob-Typen sind in build.py (MOBS) definiert: zombie, husk, zombie_leder, zombie_eisen, brutalo,
+# skeleton, spider, creeper, witch, wither_skeleton, pillager, ravager
+von,bis,mob,gewicht
+1,4,zombie,100
+5,7,zombie,60
+5,7,husk,25
+5,7,zombie_leder,15
+8,11,zombie,40
+8,11,husk,20
+8,11,zombie_leder,10
+8,11,skeleton,20
+8,11,spider,10
+12,15,zombie,30
+12,15,husk,10
+12,15,zombie_eisen,15
+12,15,skeleton,20
+12,15,spider,10
+12,15,creeper,15
+16,19,zombie,25
+16,19,zombie_eisen,15
+16,19,skeleton,15
+16,19,spider,5
+16,19,creeper,15
+16,19,witch,10
+16,19,wither_skeleton,15
+20,24,zombie,15
+20,24,zombie_eisen,15
+20,24,brutalo,15
+20,24,skeleton,10
+20,24,creeper,10
+20,24,witch,10
+20,24,wither_skeleton,10
+20,24,pillager,15
+25,999,zombie,10
+25,999,zombie_eisen,10
+25,999,brutalo,15
+25,999,skeleton,10
+25,999,creeper,10
+25,999,witch,10
+25,999,wither_skeleton,10
+25,999,pillager,10
+25,999,ravager,15
