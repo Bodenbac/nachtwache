@@ -15,9 +15,9 @@ phasen,item,gewicht,min,max
 1-7,bone,1,1,1
 1-7,cobweb,1,1,1
 2-7,coal_ore,8,1,1
-2-7,iron_ore,6,1,1
+2-7,iron_ore,3,1,1
 2-7,copper_ore,6,1,1
-2-7,raw_iron,2,1,1
+2-7,raw_iron,1,1,1
 2-7,deepslate,6,1,2
 2-7,spruce_log,4,1,1
 2-7,birch_log,3,1,1

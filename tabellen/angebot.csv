@@ -10,8 +10,8 @@ id,stufe,name,preis,max,item
 5,1,Gravel,10,64,gravel
 6,1,Oak Log,50,64,oak_log
 7,1,Oak Planks,15,64,oak_planks
-12,1,Bread,150,64,bread
-13,1,Apple,130,64,apple
+12,1,Bread,50,64,bread
+13,1,Apple,30,64,apple
 15,1,Water Bucket,1500,1,water_bucket
 16,1,Lava Bucket,1500,1,lava_bucket
 21,1,Oak Sapling,4000,64,oak_sapling
@@ -37,53 +37,39 @@ id,stufe,name,preis,max,item
 138,1,Book: Flame,5000,1,BUCH_FLAME_1
 139,1,Book: Infinity,8000,1,BUCH_INFINITY_1
 140,1,Book: Mending,10000,1,BUCH_MENDING_1
-32,2,Iron Pickaxe,90,1,iron_pickaxe
-33,2,Iron Sword,90,1,iron_sword
-34,2,Iron Axe,90,1,iron_axe
-35,2,Iron Helmet,75,1,iron_helmet
-36,2,Iron Chestplate,120,1,iron_chestplate
-37,2,Iron Leggings,105,1,iron_leggings
-38,2,Iron Boots,60,1,iron_boots
-39,2,Bow,50,1,bow
-40,2,Arrow,2,64,arrow
-41,2,Hopper,40,64,hopper
-42,2,Redstone,4,64,redstone
-43,2,Iron Bars,6,64,iron_bars
-44,2,Oak Trapdoor,4,64,oak_trapdoor
-45,2,Steak,8,64,cooked_beef
-46,2,Leather,6,64,leather
-47,2,String,4,64,string
-48,2,Lava Moat Kit,140,1,SET:lava_bucket:2;cobblestone:32
-61,3,Gold Ingot,20,64,gold_ingot
-63,3,Enchanting Table,250,1,enchanting_table
-64,3,Bookshelf,40,64,bookshelf
-65,3,Lapis Lazuli,5,64,lapis_lazuli
-66,3,Golden Apple,100,64,golden_apple
-67,3,Potion of Healing II,40,1,TRANK_HEILUNG
-68,3,Potion of Strength,60,1,TRANK_STAERKE
-69,3,Potion of Night Vision (long),30,1,TRANK_NACHTSICHT
-70,3,Piston,30,64,piston
-71,3,Sticky Piston,45,64,sticky_piston
-72,3,Observer,30,64,observer
-73,3,Dispenser,50,64,dispenser
-74,3,Slimeball,10,64,slime_ball
-75,3,TNT,60,64,tnt
-76,3,Cobweb,8,64,cobweb
-77,3,Magma Block,6,64,magma_block
-78,3,Piston Crusher Kit,180,1,SET:sticky_piston:2;redstone:8;observer:1;lever:1
-79,3,Arrow Tower Kit,200,1,SET:dispenser:1;arrow:64;redstone:8;observer:1
-90,5,Diamond Helmet,400,1,diamond_helmet
-91,5,Diamond Chestplate,650,1,diamond_chestplate
-92,5,Diamond Leggings,550,1,diamond_leggings
-93,5,Diamond Boots,350,1,diamond_boots
-94,5,Diamond Sword,500,1,diamond_sword
-95,5,Diamond Pickaxe,500,1,diamond_pickaxe
-101,5,Bottle o' Enchanting,8,64,experience_bottle
-102,5,Ender Pearl,20,16,ender_pearl
+40,2,Arrow,3,64,arrow
+41,2,Hopper,300,64,hopper
+42,2,Redstone,10,64,redstone
+43,2,Iron Bars,20,64,iron_bars
+44,2,Oak Trapdoor,30,64,oak_trapdoor
+45,2,Steak,100,64,cooked_beef
+46,2,Leather,30,64,leather
+47,2,String,10,64,string
+48,2,Lava Moat Kit,3000,1,SET:lava_bucket:2;cobblestone:32
+61,3,Gold Ingot,100,64,gold_ingot
+63,3,Enchanting Table,4000,1,enchanting_table
+64,3,Bookshelf,150,64,bookshelf
+65,3,Lapis Lazuli,20,64,lapis_lazuli
+66,3,Golden Apple,900,64,golden_apple
+67,3,Potion of Healing II,150,1,TRANK_HEILUNG
+68,3,Potion of Strength,200,1,TRANK_STAERKE
+69,3,Potion of Night Vision (long),100,1,TRANK_NACHTSICHT
+70,3,Piston,110,64,piston
+71,3,Sticky Piston,150,64,sticky_piston
+72,3,Observer,60,64,observer
+73,3,Dispenser,80,64,dispenser
+74,3,Slimeball,30,64,slime_ball
+75,3,TNT,200,64,tnt
+76,3,Cobweb,20,64,cobweb
+77,3,Magma Block,20,64,magma_block
+78,3,Piston Crusher Kit,450,1,SET:sticky_piston:2;redstone:8;observer:1;lever:1
+79,3,Arrow Tower Kit,350,1,SET:dispenser:1;arrow:64;redstone:8;observer:1
+101,5,Bottle o' Enchanting,50,64,experience_bottle
+102,5,Ender Pearl,100,16,ender_pearl
 103,5,Totem of Undying,1500,1,totem_of_undying
-104,5,Elytra,3000,1,elytra
-105,5,Iron Golem Egg,800,1,iron_golem_spawn_egg
+104,5,Elytra,5000,1,elytra
+105,5,Iron Golem Egg,2000,1,iron_golem_spawn_egg
 120,7,Netherite Scrap,600,64,netherite_scrap
-121,7,Netherite Upgrade Template,500,1,netherite_upgrade_smithing_template
-124,7,Trident,1000,1,trident
-125,7,Beacon,4000,1,beacon
+121,7,Netherite Upgrade Template,1500,1,netherite_upgrade_smithing_template
+124,7,Trident,2000,1,trident
+125,7,Beacon,8000,1,beacon
