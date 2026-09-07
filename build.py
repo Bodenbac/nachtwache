@@ -18,14 +18,14 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 34                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 35                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
 ZWERG_TAKT = 300                        # Ticks je Schlag auf Stufe 0 (15 s)
 ZWERG_STUFE_TICKS = 20                  # je Upgrade eine Sekunde schneller
 ZWERG_MAX = 12                          # 12 Upgrades -> 3 s
-ZWERG_YAW_VERSATZ = 180                # Display-Konvention: Gesicht = Modell-Nord; 0 wenn er falsch herum steht
+ZWERG_YAW_VERSATZ = 0                  # Blickrichtungs-Versatz (Luis 07.09.2026: mit 180 schaute er weg vom Quell)
 ZWERG_UPGRADE_PREIS = 250               # mal (Stufe + 1)
 def zwerg_item(lvl):
     """Der Zwerg als Gegenstand (Spawn-Ei, das einen Marker mit Stufen-Tag setzt)."""
@@ -289,6 +289,7 @@ fn("migration", [
     f"execute unless score #phase nw.phase matches 1.. run scoreboard players set #phase nw.phase 1",
     f"setblock {QUELL[0]} {QUELL[1]} {QUELL[2]} minecraft:air", f"function {NS}:quell/setzen",
     f"function {NS}:sammler/kaufmenue",
+    f"scoreboard players set #zoff nw.status {ZWERG_YAW_VERSATZ}",
     f"execute as @e[type=marker,tag=nw.zwerg] at @s run function {NS}:zwerg/zeichnen",
     f"clear @a minecraft:echo_shard[custom_data~{{nw_splitter:1b}}]", f"clear @a minecraft:prismarine_crystals[custom_data~{{nw_buendel:1b}}]",
     "kill @e[type=item,x=-6,y=60,z=-10,dx=12,dy=10,dz=8]",
@@ -1577,6 +1578,7 @@ fn("admin/night_trigger", [
 fn("admin/fraggle_trigger", [
     "scoreboard players operation #zoff nw.status = @s fraggle", "scoreboard players set @s fraggle 0", "scoreboard players enable @s fraggle",
     "execute if score #zoff nw.status matches 1 run scoreboard players set #zoff nw.status 0",
+    f"scoreboard players set #zoff nw.status {ZWERG_YAW_VERSATZ}",
     f"execute as @e[type=marker,tag=nw.zwerg] at @s run function {NS}:zwerg/zeichnen",
     "tellraw @s " + J([txt("[Nightwatch] Fraggle turned by ", "yellow"), {"score": {"name": "#zoff", "objective": "nw.status"}, "color": "yellow"}, txt(" degrees (all dwarves redrawn).", "yellow")]),
 ])
