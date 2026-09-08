@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 44                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 45                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -73,7 +73,7 @@ def zwerg_item(lvl, bp=0):
     return (f'minecraft:zombie_spawn_egg[{modell}custom_name={{text:"Fraggle",color:"aqua",italic:false}},custom_data={{nw_zwerg:1b,lvl:{lvl},bp:{bp}}},'
             f'entity_data={{id:"minecraft:marker",Tags:["nw.zwerg_neu","nw.lvl{lvl}","nw.bp{bp}"]}},lore={lore}]')
 
-QUELL = (0, 64, 0)                     # der One Block
+QUELL = (0, 64, -7)                    # Start-Generator, mittig auf der Insel
 # Sieben Stufen des Quells: (Block, Farbe, Abbauten bis zur naechsten Stufe, Splitter je Abbau, Mob-Chance, Mob)
 # Alle Bloecke brauchen eine Spitzhacke, um schnell zu gehen (Haerte 1.5 bis 1.8), Drops werden weggeraeumt.
 STUFEN = [
@@ -96,21 +96,28 @@ QUELL_MOBS = False                       # Luis 07.09.2026: kein Mob aus dem Que
 MOB_CHANCE = {i + 1: (st[4] if QUELL_MOBS else 0.0) for i, st in enumerate(STUFEN)}
 MOB_AUS_QUELL = {i + 1: st[5] for i, st in enumerate(STUFEN)}
 
-INSEL_RADIUS = 7                       # Startinsel
+# Startinsel: laengliche Ellipse, Laengsachse zeigt zur Bruecke (Luis 08.09.2026).
+# Bruecke trifft die Insel bei z = INSEL_ZM + INSEL_RZ, der Beacon liegt 25 Bloecke dahinter.
+INSEL_RX = 9                           # halbe Breite (x)
+INSEL_RZ = 15                          # halbe Laenge (z)
+INSEL_ZM = -7                          # Mittelpunkt der Insel in z
 GEGNER_Z = 72                          # Mittelpunkt Gegnerinsel (x = 0)
 GEGNER_RADIUS = 11
 STRASSE_Z = (9, 59)                    # von .. bis (z), Breite 3 (x -1..1). Davor und dahinter feste Stege der Inseln
-STRASSENMUND = (2.5, 64, 6.5)          # wohin festhaengende oder gefallene Gegner gesetzt werden (Inselrand)
+STRASSENMUND = (0.5, 64, 6.5)          # wohin festhaengende oder gefallene Gegner gesetzt werden (Inselrand)
 BODEN_Y = 63                           # Oberkante Boden, gelaufen wird auf 64
 
-SAMMLER_POS = (0.5, 64, -6.5)
-RAMPE = (3, 64, -6)                    # Trichter der Lieferrampe
-SPAWN = (0, 64, 3)
-BEACON = (0, 64, 4)                    # roter Beacon: das Herz der Insel, die Gegner laufen darauf zu
+LADEN = (-6, 64, -10)                  # Mitte des Tresens; der Laden steht seitlich, nicht im Weg Bruecke -> Beacon
+KAUF_A = (LADEN[0] - 1, LADEN[1], LADEN[2])   # Truhenhaelfte mit den Feldern 0..26 (oben im Fenster) -> type=right bei facing=south
+KAUF_B = (LADEN[0], LADEN[1], LADEN[2])       # Truhenhaelfte mit den Feldern 27..53 (unten)
+VERKAUF = (LADEN[0] + 1, LADEN[1], LADEN[2])  # Fass
+SAMMLER_POS = (LADEN[0] + 0.5, LADEN[1], LADEN[2] - 0.5)   # direkt hinter der rechten Truhenhaelfte, Wand im Ruecken
+SPAWN = (0, 64, -10)
+BEACON = (0, 64, -17)                  # roter Beacon: 25 Bloecke vom Brueckenende, am hinteren Ende der Insel
 LEBEN_START, LEBEN_MAX, LEBEN_PREIS = 10, 20, 1500
 DURCHBRUCH_TICKS = 100                 # 5 s ungestoert am Beacon, dann kostet der Gegner ein Leben
 DURCHBRUCH_RADIUS = 3.5
-TRUHE = (2, 64, 2)
+TRUHE = (2, 64, 2)                     # alte Starttruhe, nur noch fuer die Migration
 
 # Uhr: die Spielzeit laeuft mit ZAEHLER/NENNER Zeiteinheiten je Tick (Akkumulator, dadurch fluessig). Tag = 13500 Einheiten.
 TAG_ZAEHLER, TAG_NENNER = 45, 32       # 1,40625 je Tick -> Tag genau 8 Minuten (Luis, 07.09.2026)
@@ -267,6 +274,16 @@ def read_csv(name):
                 rows.append(line)
     return list(csv.DictReader(rows))
 
+def ellipse_fills(cx, cz, rx, rz, y1, y2, block):
+    """fill-Befehle fuer eine Ellipsenscheibe (Zeile fuer Zeile, Laengsachse z)."""
+    out = []
+    for z in range(-rz, rz + 1):
+        w = 1.0 - (z * z) / float(rz * rz)
+        if w <= 0: continue
+        half = int(rx * math.sqrt(w))
+        out.append(f"fill {cx-half} {y1} {cz+z} {cx+half} {y2} {cz+z} {block}")
+    return out
+
 def kreis_fills(cx, cz, r, y1, y2, block):
     """fill-Befehle fuer eine Kreisscheibe (Zeile fuer Zeile)."""
     out = []
@@ -343,7 +360,30 @@ fn("migration", [
     "fill -1 63 4 1 63 6 minecraft:grass_block replace minecraft:water",
     f"clear @a minecraft:echo_shard[custom_data~{{nw_splitter:1b}}]", f"clear @a minecraft:prismarine_crystals[custom_data~{{nw_buendel:1b}}]",
     "kill @e[type=item,x=-6,y=60,z=-10,dx=12,dy=10,dz=8]",
-    "tellraw @a " + J([txt("[Nightwatch] Stall and Collector updated to the current version.", "yellow")]),
+    # ---- v0.13: Insel umgebaut. Alter Stand, alter Beacon, alte Rampe, alter Baum und der alte Quell weg,
+    # danach baut welt/startinsel die neue Ellipse. Alles, was Spieler gebaut haben, bleibt stehen.
+    "fill -3 64 -9 3 68 -3 minecraft:air",                                   # alter Stand samt Rampe (x -2..2, z -8..-4)
+    "fill -3 63 -9 3 63 -3 minecraft:grass_block replace minecraft:polished_deepslate",
+    "fill -2 64 2 2 67 6 minecraft:air",                                     # alter Beacon (0,64,4) samt Sockel
+    "fill -2 63 2 2 63 6 minecraft:grass_block replace minecraft:iron_block",
+    "fill -6 64 -3 -2 71 1 minecraft:air",                                   # alter verkohlter Baum bei (-4,*,-1)
+    "setblock 5 64 3 minecraft:air", "setblock -5 64 4 minecraft:air",       # alte Laternen
+    'kill @e[type=item,x=-8,y=60,z=-12,dx=16,dy=14,dz=20,nbt={Item:{id:"minecraft:iron_block"}}]',
+    'kill @e[type=item,x=-8,y=60,z=-12,dx=16,dy=14,dz=20,nbt={Item:{id:"minecraft:beacon"}}]',
+    'kill @e[type=item,x=-8,y=60,z=-12,dx=16,dy=14,dz=20,nbt={Item:{id:"minecraft:deepslate_bricks"}}]',
+    'kill @e[type=item,x=-8,y=60,z=-12,dx=16,dy=14,dz=20,nbt={Item:{id:"minecraft:hopper"}}]',
+    # der Start-Generator zieht in die Inselmitte
+    "kill @e[type=marker,tag=nw.gen,x=0,y=64,z=0,dx=0,dy=0,dz=0]",
+    "kill @e[type=marker,tag=nw.gen_neu,x=0,y=64,z=0,dx=0,dy=0,dz=0]",
+    "kill @e[type=block_display,tag=nw.gen_block,x=-1,y=63,z=-1,dx=2,dy=2,dz=2]",
+    "setblock 0 64 0 minecraft:air",
+    f"function {NS}:welt/startinsel",
+    f"function {NS}:welt/stand",
+    f"function {NS}:sammler/erscheinen", f"function {NS}:sammler/kaufmenue",
+    f"function {NS}:beacon/aufbauen",
+    "kill @e[tag=nw.herz]", "kill @e[tag=nw.herz_text]",
+    f"spawnpoint @a {SPAWN[0]} {SPAWN[1]} {SPAWN[2]}", f"setworldspawn {SPAWN[0]} {SPAWN[1]} {SPAWN[2]}",
+    "tellraw @a " + J([txt("[Nightwatch] The island has been rebuilt: longer, the beacon at the far end, the stall off to the side.", "yellow")]),
 ])
 
 # ---- init: Welt bauen -------------------------------------------------------
@@ -364,7 +404,6 @@ init = [
     f"forceload add -20 -20 20 100",
     f"function {NS}:welt/startinsel", f"function {NS}:welt/stand", f"function {NS}:welt/gegnerinsel",
     f"function {NS}:quell/setzen",
-    f"setblock {RAMPE[0]} {RAMPE[1]} {RAMPE[2]} minecraft:hopper[facing=down]",
     f"function {NS}:sammler/erscheinen",
     f"spawnpoint @a {SPAWN[0]} {SPAWN[1]} {SPAWN[2]}",
     f"setworldspawn {SPAWN[0]} {SPAWN[1]} {SPAWN[2]}",
@@ -374,51 +413,54 @@ init = [
 ]
 fn("init", init)
 
-# Startinsel
-R = INSEL_RADIUS
+# Startinsel: laengliche Ellipse, Bruecke am +z-Ende, Beacon am -z-Ende, Generator in der Mitte
+RX, RZ, ZM = INSEL_RX, INSEL_RZ, INSEL_ZM
 start = []
-start += kreis_fills(0, 0, R, BODEN_Y, BODEN_Y, "minecraft:grass_block")
-start += kreis_fills(0, 0, R, BODEN_Y - 3, BODEN_Y - 1, "minecraft:dirt")
-start += kreis_fills(0, 0, R - 1, BODEN_Y - 6, BODEN_Y - 4, "minecraft:deepslate")
-start += kreis_fills(0, 0, R - 3, BODEN_Y - 8, BODEN_Y - 7, "minecraft:deepslate")
-start += kreis_fills(0, 0, R - 5, BODEN_Y - 9, BODEN_Y - 9, "minecraft:deepslate")
+start += ellipse_fills(0, ZM, RX, RZ, BODEN_Y, BODEN_Y, "minecraft:grass_block")
+start += ellipse_fills(0, ZM, RX, RZ, BODEN_Y - 3, BODEN_Y - 1, "minecraft:dirt")
+start += ellipse_fills(0, ZM, RX - 1, RZ - 1, BODEN_Y - 6, BODEN_Y - 4, "minecraft:deepslate")
+start += ellipse_fills(0, ZM, RX - 3, RZ - 4, BODEN_Y - 8, BODEN_Y - 7, "minecraft:deepslate")
+start += ellipse_fills(0, ZM, RX - 5, RZ - 8, BODEN_Y - 9, BODEN_Y - 9, "minecraft:deepslate")
 # Steg zur Strasse (Teil der Insel, luecken- und gelaenderlos)
 start += [
-    f"fill -1 {BODEN_Y} 6 1 {BODEN_Y} 8 minecraft:polished_deepslate", f"fill -1 {BODEN_Y+1} 6 1 {BODEN_Y+2} 8 minecraft:air",
-    # verkohlter Baum
-    "fill -4 64 -1 -4 68 -1 minecraft:stripped_dark_oak_log",
-    "setblock -4 69 -1 minecraft:stripped_dark_oak_log", "setblock -5 68 -1 minecraft:stripped_dark_oak_log[axis=x]",
-    "setblock -3 67 -1 minecraft:stripped_dark_oak_log[axis=x]", "setblock -3 67 0 minecraft:stripped_dark_oak_log[axis=z]",
-    "setblock -4 70 -1 minecraft:dark_oak_leaves[persistent=true]",
+    f"fill -1 {BODEN_Y} {ZM+RZ-2} 1 {BODEN_Y} {ZM+RZ} minecraft:polished_deepslate",
+    f"fill -1 {BODEN_Y+1} {ZM+RZ-2} 1 {BODEN_Y+2} {ZM+RZ} minecraft:air",
+    # verkohlter Baum, seitlich am Beaconende
+    "fill 5 64 -14 5 68 -14 minecraft:stripped_dark_oak_log",
+    "setblock 5 69 -14 minecraft:stripped_dark_oak_log", "setblock 4 68 -14 minecraft:stripped_dark_oak_log[axis=x]",
+    "setblock 6 67 -14 minecraft:stripped_dark_oak_log[axis=x]", "setblock 6 67 -13 minecraft:stripped_dark_oak_log[axis=z]",
+    "setblock 5 70 -14 minecraft:dark_oak_leaves[persistent=true]",
     # Herz der Insel: roter Beacon auf einem Eisensockel
     f"fill {BEACON[0]-1} {BEACON[1]-1} {BEACON[2]-1} {BEACON[0]+1} {BEACON[1]-1} {BEACON[2]+1} minecraft:iron_block",
     f"setblock {BEACON[0]} {BEACON[1]} {BEACON[2]} minecraft:beacon",
     f"setblock {BEACON[0]} {BEACON[1]+1} {BEACON[2]} minecraft:red_stained_glass",
-    # Lichter
-    "setblock 5 64 3 minecraft:soul_lantern", "setblock -5 64 4 minecraft:soul_lantern", "setblock 3 64 -6 minecraft:air",
+    # Lichter entlang des Wegs
+    "setblock 5 64 2 minecraft:soul_lantern", "setblock -5 64 -2 minecraft:soul_lantern",
+    "setblock 4 64 -19 minecraft:soul_lantern", "setblock -4 64 -19 minecraft:soul_lantern",
 ]
 fn("welt/startinsel", start)
 
-# Stand des Sammlers (Booth): x -2..2, z -8..-4
+# Stand des Sammlers: 3 Bloecke Front (Doppeltruhe + Fass), der Sammler direkt dahinter, Wand im Ruecken,
+# Dach direkt darueber. Bauwerk x LADEN[0]-2 .. +2, z LADEN[2]-2 .. LADEN[2], y 63..66 (Luis 08.09.2026).
+LX, LY, LZ = LADEN
+SCHUTT = ('minecraft:polished_deepslate', 'minecraft:deepslate_bricks', 'minecraft:crimson_slab',
+          'minecraft:soul_lantern', 'minecraft:crimson_wall_sign', 'minecraft:chest', 'minecraft:barrel')
 stand = [
-    "fill -2 63 -8 2 63 -4 minecraft:polished_deepslate",
-    "fill -2 64 -8 2 66 -8 minecraft:deepslate_bricks",                 # Rueckwand
-    "fill -2 64 -7 -2 66 -5 minecraft:deepslate_bricks", "fill 2 64 -7 2 66 -5 minecraft:deepslate_bricks",  # Seiten
-    "fill -1 64 -7 1 66 -6 minecraft:air", "fill -1 65 -5 1 66 -5 minecraft:air",   # innen frei, Tresen (Truhe, Fass) bleibt
-    "fill -2 67 -8 2 67 -4 minecraft:crimson_slab[type=bottom]",         # Dach
-    "fill -1 67 -4 1 67 -4 minecraft:crimson_stairs[facing=south,half=top]",
-    "setblock -2 67 -4 minecraft:crimson_planks", "setblock 2 67 -4 minecraft:crimson_planks",   # volle Bloecke, damit die Laternen haengen koennen
-    "setblock -2 66 -4 minecraft:soul_lantern[hanging=true]", "setblock 2 66 -4 minecraft:soul_lantern[hanging=true]",
-    "setblock -1 66 -8 minecraft:redstone_torch[lit=true]", "setblock 1 66 -8 minecraft:redstone_torch[lit=true]",
-    'setblock 0 66 -7 minecraft:crimson_wall_sign[facing=south]{front_text:{messages:["",{text:"THE",color:"dark_red"},{text:"COLLECTOR",color:"dark_red"},""]}}',
-    "setblock 0 64 -8 minecraft:barrel[facing=up]", "setblock -1 64 -7 minecraft:candle[candles=3,lit=true]",
-    # Lieferrampe: Rahmen um den Trichter (der Trichter selbst wird nur ersetzt, wenn er fehlt)
-    f"setblock {RAMPE[0]} {RAMPE[1]+1} {RAMPE[2]} minecraft:air",
-    f"setblock {RAMPE[0]+1} {RAMPE[1]} {RAMPE[2]} minecraft:crimson_planks", f"setblock {RAMPE[0]+1} {RAMPE[1]+1} {RAMPE[2]} minecraft:soul_lantern",
-    f'setblock {RAMPE[0]+1} {RAMPE[1]} {RAMPE[2]+1} minecraft:crimson_wall_sign[facing=south]{{front_text:{{messages:["",{{text:"Drop-off",color:"dark_red"}},{{text:"sells at 80%",color:"gray"}},""]}}}}',
-    f"execute unless block {RAMPE[0]} {RAMPE[1]} {RAMPE[2]} minecraft:hopper run setblock {RAMPE[0]} {RAMPE[1]} {RAMPE[2]} minecraft:hopper[facing=down]",
-    f"setblock {RAMPE[0]} {RAMPE[1]-1} {RAMPE[2]} minecraft:deepslate_bricks",
+    f"fill {LX-2} {BODEN_Y} {LZ-2} {LX+2} {BODEN_Y} {LZ} minecraft:polished_deepslate",          # Boden
+    f"fill {LX-2} 64 {LZ-2} {LX+2} 65 {LZ-2} minecraft:deepslate_bricks",                        # Rueckwand
+    f"fill {LX-2} 64 {LZ-1} {LX-2} 65 {LZ} minecraft:deepslate_bricks",                          # Seite links
+    f"fill {LX+2} 64 {LZ-1} {LX+2} 65 {LZ} minecraft:deepslate_bricks",                          # Seite rechts
+    f"fill {LX-1} 64 {LZ-1} {LX+1} 65 {LZ-1} minecraft:air",                                     # ein Block Platz fuer den Sammler
+    f"fill {LX-1} 65 {LZ} {LX+1} 65 {LZ} minecraft:air",                                         # Front ueber dem Tresen offen
+    f"fill {LX-2} 66 {LZ-2} {LX+2} 66 {LZ} minecraft:crimson_slab[type=bottom]",                 # Dach
+    f"execute unless block {LX-2} 67 {LZ} minecraft:soul_lantern run setblock {LX-2} 67 {LZ} minecraft:soul_lantern",
+    f"execute unless block {LX+2} 67 {LZ} minecraft:soul_lantern run setblock {LX+2} 67 {LZ} minecraft:soul_lantern",
+    f'execute unless block {LX-2} 65 {LZ+1} minecraft:crimson_wall_sign run setblock {LX-2} 65 {LZ+1} '
+    f'minecraft:crimson_wall_sign[facing=south]{{front_text:{{messages:["",{{text:"THE",color:"dark_red"}},{{text:"COLLECTOR",color:"dark_red"}},""]}}}}',
+    f"function {NS}:sammler/tresen",
 ]
+# Der ganze Stand ist unzerstoerbar: was abgeschlagen wird, ist zwei Ticks spaeter wieder da und das Item verschwindet
+stand += [f'kill @e[type=item,x={LX-2},y={BODEN_Y-1},z={LZ-2},dx=5,dy=6,dz=4,nbt={{Item:{{id:"{b}"}}}}]' for b in SCHUTT]
 fn("welt/stand", stand)
 
 # Gegnerinsel
@@ -818,7 +860,6 @@ fn("tick", [
     f"execute as @a[tag=nw.admin,scores={{endnight=1..}}] run function {NS}:admin/endnight_trigger",
     f"execute as @a[tag=nw.admin,scores={{money=1..}}] run function {NS}:admin/money_trigger",
     f"execute as @a[tag=nw.admin,scores={{money=..-1}}] run function {NS}:admin/money_trigger",
-    f"execute if score #m20 nw.tmp matches 0 run function {NS}:sammler/rampe",
     f"execute if score #m20 nw.tmp matches 0 run function {NS}:schutz/sekunde",
     f"execute if score #m20 nw.tmp matches 10 run function {NS}:anzeige/aktualisieren",
     f"execute if score #m20 nw.tmp matches 15 run function {NS}:uhr/anzeige",
@@ -990,7 +1031,6 @@ fn("hilfe", [
 # Sammler
 # ----------------------------------------------------------------------------
 sx, sy, sz = SAMMLER_POS
-rx, ry, rz = RAMPE
 # Ankaufspreise: preise_abgeleitet.csv (alle Gegenstaende, aus preise.csv plus Spielrezepten, python3 preise_ableiten.py),
 # falls die fehlt nur preise.csv
 preise = read_csv("preise_abgeleitet.csv") if (TAB / "preise_abgeleitet.csv").exists() else read_csv("preise.csv")
@@ -1456,9 +1496,6 @@ fn("decoy/zerbricht", [
 # Kaufen: Klick auf ein Symbol = 1 Stueck, Shift-Klick = max (meist 64). Verkaufen: Ware ins Fass legen
 # (Shift-Klick aus dem Inventar), wird sofort verkauft. Nur Ware aus preise.csv, nie Werkzeug.
 # ----------------------------------------------------------------------------
-KAUF_A = (-1, 64, -5)      # Truhenhaelfte mit den Feldern 0..26 (oben im Fenster)   -> type=right bei facing=south
-KAUF_B = (0, 64, -5)       # Truhenhaelfte mit den Feldern 27..53 (unten)            -> type=left
-VERKAUF = (1, 64, -5)      # Fass
 REITER_SLOTS = 9           # oberste Reihe: Reiter (Starter, Tier 2..7, Books)
 PLATZ_PRO_REITER = 45      # fuenf Reihen Ware je Reiter
 
@@ -1669,8 +1706,8 @@ for r in angebot:
     pred = f"*[custom_data~{{nw_menu:{rid}}}]"
     fn(f"sammler/kauf/{rid}", [
         # Wer hat es? (Cursor oder Inventar)
-        f"execute as @a[x=-1,y=64,z=-5,distance=..8] store result score @s nw.tmp run clear @s {pred} 0",
-        f"execute as @a[x=-1,y=64,z=-5,distance=..8,scores={{nw.tmp=1..}}] run function {NS}:sammler/kauf_abwickeln/{rid}",
+        f"execute as @a[x={KAUF_A[0]},y={KAUF_A[1]},z={KAUF_A[2]},distance=..8] store result score @s nw.tmp run clear @s {pred} 0",
+        f"execute as @a[x={KAUF_A[0]},y={KAUF_A[1]},z={KAUF_A[2]},distance=..8,scores={{nw.tmp=1..}}] run function {NS}:sammler/kauf_abwickeln/{rid}",
         f"function {NS}:sammler/kaufmenue",
     ])
     if r["item"] == "KONTRAKT":
@@ -1725,7 +1762,7 @@ for r in angebot:
     ])
 fn("sammler/geben", ["$give @s $(item) $(n)"])
 
-# Verkaufen: Fass am Tresen, alle 5 Ticks; Lieferrampe (Trichter) jede Sekunde zu 80 Prozent
+# Verkaufen: Fass am Tresen, alle 5 Ticks (die Lieferrampe ist seit v0.13 raus, Luis: wird nicht benutzt)
 # Preis je Gegenstand als eigene Funktion preis/<item>: Fach lesen, Namensraum abschneiden, Funktion mit dem Namen aufrufen.
 for r in preise:
     fn(f"preis/{r['item']}", [f"scoreboard players set #w nw.tmp2 {int(r['wert'])}"])
@@ -1751,7 +1788,6 @@ def verkauf_funktionen(name, pos, slots, prozent):
         f"title @a[distance=..12] actionbar {J([txt('Sold: +', 'gold'), {'score': {'name': '#gain', 'objective': 'nw.tmp'}, 'color': 'gold'}, txt(' ', 'gold'), coin()])}",
     ])
 verkauf_funktionen("verkauf", VERKAUF, 27, 100)
-verkauf_funktionen("rampe", RAMPE, 5, 80)
 
 # ----------------------------------------------------------------------------
 # Uhr
@@ -2162,13 +2198,13 @@ fn("schutz/tick", [
     # Gegnerinsel und Strasse: jeden Tick zuruecksetzen, nichts darf abgebaut oder gebaut werden
     "scoreboard players operation #m2 nw.tmp2 = #tick nw.tick", "scoreboard players operation #m2 nw.tmp2 %= #2 nw.const",
     f"execute if score #m2 nw.tmp2 matches 0 run function {NS}:welt/gegnerinsel",
+    f"function {NS}:welt/stand",
     f"execute if score #m2 nw.tmp2 matches 1 if score #status nw.status matches 1 run function {NS}:strasse/bauen",
     f"execute if score #m2 nw.tmp2 matches 1 if score #status nw.status matches 0 run function {NS}:strasse/entfernen",
     f"kill @e[type=item,x={-GEGNER_RADIUS-2},y={BODEN_Y-8},z={GEGNER_Z-GEGNER_RADIUS-1},dx={2*GEGNER_RADIUS+4},dy=25,dz={2*GEGNER_RADIUS+2}]",
     f"kill @e[type=item,x=-4,y={BODEN_Y-1},z={STRASSE_Z[0]},dx=8,dy=6,dz={STRASSE_Z[1]-STRASSE_Z[0]}]",
 ])
 fn("schutz/sekunde", [
-    f"function {NS}:welt/stand",
     *[f"tag @a[name={n}] add nw.admin" for n in ADMINS],
     "scoreboard players enable @a[tag=nw.admin] reset", "scoreboard players enable @a[tag=nw.admin] yes", "scoreboard players enable @a[tag=nw.admin] night", "scoreboard players enable @a[tag=nw.admin] boss", "scoreboard players enable @a[tag=nw.admin] fraggle", "scoreboard players enable @a[tag=nw.admin] endnight", "scoreboard players enable @a[tag=nw.admin] money",
     f"function {NS}:laterne/sekunde",
@@ -2188,7 +2224,6 @@ fn("schutz/sekunde", [
     "execute if score #cv nw.tmp2 matches 2.. run kill @e[tag=nw.villager,limit=1,sort=arbitrary]",
     "execute store result score #ci nw.tmp2 if entity @e[tag=nw.sammler]",
     "execute if score #ci nw.tmp2 matches 2.. run kill @e[tag=nw.sammler,limit=1,sort=arbitrary]",
-    f"function {NS}:sammler/tresen",
     "execute if score #tick nw.tick matches 6000.. run scoreboard players operation #m6000 nw.tmp2 = #tick nw.tick",
     "scoreboard players operation #m6000 nw.tmp2 %= #6000 nw.const",
     "execute if score #m6000 nw.tmp2 matches 0..19 unless score #modus nw.status matches 3 run weather thunder 1000000",
