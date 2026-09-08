@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 54                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 55                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -1571,7 +1571,8 @@ LORE_DECOY_L = ['{text:"Right-click: puts up a decoy where you stand.",color:"gr
                 '{text:"Enemies go for it instead of you until it breaks.",color:"gray",italic:false}']
 MODELL_SKULL = 'item_model="nachtwache:skull_item",' if RESSOURCENPAKET else ""
 LORE_SKULL_L = ['{text:"Right-click: three enemies drop where they stand.",color:"gray",italic:false}',
-                '{text:"Works as often as you can pay for it.",color:"gray",italic:false}']
+                '{text:"Works as often as you can pay for it.",color:"gray",italic:false}',
+                '{text:"Only at night.",color:"dark_gray",italic:false}']
 KONSUM = 'consumable={consume_seconds:0.6f,animation:"drink",sound:"minecraft:block.amethyst_block.chime",has_consume_particles:false},max_stack_size=16'
 
 w(f"{NS}/advancement/focus_benutzt.json", {"criteria": {"benutzt": {"trigger": "minecraft:consume_item", "conditions": {
@@ -1585,13 +1586,23 @@ w(f"{NS}/advancement/skull_benutzt.json", {"criteria": {"benutzt": {"trigger": "
     "rewards": {"function": f"{NS}:skull/benutzen"}})
 
 # Reaper's Skull: toetet drei zufaellige Gegner der Welle sofort. Bosse sind ausgenommen, sonst waere er zu stark.
+SKULL_ITEM = ("minecraft:echo_shard[" + MODELL_SKULL +
+              'custom_name={text:"Reaper Skull",color:"dark_red",italic:false},custom_data={nw_skull:1b},'
+              + KONSUM + ',lore=[' + ",".join(LORE_SKULL_L) + ']]')
 fn("skull/benutzen", [
     f"advancement revoke @s only {NS}:skull_benutzt",
+    # Nur nachts (Luis 08.09.2026): am Tag passiert nichts und der Schaedel kommt zurueck ins Inventar
+    f"execute unless score #status nw.status matches 1 run return run function {NS}:skull/zu_hell",
     "execute store result score #opfer nw.tmp if entity @e[tag=nw.welle,tag=!nw.boss]",
     "execute if score #opfer nw.tmp matches 0 run return run tellraw @s " + J([txt("The skull finds nothing to reap.", "gray", italic=True)]),
     f"execute as @e[tag=nw.welle,tag=!nw.boss,sort=random,limit=3] at @s run function {NS}:skull/opfer",
     "playsound minecraft:entity.wither.spawn master @a ~ ~ ~ 0.5 1.6",
     "tellraw @a " + J([txt("The skull opens its jaws. Three of them fall.", "dark_red")]),
+])
+fn("skull/zu_hell", [
+    f"give @s {SKULL_ITEM}",
+    "tellraw @s " + J([txt("[Reaper Skull] ", "dark_red"), txt("It sleeps by daylight. Wake it when the night comes.", "gray")]),
+    "playsound minecraft:entity.villager.no neutral @s ~ ~ ~ 1 0.7",
 ])
 fn("skull/opfer", [
     "particle minecraft:soul ~ ~1 ~ 0.3 0.6 0.3 0.05 40",
@@ -1690,7 +1701,7 @@ def item_spec(spec):
     if spec == "FOCUS":
         return "minecraft:amethyst_shard", MODELL_FOCUS + 'custom_name={text:"Source Focus",color:"light_purple",italic:false},custom_data={nw_focus:1b},' + KONSUM + ',lore=[' + ",".join(LORE_FOCUS_L) + ']', 1
     if spec == "SKULL":
-        return "minecraft:echo_shard", MODELL_SKULL + 'custom_name={text:"Reaper Skull",color:"dark_red",italic:false},custom_data={nw_skull:1b},' + KONSUM + ',lore=[' + ",".join(LORE_SKULL_L) + ']', 1
+        return SKULL_ITEM[:SKULL_ITEM.index("[")], SKULL_ITEM[SKULL_ITEM.index("[") + 1:-1], 1
     if spec == "DECOY":
         return "minecraft:carved_pumpkin", MODELL_DECOY + 'custom_name={text:"Decoy Totem",color:"gold",italic:false},custom_data={nw_decoy:1b},' + KONSUM + ',lore=[' + ",".join(LORE_DECOY_L) + ']', 1
     if spec == "LATERNE":
