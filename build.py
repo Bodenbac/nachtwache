@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 48                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 49                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -1632,6 +1632,7 @@ def menue_item(r):
 KATEGORIEN = [
     ("BLOCKS",   "Building Blocks",  "minecraft:stone"),
     ("MINERALS", "Minerals & Drops", "minecraft:iron_ingot"),
+    ("MOB",      "Mob Drops",        "minecraft:rotten_flesh"),
     ("FOOD",     "Food & Farming",   "minecraft:bread"),
     ("TOOLS",    "Tools & Redstone", "minecraft:redstone"),
     ("BREW",     "Brewing & Magic",  "minecraft:brewing_stand"),

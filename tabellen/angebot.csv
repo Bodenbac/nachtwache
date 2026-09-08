@@ -2,7 +2,7 @@
 # max = wie viel ein Shift-Klick kauft (Standard 64, bei Werkzeug und Sets 1).
 # item: normale Item-ID, Kurzname aus SONDERITEMS (Tranke, Buecher) oder SET:<a:n;b:n> fuer eine gefuellte Truhe.
 # id muss eindeutig und stabil bleiben.
-# kat = Reiter im Laden: BLOCKS, MINERALS, FOOD, TOOLS, BREW, BOOKS, SPECIAL
+# kat = Reiter im Laden: BLOCKS, MINERALS, MOB, FOOD, TOOLS, BREW, BOOKS, SPECIAL
 id,stufe,name,preis,max,item,kat
 1,1,Dirt,2,64,dirt,BLOCKS
 2,1,Cobblestone,2,64,cobblestone,BLOCKS
@@ -22,7 +22,7 @@ id,stufe,name,preis,max,item,kat
 25,1,Stone Axe,30,1,stone_axe,TOOLS
 26,1,Stone Shovel,20,1,stone_shovel,TOOLS
 29,1,Iron Ingot,50,64,iron_ingot,MINERALS
-141,1,Bone,35,64,bone,MINERALS
+141,1,Bone,35,64,bone,MOB
 30,1,Collector Lantern,300,1,LATERNE,SPECIAL
 31,1,Bounty Contract,150,1,KONTRAKT,SPECIAL
 62,1,Obsidian,500,64,obsidian,BLOCKS
@@ -30,11 +30,11 @@ id,stufe,name,preis,max,item,kat
 49,1,Fraggle the Dwarf,10000,1,ZWERG,SPECIAL
 130,1,Coal,15,64,coal,MINERALS
 131,1,Diamond,1000,64,diamond,MINERALS
-40,2,Arrow,3,64,arrow,TOOLS
+40,1,Arrow,20,64,arrow,MOB
 42,2,Redstone,10,64,redstone,TOOLS
 45,2,Steak,100,64,cooked_beef,FOOD
-46,2,Leather,30,64,leather,MINERALS
-47,2,String,10,64,string,MINERALS
+46,4,Leather,30,64,leather,MOB
+47,2,String,10,64,string,MOB
 61,3,Gold Ingot,100,64,gold_ingot,MINERALS
 63,3,Enchanting Table,4000,1,enchanting_table,BREW
 64,3,Bookshelf,150,64,bookshelf,BLOCKS
@@ -43,12 +43,12 @@ id,stufe,name,preis,max,item,kat
 68,3,Potion of Strength,200,1,TRANK_STAERKE,BREW
 69,3,Potion of Night Vision (long),100,1,TRANK_NACHTSICHT,BREW
 72,3,Observer,60,64,observer,TOOLS
-74,3,Slimeball,30,64,slime_ball,MINERALS
+74,3,Slimeball,30,64,slime_ball,MOB
 75,3,TNT,200,64,tnt,TOOLS
-76,3,Cobweb,20,64,cobweb,BLOCKS
+76,2,Cobweb,20,64,cobweb,MOB
 77,3,Magma Block,20,64,magma_block,BLOCKS
 101,5,Bottle o' Enchanting,50,64,experience_bottle,BREW
-102,5,Ender Pearl,100,16,ender_pearl,SPECIAL
+102,5,Ender Pearl,100,16,ender_pearl,MOB
 103,5,Totem of Undying,1500,1,totem_of_undying,SPECIAL
 104,5,Elytra,5000,1,elytra,SPECIAL
 105,5,Iron Golem Egg,2000,1,iron_golem_spawn_egg,SPECIAL
@@ -64,7 +64,7 @@ id,stufe,name,preis,max,item,kat
 89,4,Name Tag,200,1,name_tag,TOOLS
 90,4,Saddle,300,1,saddle,TOOLS
 110,6,Ghast Tear,300,64,ghast_tear,BREW
-111,6,Phantom Membrane,150,64,phantom_membrane,MINERALS
+111,6,Phantom Membrane,150,64,phantom_membrane,MOB
 112,6,Shulker Shell,800,64,shulker_shell,MINERALS
 113,6,Dragon's Breath,400,64,dragon_breath,BREW
 114,6,Wither Skeleton Skull,1500,64,wither_skeleton_skull,SPECIAL
@@ -108,3 +108,9 @@ id,stufe,name,preis,max,item,kat
 48,1,Bogi the Archer,7500,1,BOGI,SPECIAL
 34,1,One more Life,1500,1,LEBEN,SPECIAL
 35,3,Source Generator,20000,1,GENERATOR,SPECIAL
+178,1,Rotten Flesh,10,64,rotten_flesh,MOB
+179,2,Spider Eye,25,64,spider_eye,MOB
+180,3,Gunpowder,40,64,gunpowder,MOB
+181,5,Magma Cream,90,64,magma_cream,MOB
+182,6,Wither Skeleton Skull,1200,16,wither_skeleton_skull,MOB
+183,7,Nether Star,6000,1,nether_star,MOB
