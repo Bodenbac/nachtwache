@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 52                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 53                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -217,7 +217,7 @@ MOBS = {
     "husk":            _mob("minecraft:husk", 'CanBreakDoors:1b', helm=False),
     "zombie_leder":    _mob("minecraft:zombie", 'CanBreakDoors:1b,equipment:{head:%s,chest:{id:"minecraft:leather_chestplate",count:1},legs:{id:"minecraft:leather_leggings",count:1}},drop_chances:{head:0.0f,chest:0.0f,legs:0.0f}' % HELM, helm=False),
     "zombie_eisen":    _mob("minecraft:zombie", 'CanBreakDoors:1b,equipment:{head:{id:"minecraft:iron_helmet",count:1},chest:{id:"minecraft:iron_chestplate",count:1},mainhand:{id:"minecraft:iron_sword",count:1}},drop_chances:{head:0.0f,chest:0.0f,mainhand:0.05f}', helm=False),
-    "brutalo":         _mob("minecraft:zombie", 'CanBreakDoors:1b,CustomName:"Brute",attributes:[{id:"minecraft:follow_range",base:100d},{id:"minecraft:max_health",base:40d},{id:"minecraft:attack_damage",base:7d},{id:"minecraft:movement_speed",base:0.27d}],Health:40f,equipment:{head:{id:"minecraft:chainmail_helmet",count:1}},drop_chances:{head:0.0f},active_effects:[{id:"minecraft:strength",duration:-1,amplifier:0,show_particles:0b}]', helm=False, follow=100),
+    "brutalo":         _mob("minecraft:zombie", 'CanBreakDoors:1b,CustomName:"Brute",attributes:[{id:"minecraft:follow_range",base:100d},{id:"minecraft:max_health",base:40d},{id:"minecraft:attack_damage",base:7d},{id:"minecraft:movement_speed",base:0.27d}],Health:40f,equipment:{head:{id:"minecraft:iron_chainmail_helmet",count:1}},drop_chances:{head:0.0f},active_effects:[{id:"minecraft:strength",duration:-1,amplifier:0,show_particles:0b}]', helm=False, follow=100),
     "skeleton":        _mob("minecraft:skeleton", 'equipment:{head:%s,mainhand:{id:"minecraft:bow",count:1}},drop_chances:{head:0.0f,mainhand:0.05f}' % HELM, helm=False),
     "spider":          _mob("minecraft:spider", "", helm=False),
     "creeper":         _mob("minecraft:creeper", "", helm=False),
@@ -317,7 +317,7 @@ OBJEKTIVE = [("nw.mined_gen", "minecraft.mined:minecraft.barrel")] + [
     ("nw.px", "dummy"), ("nw.py", "dummy"), ("nw.pz", "dummy"), ("nw.qx", "dummy"), ("nw.qy", "dummy"), ("nw.qz", "dummy"),
     ("nw.still", "dummy"), ("nw.kills", "dummy"), ("nw.verdient", "dummy"), ("nw.anzeige", "dummy"), ("nw.const", "dummy"),
     ("nw.boss", "dummy"), ("nw.upgrade", "dummy"), ("nw.laterne", "dummy"), ("nw.zwerg", "dummy"), ("nw.zwerg_t", "dummy"), ("nw.zwerg_b", "dummy"), ("nw.zwerg_d", "dummy"), ("nw.leben", "dummy"), ("nw.chan", "dummy"), ("nw.hpv", "dummy"), ("nw.hpp", "dummy"),
-    ("nw.b_sp", "dummy"), ("nw.b_st", "dummy"), ("nw.b_mu", "dummy"), ("nw.b_fl", "dummy"), ("nw.b_inf", "dummy"), ("nw.b_kb", "dummy"), ("nw.b_rg", "dummy"), ("nw.b_t", "dummy"), ("nw.b_nm", "dummy"), ("reset", "trigger"), ("yes", "trigger"), ("night", "trigger"), ("boss", "trigger"), ("fraggle", "trigger"), ("endnight", "trigger"), ("money", "trigger"), ("nw.schlaf", "dummy"), ("nw.fest", "dummy"), ("nw.dmin", "dummy"),
+    ("nw.b_sp", "dummy"), ("nw.b_st", "dummy"), ("nw.b_mu", "dummy"), ("nw.b_fl", "dummy"), ("nw.b_inf", "dummy"), ("nw.b_kb", "dummy"), ("nw.b_rg", "dummy"), ("nw.b_t", "dummy"), ("nw.b_nm", "dummy"), ("nw.ziel", "dummy"), ("reset", "trigger"), ("yes", "trigger"), ("night", "trigger"), ("boss", "trigger"), ("fraggle", "trigger"), ("endnight", "trigger"), ("money", "trigger"), ("nw.schlaf", "dummy"), ("nw.fest", "dummy"), ("nw.dmin", "dummy"),
 ]
 
 # ---- load ------------------------------------------------------------------
@@ -473,6 +473,21 @@ fn("welt/stand", stand)
 # Gegnerinsel
 GZ, GR = GEGNER_Z, GEGNER_RADIUS
 geg = [f"fill -{GR+1} {BODEN_Y+1} {GZ-GR-1} {GR+1} {BODEN_Y+12} {GZ+GR+1} minecraft:air"]   # alles Gebaute darueber weg
+# Wall rundherum, damit niemand von der Gegnerinsel faellt (Luis 08.09.2026). Ring aus den Zellen,
+# die im Kreis mit Radius GR liegen, aber nicht mehr im Kreis mit Radius GR-1.
+def ring_fills(cx, cz, r_aussen, r_innen, y1, y2, block):
+    out = []
+    for z in range(-r_aussen, r_aussen + 1):
+        ha = int(math.sqrt(r_aussen * r_aussen - z * z + 0.25))
+        hi = int(math.sqrt(r_innen * r_innen - z * z + 0.25)) if abs(z) <= r_innen else -1
+        if hi < 0:
+            out.append(f"fill {cx-ha} {y1} {cz+z} {cx+ha} {y2} {cz+z} {block}")
+        else:
+            if ha > hi:
+                out.append(f"fill {cx-ha} {y1} {cz+z} {cx-hi-1} {y2} {cz+z} {block}")
+                out.append(f"fill {cx+hi+1} {y1} {cz+z} {cx+ha} {y2} {cz+z} {block}")
+    return out
+
 geg += kreis_fills(0, GZ, GR, BODEN_Y, BODEN_Y, "minecraft:blackstone")
 geg += kreis_fills(0, GZ, GR, BODEN_Y - 3, BODEN_Y - 1, "minecraft:deepslate")
 geg += kreis_fills(0, GZ, GR - 2, BODEN_Y - 6, BODEN_Y - 4, "minecraft:deepslate")
@@ -493,9 +508,13 @@ geg += [
     f"setblock 8 {BODEN_Y+1} {GZ} minecraft:crying_obsidian", f"setblock -8 {BODEN_Y+1} {GZ} minecraft:crying_obsidian",
     f"setblock 0 {BODEN_Y+1} {GZ+10} minecraft:crying_obsidian",
     f"fill -1 {BODEN_Y} {GZ-GR-1} 1 {BODEN_Y} {GZ-GR+1} minecraft:blackstone",   # Steg zur Strasse (z 60..62)
-    f"fill -1 {BODEN_Y+1} {GZ-GR} 1 {BODEN_Y+1} {GZ-GR} minecraft:air",   # Strassenmuendung frei
+]
+# Wall am Rand, drei Bloecke hoch, damit niemand herunterfaellt oder gedraengt wird
+geg += ring_fills(0, GZ, GR, GR - 1, BODEN_Y + 1, BODEN_Y + 3, "minecraft:polished_blackstone_bricks")
+geg += [
+    f"fill -1 {BODEN_Y+1} {GZ-GR-1} 1 {BODEN_Y+3} {GZ-GR+2} minecraft:air",      # Tor zur Bruecke
     f"setblock -2 {BODEN_Y+1} {GZ-GR} minecraft:crying_obsidian", f"setblock 2 {BODEN_Y+1} {GZ-GR} minecraft:crying_obsidian",
-    f"setblock -2 {BODEN_Y+2} {GZ-GR} minecraft:shroomlight", f"setblock 2 {BODEN_Y+2} {GZ-GR} minecraft:shroomlight",
+    f"setblock -2 {BODEN_Y+4} {GZ-GR+1} minecraft:shroomlight", f"setblock 2 {BODEN_Y+4} {GZ-GR+1} minecraft:shroomlight",
 ]
 fn("welt/gegnerinsel", geg)
 
@@ -508,33 +527,63 @@ fn("welt/gegnerinsel", geg)
 Z1, Z2 = STRASSE_Z
 POSTEN = list(range(Z1 + 2, Z2, 6))          # z-Positionen der Pfosten (x = -2 und 2)
 
+# Die Bruecke ist ein geschlossener Gang: Boden, zwei Waende und ein Dach aus Eisengittern, alle sechs
+# Bloecke ein Bogen aus poliertem Blackstone mit haengenden Seelenlaternen und Ketten darunter.
+# Luis 08.09.2026: auf der Bruecke und der Gegnerinsel darf niemand herunterfallen, gedraengelt oder gesprungen.
+ZE = Z2 + 3                                   # bis an die Gegnerinsel heran, damit der Gang dort dicht anschliesst
+BR_BODEN = "minecraft:polished_blackstone_bricks"
+BR_WAND = "minecraft:deepslate_bricks"
+BR_BOGEN = "minecraft:polished_blackstone_bricks"
+BR_GITTER = "minecraft:iron_bars"
+
 def strasse_bauen():
     out = [
-        f"fill -1 {BODEN_Y} {Z1} 1 {BODEN_Y} {Z2} minecraft:crimson_planks",            # Gehweg
-        f"fill -1 {BODEN_Y+1} {Z1} 1 {BODEN_Y+3} {Z2} minecraft:air",                   # ueber dem Gehweg frei
-        f"fill -3 {BODEN_Y-1} {Z1} 3 {BODEN_Y-1} {Z2} minecraft:air",                   # darunter frei
-        f"fill -3 {BODEN_Y} {Z1} -3 {BODEN_Y+3} {Z2} minecraft:air", f"fill 3 {BODEN_Y} {Z1} 3 {BODEN_Y+3} {Z2} minecraft:air",   # Aussenkanten frei
-        f"fill -2 {BODEN_Y+2} {Z1} -2 {BODEN_Y+3} {Z2} minecraft:air", f"fill 2 {BODEN_Y+2} {Z1} 2 {BODEN_Y+3} {Z2} minecraft:air",  # ueber den Pfosten frei
+        f"fill -1 {BODEN_Y} {Z1} 1 {BODEN_Y} {Z2} {BR_BODEN}",                          # Gehweg
+        f"fill -2 {BODEN_Y} {Z1} -2 {BODEN_Y} {ZE} minecraft:polished_deepslate",       # Randstreifen unter den Waenden
+        f"fill 2 {BODEN_Y} {Z1} 2 {BODEN_Y} {ZE} minecraft:polished_deepslate",
+        f"fill -1 {BODEN_Y-3} {Z1} 1 {BODEN_Y-1} {Z2} minecraft:air",                   # unter der Bruecke frei
+        f"fill -3 {BODEN_Y-3} {Z1} -3 {BODEN_Y+7} {ZE} minecraft:air",                  # Aussenkanten frei
+        f"fill 3 {BODEN_Y-3} {Z1} 3 {BODEN_Y+7} {ZE} minecraft:air",
+        f"fill -2 {BODEN_Y+5} {Z1} 2 {BODEN_Y+7} {ZE} minecraft:air",                   # ueber dem Dach frei
     ]
-    # Pfostenspalten (x = +-2, y 63..64): Luft nur ZWISCHEN den Pfosten
-    grenzen = [Z1 - 1] + POSTEN + [Z2 + 1]
+    grenzen = [Z1 - 1] + POSTEN + [ZE + 1]
     for a, b in zip(grenzen, grenzen[1:]):
         if b - a > 1:
-            for x in (-2, 2):
-                out.append(f"fill {x} {BODEN_Y} {a+1} {x} {BODEN_Y+1} {b-1} minecraft:air")
-    # Pfosten nur setzen, wenn sie fehlen
+            out += [
+                f"fill -2 {BODEN_Y+1} {a+1} -2 {BODEN_Y+3} {b-1} {BR_WAND}",            # Wand links
+                f"fill 2 {BODEN_Y+1} {a+1} 2 {BODEN_Y+3} {b-1} {BR_WAND}",              # Wand rechts
+                f"fill -1 {BODEN_Y+4} {a+1} 1 {BODEN_Y+4} {b-1} {BR_GITTER}",           # Dach aus Gittern
+                f"fill -2 {BODEN_Y+4} {a+1} -2 {BODEN_Y+4} {b-1} {BR_WAND}",
+                f"fill 2 {BODEN_Y+4} {a+1} 2 {BODEN_Y+4} {b-1} {BR_WAND}",
+                f"fill -1 {BODEN_Y+1} {a+1} 1 {BODEN_Y+3} {b-1} minecraft:air",         # Gang frei
+            ]
+    # Boegen: Pfeiler, massives Dachstueck, zwei haengende Laternen, Ketten unter der Bruecke
     for z in POSTEN:
-        for x in (-2, 2):
-            out.append(f"execute unless block {x} {BODEN_Y} {z} minecraft:crimson_fence run setblock {x} {BODEN_Y} {z} minecraft:crimson_fence")
-            out.append(f"execute unless block {x} {BODEN_Y+1} {z} minecraft:redstone_torch run setblock {x} {BODEN_Y+1} {z} minecraft:redstone_torch[lit=true]")
+        out += [
+            f"fill -2 {BODEN_Y+1} {z} -2 {BODEN_Y+4} {z} {BR_BOGEN}",
+            f"fill 2 {BODEN_Y+1} {z} 2 {BODEN_Y+4} {z} {BR_BOGEN}",
+            f"fill -1 {BODEN_Y+4} {z} 1 {BODEN_Y+4} {z} {BR_BOGEN}",
+            f"fill -1 {BODEN_Y+1} {z} 1 {BODEN_Y+2} {z} minecraft:air",                 # Kopfhoehe frei
+            f"setblock 0 {BODEN_Y+3} {z} minecraft:air",
+            f"execute unless block -1 {BODEN_Y+3} {z} minecraft:soul_lantern run setblock -1 {BODEN_Y+3} {z} minecraft:soul_lantern[hanging=true]",
+            f"execute unless block 1 {BODEN_Y+3} {z} minecraft:soul_lantern run setblock 1 {BODEN_Y+3} {z} minecraft:soul_lantern[hanging=true]",
+            f"execute unless block -2 {BODEN_Y-1} {z} minecraft:iron_chain run setblock -2 {BODEN_Y-1} {z} minecraft:iron_chain",
+            f"execute unless block -2 {BODEN_Y-2} {z} minecraft:iron_chain run setblock -2 {BODEN_Y-2} {z} minecraft:iron_chain",
+            f"execute unless block 2 {BODEN_Y-1} {z} minecraft:iron_chain run setblock 2 {BODEN_Y-1} {z} minecraft:iron_chain",
+            f"execute unless block 2 {BODEN_Y-2} {z} minecraft:iron_chain run setblock 2 {BODEN_Y-2} {z} minecraft:iron_chain",
+        ]
     out.append(f"execute as @e[type=marker,tag=nw.laterne,x=-3,y={BODEN_Y},z={Z1},dx=6,dy=3,dz={Z2-Z1}] at @s run function {NS}:laterne/halten")
     return out
 
 fn("strasse/bauen", strasse_bauen())
-# Entfernen: erst die Fackeln, dann die Pfosten, dann der Rest (so faellt nichts ab)
-fn("strasse/entfernen", [f"fill -2 {BODEN_Y+1} {Z1} -2 {BODEN_Y+1} {Z2} minecraft:air", f"fill 2 {BODEN_Y+1} {Z1} 2 {BODEN_Y+1} {Z2} minecraft:air",
-                         f"fill -3 {BODEN_Y-1} {Z1} 3 {BODEN_Y+3} {Z2} minecraft:air",
-                         f"execute as @e[type=marker,tag=nw.laterne,x=-3,y={BODEN_Y},z={Z1},dx=6,dy=3,dz={Z2-Z1}] at @s run function {NS}:laterne/halten"])
+# Entfernen: erst die haengenden Teile (Laternen, Ketten), dann der Rest, sonst fallen sie als Item ab
+fn("strasse/entfernen",
+   [f"setblock -1 {BODEN_Y+3} {z} minecraft:air" for z in POSTEN] +
+   [f"setblock 1 {BODEN_Y+3} {z} minecraft:air" for z in POSTEN] +
+   [f"fill -2 {BODEN_Y-2} {Z1} 2 {BODEN_Y-1} {ZE} minecraft:air",
+    f"fill -3 {BODEN_Y-3} {Z1} 3 {BODEN_Y+7} {ZE} minecraft:air",
+    f"execute as @e[type=marker,tag=nw.laterne,x=-3,y={BODEN_Y},z={Z1},dx=6,dy=3,dz={Z2-Z1}] at @s run function {NS}:laterne/halten"])
+
 
 # ----------------------------------------------------------------------------
 # Collector Lantern: Marker je gesetzter Laterne, Gegner im Umkreis 8 langsam, drei Naechte
@@ -2257,8 +2306,8 @@ fn("gegner/einer", [
     "execute unless score @s nw.pz = @s nw.qz run scoreboard players set @s nw.still 0",
     "scoreboard players operation @s nw.qx = @s nw.px", "scoreboard players operation @s nw.qy = @s nw.py", "scoreboard players operation @s nw.qz = @s nw.pz",
     # Kommt der Gegner dem naechsten Spieler laenger nicht naeher (egal ob er dabei herumlaeuft), taucht er neben ihm auf
-    f"execute if score @s nw.still matches {EINGEBAUT_TICKS}.. if entity @a run function {NS}:gegner/eingebaut",
-    f"execute if score @s nw.still matches {STILL_TICKS}.. if entity @a run function {NS}:gegner/blockiert",
+    f"execute if score @s nw.still matches {EINGEBAUT_TICKS}.. run function {NS}:gegner/eingebaut",
+    f"execute if score @s nw.still matches {STILL_TICKS}.. run function {NS}:gegner/blockiert",
     f"execute if score #m20 nw.tmp matches 3 run function {NS}:gegner/fokus",
 ])
 # Zielwahl (Luis 08.09.2026): Gegner wollen IMMER zum Beacon, egal wie weit weg sie sind. Nur wenn ein
@@ -2271,18 +2320,27 @@ _bp = f"x={BEACON[0]+0.5},y={BEACON[1]+0.5},z={BEACON[2]+0.5}"
 _ziel = "@a[distance=..%d,gamemode=!spectator,gamemode=!creative]"
 fokus = ["scoreboard players set #bk nw.tmp2 0"]
 fokus += [f"execute if entity @s[{_bp},distance=..{r}] run scoreboard players set #bk nw.tmp2 {r}" for r in reversed(FOKUS_STUFEN)]
+fokus.append("scoreboard players set @s nw.ziel 0")
 for r in FOKUS_STUFEN:
     fokus.append(f"execute if score #bk nw.tmp2 matches {r} unless entity {_ziel % (r + 1)} run attribute @s minecraft:follow_range base set {r + 1}")
     fokus.append(f"execute if score #bk nw.tmp2 matches {r} if entity {_ziel % (r + 1)} run attribute @s minecraft:follow_range base set {FOKUS_WEIT}")
+    fokus.append(f"execute if score #bk nw.tmp2 matches {r} if entity {_ziel % (r + 1)} run scoreboard players set @s nw.ziel 1")
 # Weiter weg als die groesste Stufe: volle Sichtweite, damit sie den Beacon trotzdem kennen und loslaufen
 fokus.append(f"execute if score #bk nw.tmp2 matches 0 run attribute @s minecraft:follow_range base set {FOKUS_WEIT}")
 fn("gegner/fokus", fokus)
 # Komplett eingebaut: lange still und der Block Richtung Spieler ist weder Luft noch grabbar (Obsidian, Portalrahmen, Grundgestein)
+# Graben immer in Richtung des aktuellen Ziels: Beacon, oder der Spieler, wenn der gerade naeher ist.
+# Es fallen beide Bloecke auf Fuss- und Kopfhoehe, damit ein Durchgang entsteht (Luis 08.09.2026).
+_BZIEL = f"{BEACON[0]+0.5} {BEACON[1]+0.5} {BEACON[2]+0.5}"
 fn("gegner/eingebaut", [
-    f"execute facing entity @p feet rotated ~ 0 positioned ^ ^ ^1 unless block ~ ~ ~ minecraft:air unless block ~ ~ ~ #{NS}:grabbar run function {NS}:gegner/festgefahren",
+    f"execute if score @s nw.ziel matches 1 facing entity @p feet rotated ~ 0 positioned ^ ^ ^1 "
+    f"unless block ~ ~ ~ minecraft:air unless block ~ ~ ~ #{NS}:grabbar run return run function {NS}:gegner/festgefahren",
+    f"execute unless score @s nw.ziel matches 1 facing {_BZIEL} rotated ~ 0 positioned ^ ^ ^1 "
+    f"unless block ~ ~ ~ minecraft:air unless block ~ ~ ~ #{NS}:grabbar run function {NS}:gegner/festgefahren",
 ])
 fn("gegner/blockiert", [
-    f"execute facing entity @p feet rotated ~ 0 positioned ^ ^ ^1 run function {NS}:gegner/graben",
+    f"execute if score @s nw.ziel matches 1 facing entity @p feet rotated ~ 0 positioned ^ ^ ^1 run return run function {NS}:gegner/graben",
+    f"execute unless score @s nw.ziel matches 1 facing {_BZIEL} rotated ~ 0 positioned ^ ^ ^1 run function {NS}:gegner/graben",
 ])
 fn("gegner/graben", [
     "scoreboard players set #klasse nw.tmp 0",
@@ -2310,6 +2368,19 @@ fn("gegner/klopfen", [
 # Festgefahren oder in den Nebel gefallen: der Gegner taucht 10 bis 16 Bloecke vor dem naechsten Spieler wieder auf
 # (in dessen Blickrichtung, auf festem Boden). Ist dort nichts, seitlich oder hinter ihm, zuletzt am Strassenmund.
 AM_MUND = f"x={STRASSENMUND[0]},y={STRASSENMUND[1]},z={STRASSENMUND[2]},distance=..1.5"
+# Diese Funktion wurde aufgerufen, existierte aber nicht: gefallene Gegner blieben einfach unten liegen.
+# Neu (Luis 08.09.2026): Wer auf der Bruecke oder der Gegnerinsel abstuerzt, kommt dorthin zurueck und nicht
+# als Geschenk auf die Spielerinsel. Nur wer auf der eigenen Insel abstuerzt, taucht beim Spieler auf.
+fn("gegner/festgefahren", [
+    f"execute if score @s nw.pz matches {Z1}.. run return run function {NS}:gegner/zurueck_gegnerinsel",
+    f"execute if entity @a run return run function {NS}:gegner/zum_spieler",
+    f"function {NS}:gegner/zurueck_gegnerinsel",
+])
+fn("gegner/zurueck_gegnerinsel", [
+    f"tp @s {SPAWN_GEGNER[0]} {SPAWN_GEGNER[1]} {SPAWN_GEGNER[2]}",
+    "scoreboard players set @s nw.still 0",
+    "execute at @s run particle minecraft:portal ~ ~1 ~ 0.5 1 0.5 0.5 40",
+])
 fn("gegner/zum_spieler", [
     f"execute at @p rotated ~ 0 positioned ^ ^ ^13 run spreadplayers ~ ~ 0 3 under 320 false @s",
     *[f"execute if entity @s[{AM_MUND}] at @p rotated ~{w} 0 positioned ^ ^ ^13 run spreadplayers ~ ~ 0 3 under 320 false @s" for w in (45, -45, 90, -90, 135, -135, 180)],
