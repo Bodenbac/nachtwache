@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 49                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 50                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -387,7 +387,7 @@ fn("migration", [
     "kill @e[tag=nw.herz]", "kill @e[tag=nw.herz_text]",
     # v0.15: Generatoren sind jetzt sichtbar, die alten grossen Farbwuerfel weg (werden klein neu gesetzt)
     "kill @e[type=block_display,tag=nw.gen_block]",
-    f"execute as @e[tag=nw.welle] run attribute @s minecraft:follow_range base set 40",
+    "execute as @e[tag=nw.welle] run attribute @s minecraft:follow_range base set 128",
     f"spawnpoint @a {SPAWN[0]} {SPAWN[1]} {SPAWN[2]}", f"setworldspawn {SPAWN[0]} {SPAWN[1]} {SPAWN[2]}",
     "tellraw @a " + J([txt("[Nightwatch] The island has been rebuilt: longer, the beacon at the far end, the stall off to the side.", "yellow")]),
 ])
@@ -1367,14 +1367,10 @@ fn("gen/aufbauen", [
     f"function {NS}:gen/anzeige",
 ])
 # Das sichtbare Aussehen: ein block_display in der Farbe der Stufe
-# Das Fass ist seit v0.15 sichtbar (Steinoptik, Spitzhacke, Abbaurisse). Die Stufenfarbe sitzt als
-# kleiner Kristall oben auf dem Block, damit sie den Block nicht ueberdeckt.
-farbe = ["kill @e[type=block_display,tag=nw.gen_block,distance=..1.2]"]
-for i, st in enumerate(STUFEN):
-    farbe.append(f'execute if score #phase nw.phase matches {i+1} run summon minecraft:block_display ~-0.25 ~0.25 ~-0.25 '
-                 f'{{Tags:["nw.gen_block"],brightness:{{sky:15,block:15}},block_state:{{Name:"{st[0]}"}},'
-                 f'transformation:{{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[0.5f,0.5f,0.5f]}}}}')
-fn("gen/farbe", farbe)
+# Der Generator ist ein sichtbares Fass in Steinoptik. Der kleine Stufenkristall obendrauf ist seit v0.18
+# raus (Luis 08.09.2026: stoert optisch und blieb beim Umstellen in der Luft haengen). gen/farbe raeumt nur
+# noch alte Displays weg, damit auch Reste aus aelteren Fassungen verschwinden.
+fn("gen/farbe", ["kill @e[type=block_display,tag=nw.gen_block,distance=..2.5]"])
 
 # Uebersicht im Fass: die Drops der aktuellen Stufe mit Wahrscheinlichkeit, unten rechts der Mitnehmen-Knopf
 def gen_uebersicht_zeilen(p):
@@ -1423,7 +1419,6 @@ fn("gen/einer", [
     "clear @a[distance=..8] *[custom_data~{nw_gen_show:1b}]",
     f"execute unless items block ~ ~ ~ container.{GEN_SLOT_TAKE} *[custom_data~{{nw_gen_take:1b}}] run function {NS}:gen/mitnehmen",
     f"execute if score #m20 nw.tmp matches 7 run function {NS}:gen/anzeige",
-    "execute if score #m20 nw.tmp matches 7 unless entity @e[type=block_display,tag=nw.gen_block,distance=..1.2] run function " + f"{NS}:gen/farbe",
 ])
 gen_abgebaut = [
     'kill @e[type=item,distance=..2.5,nbt={Item:{id:"minecraft:barrel"}}]',
@@ -2185,20 +2180,21 @@ fn("gegner/einer", [
     f"execute if score @s nw.still matches {STILL_TICKS}.. if entity @a run function {NS}:gegner/blockiert",
     f"execute if score #m20 nw.tmp matches 3 run function {NS}:gegner/fokus",
 ])
-# Wer naeher am Beacon ist als am naechsten Spieler, greift den Beacon an (Luis 08.09.2026: hinter dem
-# Beacon verstecken soll nichts bringen). Vanilla gibt dem Spielerziel immer Vorrang, deshalb wird die
-# Sichtweite des Gegners auf die Beacon-Entfernung gedrueckt: der Spieler liegt dann ausserhalb, der
-# winzige Dorfbewohner auf dem Beacon innerhalb. Wer zuschlaegt, wird trotzdem angegriffen (HurtByTarget).
-FOKUS_STUFEN = [40, 32, 26, 20, 16, 12, 9, 7, 5, 3]
+# Zielwahl (Luis 08.09.2026): Gegner wollen IMMER zum Beacon, egal wie weit weg sie sind. Nur wenn ein
+# Spieler naeher ist als der Beacon, gehen sie auf den Spieler. Vanilla gibt dem Spielerziel immer Vorrang,
+# also wird die Sichtweite auf die Beacon-Entfernung gedrueckt: der Anker liegt dann drin, weiter entfernte
+# Spieler draussen. Untergrenze FOKUS_MIN, sonst findet der Wegfinder keinen Weg mehr und der Gegner steht.
+FOKUS_STUFEN = [4, 6, 8, 11, 14, 18, 23, 29, 36, 45, 56, 70, 88, 110, 128]
+FOKUS_WEIT = 128
 _bp = f"x={BEACON[0]+0.5},y={BEACON[1]+0.5},z={BEACON[2]+0.5}"
 _ziel = "@a[distance=..%d,gamemode=!spectator,gamemode=!creative]"
 fokus = ["scoreboard players set #bk nw.tmp2 0"]
-fokus += [f"execute if entity @s[{_bp},distance=..{r}] run scoreboard players set #bk nw.tmp2 {r}" for r in FOKUS_STUFEN]
+fokus += [f"execute if entity @s[{_bp},distance=..{r}] run scoreboard players set #bk nw.tmp2 {r}" for r in reversed(FOKUS_STUFEN)]
 for r in FOKUS_STUFEN:
-    # Sichtweite etwas ueber die Beacon-Entfernung setzen, damit der Anker (steht 1 Block hoeher) sicher drin liegt
-    fokus.append(f"execute if score #bk nw.tmp2 matches {r} unless entity {_ziel % (r + 3)} run attribute @s minecraft:follow_range base set {r + 3}")
-    fokus.append(f"execute if score #bk nw.tmp2 matches {r} if entity {_ziel % (r + 3)} run attribute @s minecraft:follow_range base set 40")
-fokus.append("execute if score #bk nw.tmp2 matches 0 run attribute @s minecraft:follow_range base set 40")
+    fokus.append(f"execute if score #bk nw.tmp2 matches {r} unless entity {_ziel % (r + 1)} run attribute @s minecraft:follow_range base set {r + 1}")
+    fokus.append(f"execute if score #bk nw.tmp2 matches {r} if entity {_ziel % (r + 1)} run attribute @s minecraft:follow_range base set {FOKUS_WEIT}")
+# Weiter weg als die groesste Stufe: volle Sichtweite, damit sie den Beacon trotzdem kennen und loslaufen
+fokus.append(f"execute if score #bk nw.tmp2 matches 0 run attribute @s minecraft:follow_range base set {FOKUS_WEIT}")
 fn("gegner/fokus", fokus)
 # Komplett eingebaut: lange still und der Block Richtung Spieler ist weder Luft noch grabbar (Obsidian, Portalrahmen, Grundgestein)
 fn("gegner/eingebaut", [
@@ -2262,6 +2258,7 @@ fn("schutz/sekunde", [
     f"function {NS}:beacon/aufbauen",
     f"function {NS}:beacon/anzeige",
     f"function {NS}:decoy/sekunde",
+    "kill @e[type=block_display,tag=nw.gen_block]",
     f"function {NS}:gegner/enderman_wut",
     # Sammler fehlt laenger als 5 s (nicht nur beim Start, wenn die Entities noch nicht geladen sind)? Dann neu.
     "execute if entity @e[tag=nw.villager] run scoreboard players set #fehlt nw.tmp2 0",
