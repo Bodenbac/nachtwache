@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 43                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 44                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -65,8 +65,8 @@ def zwerg_item(lvl, bp=0):
     """Der Zwerg als Gegenstand (Spawn-Ei, das einen Marker mit Stufen-Tags setzt)."""
     modell = 'item_model="nachtwache:dwarf",' if RESSOURCENPAKET else ""
     sek = (ZWERG_TAKT - lvl * ZWERG_STUFE_TICKS) // 20
-    lore = ('[{text:"Place him right next to the Source, he must face it.",color:"gray",italic:false},'
-            '{text:"Mines the Source on his own. Coins go to you, drops into his pack.",color:"gray",italic:false},'
+    lore = ('[{text:"Place him next to a Source Generator, on solid ground.",color:"gray",italic:false},'
+            '{text:"He mines the generator right in front of him. Four dwarves fit around one.",color:"gray",italic:false},'
             '{text:"Right-click: open his pack, buy speed and space, sell everything.",color:"gray",italic:false},'
             f'{{text:"Speed: one block every {sek} s (level {lvl})",color:"aqua",italic:false}},'
             f'{{text:"Pack: {ZWERG_FAECHER[bp]} slots ({ZWERG_REIHEN_START + bp} rows)",color:"aqua",italic:false}}]')
@@ -576,27 +576,36 @@ fn("zwerg/tick", [
     f"execute as @e[type=marker,tag=nw.zwerg_neu] at @s run function {NS}:zwerg/neu",
     f"execute as @e[type=marker,tag=nw.zwerg] at @s run function {NS}:zwerg/einer",
 ])
+# Fraggle steht frei auf der Insel, braucht aber einen Generator direkt vor sich (vier Seiten je Generator).
+# Richtung 0 = Norden (-z), 1 = Osten (+x), 2 = Sueden (+z), 3 = Westen (-x)
+ZWERG_RICHTUNGEN = {0: (0, -1), 1: (1, 0), 2: (0, 1), 3: (-1, 0)}
+ZWERG_YAW = {0: 180, 1: 270, 2: 0, 3: 90}
+def zwerg_vor(d):
+    dx, dz = ZWERG_RICHTUNGEN[d]
+    return f"~{dx} ~ ~{dz}"
+
 neu = [
     "tag @s remove nw.zwerg_neu",
     "execute align xyz positioned ~0.5 ~0.5 ~0.5 run tp @s ~ ~ ~",
-    f"execute positioned {qx+0.5} {qy+0.5} {qz+0.5} unless entity @s[distance=..1.9] run return run function {NS}:zwerg/zurueck",
     f"execute unless block ~ ~ ~ minecraft:air run return run function {NS}:zwerg/zurueck",
+    f"execute if block ~ ~-1 ~ minecraft:air run return run function {NS}:zwerg/zurueck",
+    "scoreboard players set @s nw.zwerg_d -1",
 ]
-for dx in (-1, 0, 1):
-    for dz in (-1, 0, 1):
-        if dx == 0 and dz == 0: continue
-        neu.append(f"execute positioned {qx+dx+0.5} {qy+0.5} {qz+dz+0.5} if entity @s[distance=..0.01] run function {NS}:zwerg/setzen")
-neu.append(f"execute unless entity @s[tag=nw.zwerg] run function {NS}:zwerg/zurueck")
+for d in range(4):
+    neu.append(f"execute positioned {zwerg_vor(d)} if entity @e[type=marker,tag=nw.gen,distance=..0.2] "
+               f"run scoreboard players set @s nw.zwerg_d {d}")
+neu += [
+    f"execute if score @s nw.zwerg_d matches -1 run return run function {NS}:zwerg/zurueck",
+    f"function {NS}:zwerg/setzen",
+]
 fn("zwerg/neu", neu)
 
-# Blickrichtung: Grundwinkel je Nachbarfeld (Blick zum Quell) plus Versatz #zoff nw.status
+# Blickrichtung: Grundwinkel aus der gespeicherten Richtung plus Versatz #zoff nw.status
 zeichnen = ["kill @e[type=item_display,tag=nw.zwerg_k,distance=..0.1]", "kill @e[type=item_display,tag=nw.zwerg_a,distance=..0.1]",
-            f"execute unless score #zoff nw.status matches -1000.. run scoreboard players set #zoff nw.status {ZWERG_YAW_VERSATZ}"]
-for dx in (-1, 0, 1):
-    for dz in (-1, 0, 1):
-        if dx == 0 and dz == 0: continue
-        basis = round(_m.degrees(_m.atan2(dx, -dz)))
-        zeichnen.append(f"execute positioned {qx+dx+0.5} {qy+0.5} {qz+dz+0.5} if entity @s[distance=..0.01] run scoreboard players set #yaw nw.tmp2 {basis}")
+            f"execute unless score #zoff nw.status matches -1000.. run scoreboard players set #zoff nw.status {ZWERG_YAW_VERSATZ}",
+            "scoreboard players set #yaw nw.tmp2 0"]
+for d in range(4):
+    zeichnen.append(f"execute if score @s nw.zwerg_d matches {d} run scoreboard players set #yaw nw.tmp2 {ZWERG_YAW[d]}")
 zeichnen += [
     "scoreboard players operation #yaw nw.tmp2 += #zoff nw.status", "scoreboard players add #yaw nw.tmp2 720",
     "scoreboard players operation #yaw nw.tmp2 %= #360 nw.const",
@@ -608,20 +617,27 @@ fn("zwerg/displays", ["$" + _display("nw.zwerg_k", "dwarf_body", "$(yaw)"), "$" 
 fn("zwerg/zurueck", [
     *[f"execute if entity @s[tag=nw.lvl{l}] if entity @s[tag=nw.bp{b}] as @p[distance=..10] run give @s {zwerg_item(l, b)}"
       for l in range(ZWERG_MAX + 1) for b in range(ZWERG_BP_MAX + 1)],
-    "tellraw @p[distance=..10] " + J([txt("[Fraggle] ", "aqua"), txt("Put me right next to the Source, on a free block. I need to see it.", "gray")]),
+    "tellraw @p[distance=..10] " + J([txt("[Fraggle] ", "aqua"), txt("Put me next to a Source Generator, on solid ground. I need one right in front of me.", "gray")]),
     "kill @s",
 ])
 setzen = ["tag @s add nw.zwerg", "scoreboard players set @s nw.zwerg 0", "scoreboard players set @s nw.zwerg_t 0", "scoreboard players set @s nw.zwerg_b 0"]
 setzen += [f"execute if entity @s[tag=nw.lvl{l}] run scoreboard players set @s nw.zwerg {l}" for l in range(1, ZWERG_MAX + 1)]
 setzen += [f"execute if entity @s[tag=nw.bp{b}] run scoreboard players set @s nw.zwerg_b {b}" for b in range(1, ZWERG_BP_MAX + 1)]
-# Ausrichtung im Schachbrettmuster, damit zwei benachbarte Zwerge nie eine Doppeltruhe bilden
-setzen += [f"execute positioned {qx+dx+0.5} {qy+0.5} {qz+dz+0.5} if entity @s[distance=..0.01] run setblock {qx+dx} {qy} {qz+dz} minecraft:trapped_chest[facing={'north' if (dx+dz) % 2 == 0 else 'east'},type=single]"
-           for dx in (-1, 0, 1) for dz in (-1, 0, 1) if (dx, dz) != (0, 0)]
+# Ausrichtung im Schachbrettmuster nach Blockkoordinaten, damit zwei benachbarte Zwerge nie eine Doppeltruhe bilden
+setzen += [
+    "execute store result score #cx nw.tmp2 run data get entity @s Pos[0] 2",
+    "execute store result score #cz nw.tmp2 run data get entity @s Pos[2] 2",
+    "scoreboard players remove #cx nw.tmp2 1", "scoreboard players remove #cz nw.tmp2 1",
+    "scoreboard players operation #cx nw.tmp2 /= #2 nw.const", "scoreboard players operation #cz nw.tmp2 /= #2 nw.const",
+    "scoreboard players operation #cx nw.tmp2 += #cz nw.tmp2", "scoreboard players operation #cx nw.tmp2 %= #2 nw.const",
+    "execute if score #cx nw.tmp2 matches 0 run setblock ~ ~ ~ minecraft:trapped_chest[facing=north,type=single]",
+    "execute if score #cx nw.tmp2 matches 1 run setblock ~ ~ ~ minecraft:trapped_chest[facing=east,type=single]",
+]
 setzen += [
     f"function {NS}:zwerg/zeichnen",
     f"function {NS}:zwerg/symbol",
     "playsound minecraft:entity.villager.work_toolsmith neutral @a ~ ~ ~ 1 0.8",
-    "tellraw @a[distance=..12] " + J([txt("Fraggle takes his place at the Source. Right-click him for his pack.", "aqua")]),
+    "tellraw @a[distance=..12] " + J([txt("Fraggle takes his place at the generator. Right-click him for his pack.", "aqua")]),
 ]
 fn("zwerg/setzen", setzen)
 
@@ -662,16 +678,22 @@ fn("zwerg/einer", [
     f"clear @a[distance=..8] {ZWERG_LOCK_PRED}",
     f"execute if score #m20 nw.tmp matches 11 run function {NS}:zwerg/symbol",
 ])
-schlag = [
-    "scoreboard players set @s nw.zwerg_t 0",
-    f"execute unless entity @e[type=marker,tag=nw.gen,x={qx},y={qy},z={qz},dx=0,dy=0,dz=0] run return 0",
+schlag = ["scoreboard players set @s nw.zwerg_t 0", "scoreboard players set #gen nw.tmp2 0"]
+for d in range(4):
+    schlag.append(f"execute if score @s nw.zwerg_d matches {d} positioned {zwerg_vor(d)} "
+                  f"if entity @e[type=marker,tag=nw.gen,distance=..0.2] run scoreboard players set #gen nw.tmp2 1")
+schlag += [
+    "execute if score #gen nw.tmp2 matches 0 run return 0",
     "execute store result score #voll nw.tmp2 run data get block ~ ~ ~ Items",
     "execute if score #voll nw.tmp2 matches 27.. run return run title @a[distance=..8] actionbar " + J([txt("Fraggle's pack is full. Sell it or buy a bigger one.", "red")]),
     f"execute as @e[type=item_display,tag=nw.zwerg_a,distance=..0.1] run data merge entity @s {{start_interpolation:0,interpolation_duration:2,transformation:{_arm_transform(-75)}}}",
-    f"playsound minecraft:block.stone.hit block @a {qx} {qy} {qz} 1 0.8",
 ]
-for i, st in enumerate(STUFEN):
-    schlag.append(f'execute if score #phase nw.phase matches {i+1} run particle minecraft:block{{block_state:"{st[0]}"}} {qx+0.5} {qy+0.5} {qz+0.5} 0.3 0.3 0.3 0 12')
+for d in range(4):
+    schlag.append(f"execute if score @s nw.zwerg_d matches {d} positioned {zwerg_vor(d)} "
+                  f"run playsound minecraft:block.stone.hit block @a ~ ~ ~ 1 0.8")
+    for i2, st in enumerate(STUFEN):
+        schlag.append(f"execute if score @s nw.zwerg_d matches {d} if score #phase nw.phase matches {i2+1} "
+                      f'positioned {zwerg_vor(d)} run particle minecraft:block{{block_state:"{st[0]}"}} ~ ~ ~ 0.3 0.3 0.3 0 12')
 schlag.append(f"function {NS}:zwerg/abbau")
 fn("zwerg/schlag", schlag)
 
