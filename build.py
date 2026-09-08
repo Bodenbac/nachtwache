@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 50                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 51                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -61,7 +61,7 @@ def zwerg_up_knopf(l):
     return (f'minecraft:netherite_pickaxe[custom_data={{nw_zwerg_up:1b}},custom_name={{text:"Max speed",color:"yellow",italic:false}},'
             f'lore=[{{text:"One block every {sek} s (level {l})",color:"gray",italic:false}}]]')
 
-def zwerg_item(lvl, bp=0):
+def zwerg_item(lvl, bp=0, inv=None):
     """Der Zwerg als Gegenstand (Spawn-Ei, das einen Marker mit Stufen-Tags setzt)."""
     modell = 'item_model="nachtwache:dwarf",' if RESSOURCENPAKET else ""
     sek = (ZWERG_TAKT - lvl * ZWERG_STUFE_TICKS) // 20
@@ -70,8 +70,9 @@ def zwerg_item(lvl, bp=0):
             '{text:"Right-click: open his pack, buy speed and space, sell everything.",color:"gray",italic:false},'
             f'{{text:"Speed: one block every {sek} s (level {lvl})",color:"aqua",italic:false}},'
             f'{{text:"Pack: {ZWERG_FAECHER[bp]} slots ({ZWERG_REIHEN_START + bp} rows)",color:"aqua",italic:false}}]')
+    daten = f',data:{{inv:{inv}}}' if inv else ""
     return (f'minecraft:zombie_spawn_egg[{modell}custom_name={{text:"Fraggle",color:"aqua",italic:false}},custom_data={{nw_zwerg:1b,lvl:{lvl},bp:{bp}}},'
-            f'entity_data={{id:"minecraft:marker",Tags:["nw.zwerg_neu","nw.lvl{lvl}","nw.bp{bp}"]}},lore={lore}]')
+            f'entity_data={{id:"minecraft:marker",Tags:["nw.zwerg_neu","nw.lvl{lvl}","nw.bp{bp}"]{daten}}},lore={lore}]')
 
 QUELL = (0, 64, -7)                    # Start-Generator, mittig auf der Insel
 # Sieben Stufen des Quells: (Block, Farbe, Abbauten bis zur naechsten Stufe, Splitter je Abbau, Mob-Chance, Mob)
@@ -642,6 +643,8 @@ neu = [
 for d in range(4):
     neu.append(f"execute positioned {zwerg_vor(d)} if entity @e[type=marker,tag=nw.gen,distance=..0.2] "
                f"run scoreboard players set @s nw.zwerg_d {d}")
+    # auch ohne Marker erkennen: das Generator-Fass steht immer mit facing=down
+    neu.append(f"execute if block {zwerg_vor(d)} minecraft:barrel[facing=down] run scoreboard players set @s nw.zwerg_d {d}")
 neu += [
     f"execute if score @s nw.zwerg_d matches -1 run return run function {NS}:zwerg/zurueck",
     f"function {NS}:zwerg/setzen",
@@ -663,9 +666,11 @@ zeichnen += [
 fn("zwerg/zeichnen", zeichnen)
 fn("zwerg/displays", ["$" + _display("nw.zwerg_k", "dwarf_body", "$(yaw)"), "$" + _display("nw.zwerg_a", "dwarf_arm", "$(yaw)")])
 fn("zwerg/zurueck", [
-    *[f"execute if entity @s[tag=nw.lvl{l}] if entity @s[tag=nw.bp{b}] as @p[distance=..10] run give @s {zwerg_item(l, b)}"
+    "data modify storage nachtwache:tmp inv set value []",
+    "execute if data entity @s data.inv run data modify storage nachtwache:tmp inv set from entity @s data.inv",
+    *[f"execute if entity @s[tag=nw.lvl{l}] if entity @s[tag=nw.bp{b}] as @p[distance=..10] run function {NS}:zwerg/geben_{l}_{b} with storage nachtwache:tmp"
       for l in range(ZWERG_MAX + 1) for b in range(ZWERG_BP_MAX + 1)],
-    "tellraw @p[distance=..10] " + J([txt("[Fraggle] ", "aqua"), txt("Put me next to a Source Generator, on solid ground. I need one right in front of me.", "gray")]),
+    "tellraw @p[distance=..10] " + J([txt("[Fraggle] ", "aqua"), txt("Put me on the ground next to a Source Generator, not on the generator itself. Sneak-click works too.", "gray")]),
     "kill @s",
 ])
 setzen = ["tag @s add nw.zwerg", "scoreboard players set @s nw.zwerg 0", "scoreboard players set @s nw.zwerg_t 0", "scoreboard players set @s nw.zwerg_b 0"]
@@ -682,6 +687,7 @@ setzen += [
     "execute if score #cx nw.tmp2 matches 1 run setblock ~ ~ ~ minecraft:trapped_chest[facing=east,type=single]",
 ]
 setzen += [
+    "execute if data entity @s data.inv run data modify block ~ ~ ~ Items set from entity @s data.inv",
     f"function {NS}:zwerg/zeichnen",
     f"function {NS}:zwerg/symbol",
     "playsound minecraft:entity.villager.work_toolsmith neutral @a ~ ~ ~ 1 0.8",
@@ -728,11 +734,22 @@ fn("zwerg/einer", [
       for off, pred, ziel in ((0, ZWERG_SELL_PRED, "verkauf_alles"), (1, ZWERG_BP_PRED, "rucksack"), (2, ZWERG_UP_PRED, "upgrade"))],
     f"clear @a[distance=..8] {ZWERG_LOCK_PRED}",
     f"execute if score #m20 nw.tmp matches 11 run function {NS}:zwerg/symbol",
+    # Rucksackinhalt laufend im Marker mitfuehren, damit er beim Abbauen nicht verloren geht
+    f"execute if score #m20 nw.tmp matches 13 run function {NS}:zwerg/merken",
 ])
+merken = ["execute unless data entity @s data run data modify entity @s data set value {}",
+          "data modify entity @s data.inv set from block ~ ~ ~ Items"]
+for b in range(ZWERG_BP_MAX + 1):
+    ende = ZWERG_LAGER_ENDE(ZWERG_REIHEN_START + b)
+    for sl in range(ende, 27):
+        merken.append(f"execute if score @s nw.zwerg_b matches {b} run data remove entity @s data.inv[{{Slot:{sl}b}}]")
+fn("zwerg/merken", merken)
 schlag = ["scoreboard players set @s nw.zwerg_t 0", "scoreboard players set #gen nw.tmp2 0"]
 for d in range(4):
     schlag.append(f"execute if score @s nw.zwerg_d matches {d} positioned {zwerg_vor(d)} "
                   f"if entity @e[type=marker,tag=nw.gen,distance=..0.2] run scoreboard players set #gen nw.tmp2 1")
+    schlag.append(f"execute if score @s nw.zwerg_d matches {d} if block {zwerg_vor(d)} minecraft:barrel[facing=down] "
+                  f"run scoreboard players set #gen nw.tmp2 1")
 schlag += [
     "execute if score #gen nw.tmp2 matches 0 run return 0",
     "execute store result score #voll nw.tmp2 run data get block ~ ~ ~ Items",
@@ -817,9 +834,17 @@ kaputt = [
     'kill @e[type=item,distance=..2.5,nbt={Item:{components:{"minecraft:custom_data":{nw_zwerg_sell:1b}}}}]',
     'kill @e[type=item,distance=..2.5,nbt={Item:{components:{"minecraft:custom_data":{nw_zwerg_lock:1b}}}}]',
 ]
+kaputt += [
+    # Der Inhalt liegt schon als Item am Boden (die Truhe war weg, bevor kaputt lief): einsammeln und ins Item packen
+    "kill @e[type=item,distance=..2.0]",
+    "data modify storage nachtwache:tmp inv set value []",
+    "execute if data entity @s data.inv run data modify storage nachtwache:tmp inv set from entity @s data.inv",
+]
 for l in range(ZWERG_MAX + 1):
     for b in range(ZWERG_BP_MAX + 1):
-        kaputt.append(f"execute if score @s nw.zwerg matches {l} if score @s nw.zwerg_b matches {b} as @p[distance=..10] run give @s {zwerg_item(l, b)}")
+        fn(f"zwerg/geben_{l}_{b}", ["$give @s " + zwerg_item(l, b, "$(inv)")])
+        kaputt.append(f"execute if score @s nw.zwerg matches {l} if score @s nw.zwerg_b matches {b} "
+                      f"as @p[distance=..10] run function {NS}:zwerg/geben_{l}_{b} with storage nachtwache:tmp")
 kaputt += [
     "tellraw @p[distance=..10] " + J([txt("[Fraggle] ", "aqua"), txt("Packing up. I am in your inventory.", "gray")]),
     "playsound minecraft:entity.item.pickup player @p[distance=..10] ~ ~ ~ 1 0.8",
@@ -852,6 +877,7 @@ fn("tick", [
     f"function {NS}:sammler/interaktion",
     f"function {NS}:sammler/kauf_tick",
     "scoreboard players operation #m5 nw.tmp = #tick nw.tick", "scoreboard players operation #m5 nw.tmp %= #5 nw.const",
+    f"execute if score #m5 nw.tmp matches 0 run function {NS}:sammler/minions",
     f"execute if score #m5 nw.tmp matches 0 run function {NS}:sammler/verkauf",
     f"execute as @a[scores={{nw.hilfe=1..}}] run function {NS}:hilfe",
     f"execute as @a[scores={{nw.endlos=1..}}] run function {NS}:nacht/endlos_an",
@@ -1074,7 +1100,7 @@ def bogi_takt(n): return BOGI_TAKT - 10 * n
 def bogi_schaden(n): return 4 + 2 * n
 def bogi_reichweite(n): return 10 + 4 * n
 
-def bogi_item(werte=None, nr=0):
+def bogi_item(werte=None, nr=0, inv=None):
     """nr 1..16 = fester Name, 0 = noch keiner (der Laden vergibt ihn beim Kauf)."""
     w = werte or {k: 0 for k, *_ in BOGI_UPGRADES}
     modell = 'item_model="nachtwache:archer",' if RESSOURCENPAKET else ""
@@ -1083,8 +1109,9 @@ def bogi_item(werte=None, nr=0):
     lore = ('[{text:"Put him anywhere on your island, he shoots what comes close.",color:"gray",italic:false},'
             '{text:"Right-click: his row of slots. Arrows go left, upgrades are on the right.",color:"gray",italic:false},'
             '{text:"No arrows, no shots. Break him: he jumps back into your inventory.",color:"gray",italic:false}]')
+    inv_t = f',inv:{inv}' if inv else ""
     return (f'minecraft:zombie_spawn_egg[{modell}custom_name={{text:"{name}",color:"green",italic:false}},custom_data={{nw_bogi:1b}},'
-            f'entity_data={{id:"minecraft:marker",Tags:["nw.bogi_neu"],data:{{{daten}}}}},lore={lore}]')
+            f'entity_data={{id:"minecraft:marker",Tags:["nw.bogi_neu"],data:{{{daten}{inv_t}}}}},lore={lore}]')
 
 def _bogi_display(tag, modell):
     return (f'summon minecraft:item_display ~ ~ ~ {{Tags:["{tag}"],item_display:"none",interpolation_duration:2,brightness:{{sky:15,block:15}},'
@@ -1109,6 +1136,7 @@ fn("bogi/neu", [
     "execute at @s run setblock ~ ~ ~ minecraft:trapped_chest[facing=north,type=single]",
     *[f"execute at @s unless block ~ ~ ~ minecraft:trapped_chest[type=single] run setblock ~ ~ ~ minecraft:trapped_chest[facing={d},type=single]"
       for d in ("east", "south", "west")],
+    "execute if data entity @s data.inv run data modify block ~ ~ ~ Items set from entity @s data.inv",
     f"execute at @s run function {NS}:bogi/zeichnen",
     f"execute at @s run function {NS}:bogi/symbol",
     "playsound minecraft:entity.villager.work_fletcher neutral @a ~ ~ ~ 1 0.9",
@@ -1121,6 +1149,8 @@ fn("bogi/zeichnen", [
 fn("bogi/zurueck", [
     *[f"data modify storage nachtwache:tmp {k} set from entity @s data.{k}" for k, *_ in BOGI_UPGRADES],
     "data modify storage nachtwache:tmp nm set from entity @s data.nm",
+    "data modify storage nachtwache:tmp inv set value []",
+    "execute if data entity @s data.inv run data modify storage nachtwache:tmp inv set from entity @s data.inv",
     "execute store result score #bnm nw.tmp2 run data get entity @s data.nm",
     f"execute as @p[distance=..10] run function {NS}:bogi/geben",
     "tellraw @p[distance=..10] " + J([txt("[Bogi] ", "green"), txt("Put me on a free block, on solid ground.", "gray")]),
@@ -1128,7 +1158,7 @@ fn("bogi/zurueck", [
 ])
 # Item mit den Stufen des Markers zurueckgeben (Makro, damit nicht jede Kombination als eigene Zeile noetig ist)
 for _n in range(len(BOGI_NAMEN) + 1):
-    fn(f"bogi/geben_{_n}", [f"$give @s {bogi_item({k: '$(' + k + ')' for k, *_ in BOGI_UPGRADES}, _n)}"])
+    fn(f"bogi/geben_{_n}", [f"$give @s {bogi_item({k: '$(' + k + ')' for k, *_ in BOGI_UPGRADES}, _n, '$(inv)')}"])
 fn("bogi/geben", [f"execute if score #bnm nw.tmp2 matches {n} run function {NS}:bogi/geben_{n} with storage nachtwache:tmp"
                   for n in range(len(BOGI_NAMEN) + 1)]
    + [f"execute unless score #bnm nw.tmp2 matches 0..{len(BOGI_NAMEN)} run function {NS}:bogi/geben_0 with storage nachtwache:tmp"])
@@ -1147,7 +1177,12 @@ fn("bogi/einer", [
     *[f"execute unless items block ~ ~ ~ container.{BOGI_SLOT[k]} *[custom_data~{{nw_bogi_{k}:1b}}] run function {NS}:bogi/kauf_{k}" for k, *_ in BOGI_UPGRADES],
     "clear @a[distance=..8] *[custom_data~{nw_bogi_lock:1b}]",
     f"execute if score #m20 nw.tmp matches 13 run function {NS}:bogi/symbol",
+    f"execute if score #m20 nw.tmp matches 15 run function {NS}:bogi/merken",
 ])
+# Pfeile laufend im Marker mitfuehren, damit sie das Abbauen ueberleben
+bogi_merken = ["data modify entity @s data.inv set from block ~ ~ ~ Items"]
+bogi_merken += [f"data remove entity @s data.inv[{{Slot:{sl}b}}]" for sl in range(27) if sl not in BOGI_PFEIL_SLOTS]
+fn("bogi/merken", bogi_merken)
 schuss = [
     "scoreboard players set @s nw.b_t 0",
     "scoreboard players operation #brg nw.tmp2 = @s nw.b_rg",
@@ -1251,11 +1286,14 @@ for k, name, ikon, maxst, preis, text in BOGI_UPGRADES:
 
 fn("bogi/kaputt", [
     "kill @e[type=item_display,tag=nw.bogi_k,distance=..0.1]", "kill @e[type=item_display,tag=nw.bogi_a,distance=..0.1]",
+    "kill @e[type=item,distance=..2.0]",
     'kill @e[type=item,distance=..2.5,nbt={Item:{id:"minecraft:trapped_chest"}}]',
     'kill @e[type=item,distance=..2.5,nbt={Item:{components:{"minecraft:custom_data":{nw_bogi_lock:1b}}}}]',
     *[f'kill @e[type=item,distance=..2.5,nbt={{Item:{{components:{{"minecraft:custom_data":{{nw_bogi_{k}:1b}}}}}}}}]' for k, *_ in BOGI_UPGRADES],
     *[f"execute store result storage nachtwache:tmp {k} int 1 run scoreboard players get @s nw.b_{k}" for k, *_ in BOGI_UPGRADES],
     "data modify storage nachtwache:tmp nm set from entity @s data.nm",
+    "data modify storage nachtwache:tmp inv set value []",
+    "execute if data entity @s data.inv run data modify storage nachtwache:tmp inv set from entity @s data.inv",
     "execute store result score #bnm nw.tmp2 run data get entity @s data.nm",
     f"execute as @p[distance=..10] run function {NS}:bogi/geben",
     "tellraw @p[distance=..10] " + J([txt("[Bogi] ", "green"), txt("Packing up. I am in your inventory.", "gray")]),
@@ -1418,6 +1456,7 @@ fn("gen/einer", [
     # Anzeigegegenstaende gehoeren nicht ins Spielerinventar
     "clear @a[distance=..8] *[custom_data~{nw_gen_show:1b}]",
     f"execute unless items block ~ ~ ~ container.{GEN_SLOT_TAKE} *[custom_data~{{nw_gen_take:1b}}] run function {NS}:gen/mitnehmen",
+    f"execute if score #m20 nw.tmp matches 5 run function {NS}:gen/fremd",
     f"execute if score #m20 nw.tmp matches 7 run function {NS}:gen/anzeige",
 ])
 gen_abgebaut = [
@@ -1431,6 +1470,22 @@ gen_abgebaut = [
     f"function {NS}:gen/anzeige",
 ]
 fn("gen/abgebaut", gen_abgebaut)
+# Wer etwas in das Fenster legt, bekommt es zurueck: gen/anzeige wuerde das Fach sonst ueberschreiben
+fremd = []
+for sl in range(27):
+    fremd.append(f"execute if items block ~ ~ ~ container.{sl} * "
+                 f"unless items block ~ ~ ~ container.{sl} *[custom_data~{{nw_gen_show:1b}}] "
+                 f"unless items block ~ ~ ~ container.{sl} *[custom_data~{{nw_gen_take:1b}}] "
+                 f"run function {NS}:gen/fremd_slot {{slot:{sl}}}")
+fn("gen/fremd", fremd)
+fn("gen/fremd_slot", [
+    "$data modify storage nachtwache:tmp it set from block ~ ~ ~ Items[{Slot:$(slot)b}]",
+    "data remove storage nachtwache:tmp it.Slot",
+    "$item replace block ~ ~ ~ container.$(slot) with minecraft:air",
+    f"function {NS}:gen/fremd_raus with storage nachtwache:tmp",
+])
+fn("gen/fremd_raus", ["$summon minecraft:item ~ ~1 ~ {Item:$(it),PickupDelay:0s}"])
+
 fn("gen/mitnehmen", [
     f"clear @a[distance=..8] *[custom_data~{{nw_gen_take:1b}}]",
     "clear @a[distance=..8] *[custom_data~{nw_gen_show:1b}]",
@@ -1817,6 +1872,29 @@ def verkauf_funktionen(name, pos, slots, prozent):
         f"title @a[distance=..12] actionbar {J([txt('Sold: +', 'gold'), {'score': {'name': '#gain', 'objective': 'nw.tmp'}, 'color': 'gold'}, txt(' ', 'gold'), coin()])}",
     ])
 verkauf_funktionen("verkauf", VERKAUF, 27, 100)
+
+# Minions lassen sich im Fass fuer die Haelfte des Kaufpreises zurueckgeben (Luis 08.09.2026).
+# Sie sind Spawn-Eier und haetten sonst keinen Ankaufspreis, deshalb ein eigener Durchlauf vor dem normalen.
+MINION_VERKAUF = {}
+for _r in angebot:
+    if _r["item"] in ("ZWERG", "BOGI"):
+        MINION_VERKAUF[{"ZWERG": "nw_zwerg", "BOGI": "nw_bogi"}[_r["item"]]] = (_r["name"], int(_r["preis"]) // 2)
+_vx, _vy, _vz = VERKAUF
+minions = [f"execute unless items block {_vx} {_vy} {_vz} container.* * run return 0"]
+for _tag, (_nm, _wert) in MINION_VERKAUF.items():
+    for _sl in range(27):
+        minions.append(f"execute if items block {_vx} {_vy} {_vz} container.{_sl} *[custom_data~{{{_tag}:1b}}] "
+                       f"run function {NS}:sammler/minion_slot {{slot:{_sl},wert:{_wert}}}")
+fn("sammler/minions", minions)
+fn("sammler/minion_slot", [
+    f"$execute store result score #n nw.tmp run data get block {_vx} {_vy} {_vz} Items[{{Slot:$(slot)b}}].count",
+    "$scoreboard players set #w nw.tmp2 $(wert)",
+    "scoreboard players operation #gain nw.tmp = #n nw.tmp", "scoreboard players operation #gain nw.tmp *= #w nw.tmp2",
+    "scoreboard players operation #konto nw.konto += #gain nw.tmp", "scoreboard players operation #verdient nw.verdient += #gain nw.tmp",
+    f"$item replace block {_vx} {_vy} {_vz} container.$(slot) with minecraft:air",
+    f"playsound minecraft:entity.villager.trade neutral @a[distance=..12] {_vx} {_vy} {_vz} 0.8 1",
+    f"title @a[distance=..12] actionbar {J([txt('Sold: +', 'gold'), {'score': {'name': '#gain', 'objective': 'nw.tmp'}, 'color': 'gold'}, txt(' ', 'gold'), coin()])}",
+])
 
 # ----------------------------------------------------------------------------
 # Uhr
