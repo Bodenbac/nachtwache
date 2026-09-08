@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 47                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 48                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -387,7 +387,7 @@ fn("migration", [
     "kill @e[tag=nw.herz]", "kill @e[tag=nw.herz_text]",
     # v0.15: Generatoren sind jetzt sichtbar, die alten grossen Farbwuerfel weg (werden klein neu gesetzt)
     "kill @e[type=block_display,tag=nw.gen_block]",
-    "attribute @e[tag=nw.welle] minecraft:follow_range base set 40",
+    f"execute as @e[tag=nw.welle] run attribute @s minecraft:follow_range base set 40",
     f"spawnpoint @a {SPAWN[0]} {SPAWN[1]} {SPAWN[2]}", f"setworldspawn {SPAWN[0]} {SPAWN[1]} {SPAWN[2]}",
     "tellraw @a " + J([txt("[Nightwatch] The island has been rebuilt: longer, the beacon at the far end, the stall off to the side.", "yellow")]),
 ])
@@ -1325,12 +1325,18 @@ fn("beacon/ende", [
 GEN_PREIS = 20000
 GEN_SLOT_TAKE = 26
 GEN_ZEIGE = 26                      # so viele Eintraege passen in die Uebersicht
-def gen_item():
+def gen_item(stufe=0):
+    """Der Generator als Gegenstand. Muss ein Spawn-Ei sein: nur dort wirkt entity_data, ein Blockitem
+    wuerde beim Setzen einfach seinen eigenen Block legen (Fehler bis v0.15, Luis 08.09.2026)."""
     modell = 'item_model="nachtwache:generator",' if RESSOURCENPAKET else ""
+    tier = f'[{{text:"Tier {stufe}",color:"light_purple",italic:false}}]' if stufe else '[{text:"Tier follows the Source",color:"light_purple",italic:false}]'
     lore = ('[{text:"Put it down anywhere on your island.",color:"gray",italic:false},'
             '{text:"Mine it for blocks and coins, right-click to see what it gives.",color:"gray",italic:false},'
-            '{text:"Every generator counts towards the same tier.",color:"gray",italic:false}]')
-    return (f'minecraft:budding_amethyst[{modell}custom_name={{text:"Source Generator",color:"light_purple",italic:false}},custom_data={{nw_gen:1b}},'
+            '{text:"Every generator counts towards the same tier.",color:"gray",italic:false},'
+            f'{tier}]')
+    daten = f",tier:{stufe}" if stufe else ""
+    return (f'minecraft:zombie_spawn_egg[{modell}custom_name={{text:"Source Generator",color:"light_purple",italic:false}},'
+            f'custom_data={{nw_gen:1b{daten}}},'
             f'entity_data={{id:"minecraft:marker",Tags:["nw.gen_neu"]}},lore={lore}]')
 
 GEN_TAKE_KNOPF = ('minecraft:ender_eye[custom_data={nw_gen_take:1b},custom_name={text:"Take the generator",color:"yellow",italic:false},'
@@ -1433,7 +1439,13 @@ fn("gen/abgebaut", gen_abgebaut)
 fn("gen/mitnehmen", [
     f"clear @a[distance=..8] *[custom_data~{{nw_gen_take:1b}}]",
     "clear @a[distance=..8] *[custom_data~{nw_gen_show:1b}]",
-    f"execute as @p[distance=..8] run give @s {gen_item()}",
+    f"execute if score #phase nw.phase matches 1 as @p[distance=..8] run give @s {gen_item(1)}",
+    f"execute if score #phase nw.phase matches 2 as @p[distance=..8] run give @s {gen_item(2)}",
+    f"execute if score #phase nw.phase matches 3 as @p[distance=..8] run give @s {gen_item(3)}",
+    f"execute if score #phase nw.phase matches 4 as @p[distance=..8] run give @s {gen_item(4)}",
+    f"execute if score #phase nw.phase matches 5 as @p[distance=..8] run give @s {gen_item(5)}",
+    f"execute if score #phase nw.phase matches 6 as @p[distance=..8] run give @s {gen_item(6)}",
+    f"execute if score #phase nw.phase matches 7 as @p[distance=..8] run give @s {gen_item(7)}",
     "kill @e[type=block_display,tag=nw.gen_block,distance=..1.2]",
     "setblock ~ ~ ~ minecraft:air",
     'kill @e[type=item,distance=..2.5,nbt={Item:{id:"minecraft:barrel"}}]',
