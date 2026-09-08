@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 51                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 52                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -633,21 +633,24 @@ def zwerg_vor(d):
     dx, dz = ZWERG_RICHTUNGEN[d]
     return f"~{dx} ~ ~{dz}"
 
+# WICHTIG: nach dem Ausrichten laeuft ALLES mit "execute at @s". Die Ausfuehrungsposition der Funktion ist
+# die Position vor dem tp (aus "at @s" im Aufrufer), sonst landen Pruefungen und Modelle einen halben Block
+# zu tief und der Zwerg steckt im Boden.
 neu = [
     "tag @s remove nw.zwerg_neu",
     "execute align xyz positioned ~0.5 ~0.5 ~0.5 run tp @s ~ ~ ~",
-    f"execute unless block ~ ~ ~ minecraft:air run return run function {NS}:zwerg/zurueck",
-    f"execute if block ~ ~-1 ~ minecraft:air run return run function {NS}:zwerg/zurueck",
+    f"execute at @s unless block ~ ~ ~ minecraft:air run return run function {NS}:zwerg/zurueck",
+    f"execute at @s if block ~ ~-1 ~ minecraft:air run return run function {NS}:zwerg/zurueck",
     "scoreboard players set @s nw.zwerg_d -1",
 ]
 for d in range(4):
-    neu.append(f"execute positioned {zwerg_vor(d)} if entity @e[type=marker,tag=nw.gen,distance=..0.2] "
+    neu.append(f"execute at @s positioned {zwerg_vor(d)} if entity @e[type=marker,tag=nw.gen,distance=..0.2] "
                f"run scoreboard players set @s nw.zwerg_d {d}")
     # auch ohne Marker erkennen: das Generator-Fass steht immer mit facing=down
-    neu.append(f"execute if block {zwerg_vor(d)} minecraft:barrel[facing=down] run scoreboard players set @s nw.zwerg_d {d}")
+    neu.append(f"execute at @s if block {zwerg_vor(d)} minecraft:barrel[facing=down] run scoreboard players set @s nw.zwerg_d {d}")
 neu += [
     f"execute if score @s nw.zwerg_d matches -1 run return run function {NS}:zwerg/zurueck",
-    f"function {NS}:zwerg/setzen",
+    f"execute at @s run function {NS}:zwerg/setzen",
 ]
 fn("zwerg/neu", neu)
 
