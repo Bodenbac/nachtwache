@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 38                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 39                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -267,7 +267,8 @@ OBJEKTIVE = [(f"nw.mined{i+1}", "minecraft.mined:" + st[0].replace("minecraft:",
     ("nw.tode", "deathCount"),
     ("nw.px", "dummy"), ("nw.py", "dummy"), ("nw.pz", "dummy"), ("nw.qx", "dummy"), ("nw.qy", "dummy"), ("nw.qz", "dummy"),
     ("nw.still", "dummy"), ("nw.kills", "dummy"), ("nw.verdient", "dummy"), ("nw.anzeige", "dummy"), ("nw.const", "dummy"),
-    ("nw.boss", "dummy"), ("nw.upgrade", "dummy"), ("nw.laterne", "dummy"), ("nw.zwerg", "dummy"), ("nw.zwerg_t", "dummy"), ("nw.zwerg_b", "dummy"), ("reset", "trigger"), ("yes", "trigger"), ("night", "trigger"), ("boss", "trigger"), ("fraggle", "trigger"), ("endnight", "trigger"), ("money", "trigger"), ("nw.schlaf", "dummy"), ("nw.fest", "dummy"), ("nw.dmin", "dummy"),
+    ("nw.boss", "dummy"), ("nw.upgrade", "dummy"), ("nw.laterne", "dummy"), ("nw.zwerg", "dummy"), ("nw.zwerg_t", "dummy"), ("nw.zwerg_b", "dummy"),
+    ("nw.b_sp", "dummy"), ("nw.b_st", "dummy"), ("nw.b_mu", "dummy"), ("nw.b_fl", "dummy"), ("nw.b_inf", "dummy"), ("nw.b_kb", "dummy"), ("nw.b_rg", "dummy"), ("nw.b_t", "dummy"), ("reset", "trigger"), ("yes", "trigger"), ("night", "trigger"), ("boss", "trigger"), ("fraggle", "trigger"), ("endnight", "trigger"), ("money", "trigger"), ("nw.schlaf", "dummy"), ("nw.fest", "dummy"), ("nw.dmin", "dummy"),
 ]
 
 # ---- load ------------------------------------------------------------------
@@ -734,6 +735,7 @@ fn("tick", [
     f"function {NS}:gegner/tick",
     f"function {NS}:schutz/tick",
     f"function {NS}:zwerg/tick",
+    f"function {NS}:bogi/tick",
     f"execute as @a[tag=nw.admin,scores={{reset=1..}}] run function {NS}:admin/reset_trigger",
     f"execute as @a[tag=nw.admin,scores={{yes=1..}}] run function {NS}:admin/yes_trigger",
     f"execute as @a[tag=nw.admin,scores={{night=1..}}] run function {NS}:admin/night_trigger",
@@ -778,6 +780,7 @@ def abbau_lines(wer, loot_ziel, mit_anzeige):
   for p, s in SPLITTER_PRO_ABBAU.items():
     abbau.append(f"execute if score #phase nw.phase matches {p} run scoreboard players set #splitter nw.tmp {s}")
   abbau += [
+    "execute if score #focus nw.upgrade matches 1.. run scoreboard players operation #splitter nw.tmp *= #2 nw.const",
     "scoreboard players operation #konto nw.konto += #splitter nw.tmp",
     "scoreboard players operation #verdient nw.verdient += #splitter nw.tmp",
     f"playsound minecraft:block.amethyst_block.break player @a ~ ~ ~ 0.6 0.7",
@@ -927,6 +930,270 @@ sprueche = read_csv("sprueche.csv")
 
 
 # ----------------------------------------------------------------------------
+# Bogi: der Bogenschuetzen-Zwerg. Steht ueberall auf der Insel, schiesst auf Gegner in Reichweite.
+# Rucksack: eine Reihe (Faecher 0..8), rechts die sieben Knoepfe, links Platz fuer Pfeile.
+# Alle Stufen stehen im data-Feld des Markers und ueberleben deshalb das Abbauen.
+# ----------------------------------------------------------------------------
+BOGI_PREIS = 7500
+BOGI_TAKT = 60                          # Ticks je Schuss auf Stufe 0 (3 s)
+# (Schluessel, Name, Symbol, Maxstufe, Preis je Stufe, Wirkungstext je Stufe)
+BOGI_UPGRADES = [
+    ("sp",  "Draw speed", "minecraft:feather",        4, 400, lambda n: f"one shot every {(BOGI_TAKT - 10 * n) / 20:.1f} s"),
+    ("st",  "Power",      "minecraft:iron_sword",     4, 500, lambda n: f"{4 + 2 * n} damage per arrow"),
+    ("mu",  "Multishot",  "minecraft:crossbow",       2, 2000, lambda n: f"{1 + n} target(s) per shot"),
+    ("fl",  "Flame",      "minecraft:blaze_powder",   1, 1500, lambda n: "sets the target on fire" if n else "no fire"),
+    ("inf", "Infinity",   "minecraft:end_crystal",    1, 4000, lambda n: "arrows are not used up" if n else "one arrow per shot"),
+    ("kb",  "Knockback",  "minecraft:piston",         2, 800, lambda n: f"pushes {n} step(s) back" if n else "no knockback"),
+    ("rg",  "Range",      "minecraft:spyglass",       2, 700, lambda n: f"{10 + 4 * n} blocks"),
+]
+BOGI_SLOT = {"sp": 8, "st": 7, "mu": 6, "fl": 5, "inf": 4, "kb": 3, "rg": 2}   # von rechts nach links
+BOGI_PFEIL_SLOTS = [0, 1]
+BOGI_LAGER = 9                          # nur die erste Reihe ist offen, der Rest ist gesperrt
+def bogi_takt(n): return BOGI_TAKT - 10 * n
+def bogi_schaden(n): return 4 + 2 * n
+def bogi_reichweite(n): return 10 + 4 * n
+
+def bogi_item(werte=None):
+    w = werte or {k: 0 for k, *_ in BOGI_UPGRADES}
+    modell = 'item_model="nachtwache:archer",' if RESSOURCENPAKET else ""
+    daten = ",".join(f"{k}:{w[k]}" for k, *_ in BOGI_UPGRADES)
+    lore = ('[{text:"Put him anywhere on your island, he shoots what comes close.",color:"gray",italic:false},'
+            '{text:"Right-click: his row of slots. Arrows go left, upgrades are on the right.",color:"gray",italic:false},'
+            '{text:"No arrows, no shots. Break him: he jumps back into your inventory.",color:"gray",italic:false}]')
+    return (f'minecraft:zombie_spawn_egg[{modell}custom_name={{text:"Bogi",color:"green",italic:false}},custom_data={{nw_bogi:1b}},'
+            f'entity_data={{id:"minecraft:marker",Tags:["nw.bogi_neu"],data:{{{daten}}}}},lore={lore}]')
+
+def _bogi_display(tag, modell):
+    return (f'summon minecraft:item_display ~ ~ ~ {{Tags:["{tag}"],item_display:"none",interpolation_duration:2,brightness:{{sky:15,block:15}},'
+            f'item:{{id:"minecraft:stick",count:1,components:{{"minecraft:item_model":"nachtwache:{modell}"}}}}}}')
+
+fn("bogi/tick", [
+    f"execute as @e[type=marker,tag=nw.bogi_neu] at @s run function {NS}:bogi/neu",
+    f"execute as @e[type=marker,tag=nw.bogi] at @s run function {NS}:bogi/einer",
+])
+fn("bogi/neu", [
+    "tag @s remove nw.bogi_neu",
+    "execute align xyz positioned ~0.5 ~0.5 ~0.5 run tp @s ~ ~ ~",
+    f"execute unless block ~ ~ ~ minecraft:air run return run function {NS}:bogi/zurueck",
+    f"execute unless block ~ ~-1 ~ #{NS}:grabbar unless block ~ ~-1 ~ minecraft:grass_block run return run function {NS}:bogi/zurueck",
+    "tag @s add nw.bogi",
+    # Stufen aus dem Marker lesen
+    *[f"execute store result score @s nw.b_{k} run data get entity @s data.{k}" for k, *_ in BOGI_UPGRADES],
+    "scoreboard players set @s nw.b_t 0",
+    # Fallentruhe als Rucksack, Ausrichtung so, dass keine Doppeltruhe entsteht
+    "setblock ~ ~ ~ minecraft:trapped_chest[facing=north,type=single]",
+    *[f"execute unless block ~ ~ ~ minecraft:trapped_chest[type=single] run setblock ~ ~ ~ minecraft:trapped_chest[facing={d},type=single]"
+      for d in ("east", "south", "west")],
+    f"function {NS}:bogi/zeichnen",
+    f"function {NS}:bogi/symbol",
+    "playsound minecraft:entity.villager.work_fletcher neutral @a ~ ~ ~ 1 0.9",
+    "tellraw @a[distance=..12] " + J([txt("Bogi takes his post. Give him arrows and he will shoot.", "green")]),
+])
+fn("bogi/zeichnen", [
+    "kill @e[type=item_display,tag=nw.bogi_k,distance=..0.1]", "kill @e[type=item_display,tag=nw.bogi_a,distance=..0.1]",
+    _bogi_display("nw.bogi_k", "archer_body"), _bogi_display("nw.bogi_a", "archer_arm"),
+])
+fn("bogi/zurueck", [
+    f"execute as @p[distance=..10] run function {NS}:bogi/geben",
+    "tellraw @p[distance=..10] " + J([txt("[Bogi] ", "green"), txt("Put me on a free block, on solid ground.", "gray")]),
+    "kill @s",
+])
+# Item mit den Stufen des Markers zurueckgeben (Makro, damit nicht jede Kombination als eigene Zeile noetig ist)
+fn("bogi/geben", [f"$give @s {bogi_item({k: '$(' + k + ')' for k, *_ in BOGI_UPGRADES})}"])
+
+# Sekundentakt und Schuss
+fn("bogi/einer", [
+    f"execute unless block ~ ~ ~ minecraft:trapped_chest run return run function {NS}:bogi/kaputt",
+    "scoreboard players add @s nw.b_t 1",
+    "scoreboard players operation #bt nw.tmp2 = @s nw.b_sp",
+    "scoreboard players operation #bt nw.tmp2 *= #10 nw.const",
+    f"scoreboard players set #btakt nw.tmp2 {BOGI_TAKT}",
+    "scoreboard players operation #btakt nw.tmp2 -= #bt nw.tmp2",
+    f"execute if score @s nw.b_t >= #btakt nw.tmp2 run function {NS}:bogi/schuss",
+    f"execute if score @s nw.b_t matches 5 as @e[type=item_display,tag=nw.bogi_a,distance=..0.1] run data merge entity @s {{start_interpolation:0,interpolation_duration:8,transformation:{_arm_transform(0)}}}",
+    # Knoepfe und Sperren
+    *[f"execute unless items block ~ ~ ~ container.{BOGI_SLOT[k]} *[custom_data~{{nw_bogi_{k}:1b}}] run function {NS}:bogi/kauf_{k}" for k, *_ in BOGI_UPGRADES],
+    "clear @a[distance=..8] *[custom_data~{nw_bogi_lock:1b}]",
+    f"execute if score #m20 nw.tmp matches 13 run function {NS}:bogi/symbol",
+])
+schuss = [
+    "scoreboard players set @s nw.b_t 0",
+    "scoreboard players operation #brg nw.tmp2 = @s nw.b_rg",
+    "scoreboard players operation #bmu nw.tmp2 = @s nw.b_mu",
+    "scoreboard players operation #bfl nw.tmp2 = @s nw.b_fl",
+    "scoreboard players operation #bkb nw.tmp2 = @s nw.b_kb",
+    "scoreboard players operation #bdmg nw.tmp2 = @s nw.b_st",
+    "scoreboard players operation #bdmg nw.tmp2 *= #2 nw.const",
+    "scoreboard players add #bdmg nw.tmp2 4",
+    # Pfeil im ersten belegten Fach? Ohne Pfeil kein Schuss.
+    "scoreboard players set #bpf nw.tmp2 -1",
+]
+for sl in reversed(BOGI_PFEIL_SLOTS):
+    schuss.append(f"execute if items block ~ ~ ~ container.{sl} minecraft:arrow run scoreboard players set #bpf nw.tmp2 {sl}")
+schuss += [
+    "execute if score #bpf nw.tmp2 matches -1 run return 0",
+]
+# Ziele je nach Reichweite und Multishot
+for rg in range(3):
+    for mu in range(3):
+        schuss.append(f"execute if score #brg nw.tmp2 matches {rg} if score #bmu nw.tmp2 matches {mu} "
+                      f"as @e[tag=nw.welle,distance=..{bogi_reichweite(rg)},sort=nearest,limit={1 + mu}] run function {NS}:bogi/treffer")
+schuss += [
+    "execute unless score #btreffer nw.tmp2 matches 1.. run return 0",
+    "scoreboard players set #btreffer nw.tmp2 0",
+    "playsound minecraft:entity.arrow.shoot player @a[distance=..16] ~ ~ ~ 0.7 1.2",
+    f"execute as @e[type=item_display,tag=nw.bogi_a,distance=..0.1] run data merge entity @s {{start_interpolation:0,interpolation_duration:2,transformation:{_arm_transform(-25)}}}",
+    # Pfeil abziehen, wenn keine Unendlichkeit gekauft ist
+    *[f"execute if score @s nw.b_inf matches 0 if score #bpf nw.tmp2 matches {sl} run item modify block ~ ~ ~ container.{sl} {NS}:pfeil_weg" for sl in BOGI_PFEIL_SLOTS],
+]
+fn("bogi/schuss", schuss)
+w(f"{NS}/item_modifier/pfeil_weg.json", {"function": "minecraft:set_count", "count": -1, "add": True})
+
+fn("bogi/treffer", [
+    "scoreboard players set #btreffer nw.tmp2 1",
+    # der Schuetze dreht sich zum Ziel, die Spur fliegt hin
+    "execute facing entity @s eyes run function " + f"{NS}:bogi/zielen",
+    "execute store result storage nachtwache:tmp dmg int 1 run scoreboard players get #bdmg nw.tmp2",
+    f"function {NS}:bogi/schaden with storage nachtwache:tmp",
+    "execute if score #bfl nw.tmp2 matches 1 run data modify entity @s Fire set value 100s",
+    "execute if score #bkb nw.tmp2 matches 1.. facing entity @s feet run tp @s ^ ^ ^0.8",
+    "execute if score #bkb nw.tmp2 matches 2 facing entity @s feet run tp @s ^ ^ ^0.8",
+    "playsound minecraft:entity.arrow.hit_player player @a[distance=..16] ~ ~ ~ 0.5 1.4",
+])
+fn("bogi/schaden", ["$damage @s $(dmg) minecraft:arrow"])
+fn("bogi/zielen", [
+    "tp @e[type=item_display,tag=nw.bogi_k,distance=..0.6] ~ ~ ~ ~ 0",
+    "tp @e[type=item_display,tag=nw.bogi_a,distance=..0.6] ~ ~ ~ ~ 0",
+    "scoreboard players set #spur nw.tmp 16",
+    f"execute positioned ~ ~0.7 ~ run function {NS}:bogi/spur",
+])
+fn("bogi/spur", [
+    "particle minecraft:crit ~ ~ ~ 0 0 0 0 1 force",
+    "scoreboard players remove #spur nw.tmp 1",
+    f"execute if score #spur nw.tmp matches 1.. positioned ^ ^ ^0.5 run function {NS}:bogi/spur",
+])
+
+# Knoepfe (rechts nach links), gesperrte Faecher und Kauf
+BOGI_SPERRE = ('minecraft:gray_stained_glass_pane[custom_data={nw_bogi_lock:1b},custom_name={text:"Locked",color:"dark_gray",italic:false},'
+               'lore=[{text:"Bogi only carries one row",color:"dark_gray",italic:false}]]')
+symbol_b = []
+for k, name, ikon, maxst, preis, text in BOGI_UPGRADES:
+    for n in range(maxst + 1):
+        if n < maxst:
+            it = (f'{ikon}[custom_data={{nw_bogi_{k}:1b}},custom_name={{text:"{name}",color:"yellow",italic:false}},'
+                  f'lore=[{{text:"Now: {text(n)}",color:"gray",italic:false}},'
+                  f'[{{text:"Next: {text(n + 1)} for {preis * (n + 1)} ",color:"gold",italic:false}},{{text:"{COIN}",color:"white",italic:false}}],'
+                  f'{{text:"Take this to buy",color:"dark_gray",italic:false}}]]')
+        else:
+            it = (f'{ikon}[enchantment_glint_override=true,custom_data={{nw_bogi_{k}:1b}},custom_name={{text:"{name} (max)",color:"yellow",italic:false}},'
+                  f'lore=[{{text:"{text(n)}",color:"gray",italic:false}}]]')
+        symbol_b.append(f"execute if score @s nw.b_{k} matches {n} run item replace block ~ ~ ~ container.{BOGI_SLOT[k]} with {it}")
+symbol_b += [f"execute if items block ~ ~ ~ container.{sl} *[custom_data~{{nw_bogi_lock:1b}}] run item replace block ~ ~ ~ container.{sl} with minecraft:air" for sl in BOGI_PFEIL_SLOTS]
+symbol_b += [f"execute unless items block ~ ~ ~ container.{sl} * run item replace block ~ ~ ~ container.{sl} with {BOGI_SPERRE}" for sl in range(BOGI_LAGER, 27)]
+fn("bogi/symbol", symbol_b)
+
+for k, name, ikon, maxst, preis, text in BOGI_UPGRADES:
+    fn(f"bogi/kauf_{k}", [
+        f"scoreboard players operation #bs nw.tmp2 = @s nw.b_{k}",
+        *[f"execute if score #bs nw.tmp2 matches {n} run scoreboard players set #bp nw.tmp2 {preis * (n + 1)}" for n in range(maxst)],
+        f"execute as @a[distance=..8] store result score @s nw.tmp run clear @s *[custom_data~{{nw_bogi_{k}:1b}}] 0",
+        f"execute as @a[distance=..8,scores={{nw.tmp=1..}}] run function {NS}:bogi/kauf_{k}_ab",
+        f"scoreboard players operation @s nw.b_{k} = #bs nw.tmp2",
+        f"execute store result entity @s data.{k} int 1 run scoreboard players get #bs nw.tmp2",
+        f"function {NS}:bogi/symbol",
+    ])
+    fn(f"bogi/kauf_{k}_ab", [
+        f"clear @s *[custom_data~{{nw_bogi_{k}:1b}}]",
+        f"execute if score #bs nw.tmp2 matches {maxst}.. run return run tellraw @s " + J([txt("[Bogi] ", "green"), txt("That one is already at its best.", "gray")]),
+        "execute if score #konto nw.konto < #bp nw.tmp2 run tellraw @s " + J([txt("[Bogi] ", "green"), txt("Not enough coins. ", "gray"), {"score": {"name": "#bp", "objective": "nw.tmp2"}, "color": "gold"}, txt(" needed.", "gray")]),
+        "execute if score #konto nw.konto < #bp nw.tmp2 run return run playsound minecraft:entity.villager.no neutral @s ~ ~ ~ 1 1",
+        "scoreboard players operation #konto nw.konto -= #bp nw.tmp2",
+        "scoreboard players add #bs nw.tmp2 1",
+        "playsound minecraft:block.smithing_table.use block @s ~ ~ ~ 0.8 1.2",
+        "tellraw @s " + J([txt("[Bogi] ", "green"), txt(f"{name} improved.", "gray")]),
+    ])
+
+fn("bogi/kaputt", [
+    "kill @e[type=item_display,tag=nw.bogi_k,distance=..0.1]", "kill @e[type=item_display,tag=nw.bogi_a,distance=..0.1]",
+    'kill @e[type=item,distance=..2.5,nbt={Item:{id:"minecraft:trapped_chest"}}]',
+    'kill @e[type=item,distance=..2.5,nbt={Item:{components:{"minecraft:custom_data":{nw_bogi_lock:1b}}}}]',
+    *[f'kill @e[type=item,distance=..2.5,nbt={{Item:{{components:{{"minecraft:custom_data":{{nw_bogi_{k}:1b}}}}}}}}]' for k, *_ in BOGI_UPGRADES],
+    *[f"execute store result storage nachtwache:tmp {k} int 1 run scoreboard players get @s nw.b_{k}" for k, *_ in BOGI_UPGRADES],
+    f"execute as @p[distance=..10] run function {NS}:bogi/geben with storage nachtwache:tmp",
+    "tellraw @p[distance=..10] " + J([txt("[Bogi] ", "green"), txt("Packing up. I am in your inventory.", "gray")]),
+    "playsound minecraft:entity.item.pickup player @p[distance=..10] ~ ~ ~ 1 0.8",
+    "kill @s",
+])
+
+# ----------------------------------------------------------------------------
+# Source Focus (10 Minuten doppelte Coins) und Decoy Totem (zieht die Gegner auf sich)
+# ----------------------------------------------------------------------------
+MODELL_FOCUS = 'item_model="nachtwache:focus",' if RESSOURCENPAKET else ""
+MODELL_DECOY = 'item_model="nachtwache:decoy",' if RESSOURCENPAKET else ""
+FOCUS_TICKS = 12000                     # 10 Minuten
+DECOY_HP = 60                           # rund 20 Treffer
+LORE_FOCUS_L = ['{text:"Right-click: the Source pays double for 10 minutes.",color:"gray",italic:false}',
+                '{text:"Burns up when used.",color:"gray",italic:false}']
+LORE_DECOY_L = ['{text:"Right-click: puts up a decoy where you stand.",color:"gray",italic:false}',
+                '{text:"Enemies go for it instead of you until it breaks.",color:"gray",italic:false}']
+KONSUM = 'consumable={consume_seconds:0.6f,animation:"drink",sound:"minecraft:block.amethyst_block.chime",has_consume_particles:false},max_stack_size=16'
+
+w(f"{NS}/advancement/focus_benutzt.json", {"criteria": {"benutzt": {"trigger": "minecraft:consume_item", "conditions": {
+    "item": {"predicates": {"minecraft:custom_data": "{nw_focus:1b}"}}}}},
+    "rewards": {"function": f"{NS}:focus/start"}})
+w(f"{NS}/advancement/decoy_benutzt.json", {"criteria": {"benutzt": {"trigger": "minecraft:consume_item", "conditions": {
+    "item": {"predicates": {"minecraft:custom_data": "{nw_decoy:1b}"}}}}},
+    "rewards": {"function": f"{NS}:decoy/setzen"}})
+
+fn("focus/start", [
+    f"advancement revoke @s only {NS}:focus_benutzt",
+    f"scoreboard players set #focus nw.upgrade {FOCUS_TICKS}",
+    "tellraw @a " + J([txt("The Source glows. Double coins for ten minutes.", "light_purple")]),
+    "playsound minecraft:block.beacon.activate master @a ~ ~ ~ 1 1.4",
+    "execute at @a run particle minecraft:witch ~ ~1 ~ 0.6 1 0.6 0.1 30",
+])
+fn("focus/sekunde", [
+    "execute if score #focus nw.upgrade matches 1.. run scoreboard players remove #focus nw.upgrade 20",
+    f"execute if score #focus nw.upgrade matches 1.. run particle minecraft:end_rod {QUELL[0]+0.5} {QUELL[1]+1.2} {QUELL[2]+0.5} 0.3 0.2 0.3 0.01 3",
+    f"execute if score #focus nw.upgrade matches 0 run function {NS}:focus/ende",
+])
+fn("focus/ende", [
+    "scoreboard players set #focus nw.upgrade -1",
+    "tellraw @a " + J([txt("The Source dims again.", "gray", italic=True)]),
+])
+
+fn("decoy/setzen", [
+    f"advancement revoke @s only {NS}:decoy_benutzt",
+    "execute at @s align xyz positioned ~0.5 ~ ~0.5 run function " + f"{NS}:decoy/bauen",
+])
+fn("decoy/bauen", [
+    'summon minecraft:armor_stand ~ ~ ~ {Tags:["nw.decoy_stand"],Invulnerable:1b,NoGravity:1b,NoBasePlate:1b,ShowArms:1b,PersistenceRequired:1b,'
+    'CustomName:{"text":"Decoy","color":"gold"},CustomNameVisible:1b,'
+    'equipment:{head:{id:"minecraft:carved_pumpkin",count:1},chest:{id:"minecraft:leather_chestplate",count:1,components:{"minecraft:dyed_color":9127187}},'
+    'mainhand:{id:"minecraft:stick",count:1}},DisabledSlots:4144959}',
+    f'summon minecraft:iron_golem ~ ~ ~ {{Tags:["nw.decoy"],NoAI:1b,Silent:1b,Invisible:1b,PersistenceRequired:1b,NoGravity:1b,'
+    f'attributes:[{{id:"minecraft:max_health",base:{DECOY_HP}d}}],Health:{DECOY_HP}f}}',
+    "playsound minecraft:block.wood.place block @a ~ ~ ~ 1 0.8",
+    "tellraw @a[distance=..20] " + J([txt("A decoy stands. It will hold them for a while.", "gold")]),
+])
+fn("decoy/sekunde", [
+    "execute unless entity @e[tag=nw.decoy] run return 0",
+    # Vogelscheuche und Golem gehoeren zusammen: fehlt einer, verschwindet auch der andere
+    f"execute as @e[tag=nw.decoy] at @s run function {NS}:decoy/einer",
+    "execute as @e[tag=nw.decoy_stand] at @s unless entity @e[tag=nw.decoy,distance=..1.5] run function " + f"{NS}:decoy/zerbricht",
+])
+fn("decoy/einer", [
+    "execute at @s run particle minecraft:smoke ~ ~1.2 ~ 0.2 0.2 0.2 0.01 2",
+    "execute unless entity @e[tag=nw.decoy_stand,distance=..1.5] run kill @s",
+])
+fn("decoy/zerbricht", [
+    "playsound minecraft:entity.item.break block @a ~ ~ ~ 1 0.7",
+    "particle minecraft:block{block_state:\"minecraft:carved_pumpkin\"} ~ ~1 ~ 0.3 0.6 0.3 0.1 30",
+    "tellraw @a[distance=..20] " + J([txt("The decoy is torn apart.", "gray", italic=True)]),
+    "kill @s",
+])
+
+# ----------------------------------------------------------------------------
 # Laden: Kaufen-Truhe (Doppeltruhe, 54 Felder) und Verkaufen-Fass am Tresen. Geld bleibt virtuell (Konto).
 # Kaufen: Klick auf ein Symbol = 1 Stueck, Shift-Klick = max (meist 64). Verkaufen: Ware ins Fass legen
 # (Shift-Klick aus dem Inventar), wird sofort verkauft. Nur Ware aus preise.csv, nie Werkzeug.
@@ -956,9 +1223,16 @@ def item_spec(spec):
     if spec in SONDERITEMS:
         iid, cnt, comp = SONDERITEMS[spec]
         return iid, comp[1:-1], cnt
+    if spec == "BOGI":
+        g = bogi_item()
+        return g[:g.index("[")], g[g.index("[") + 1:-1], 1
     if spec == "ZWERG":
         g = zwerg_item(0)
         return g[:g.index("[")], g[g.index("[") + 1:-1], 1
+    if spec == "FOCUS":
+        return "minecraft:amethyst_shard", MODELL_FOCUS + 'custom_name={text:"Source Focus",color:"light_purple",italic:false},custom_data={nw_focus:1b},' + KONSUM + ',lore=[' + ",".join(LORE_FOCUS_L) + ']', 1
+    if spec == "DECOY":
+        return "minecraft:carved_pumpkin", MODELL_DECOY + 'custom_name={text:"Decoy Totem",color:"gold",italic:false},custom_data={nw_decoy:1b},' + KONSUM + ',lore=[' + ",".join(LORE_DECOY_L) + ']', 1
     if spec == "LATERNE":
         return "minecraft:soul_lantern", MODELL_LATERNE + 'custom_name={text:"Collector Lantern",color:"aqua",italic:false},custom_data={nw_laterne:1b},lore=' + LORE_LATERNE, 1
     if spec == "KONTRAKT":
@@ -987,10 +1261,14 @@ def menue_item(r):
         lore = LORE_LATERNE_L + lore
     if r["item"] == "KONTRAKT":
         lore = LORE_KONTRAKT_L + lore
+    if r["item"] == "FOCUS":
+        lore = LORE_FOCUS_L + lore
+    if r["item"] == "DECOY":
+        lore = LORE_DECOY_L + lore
     if mx > 1:
         lore.append(f'[{{text:"Shift-click: buy {mx} for {preis * mx} ",color:"gray",italic:false}},{{text:"{COIN}",color:"white",italic:false}}]')
     comps = [f'custom_data={{nw_menu:{int(r["id"])}}}', f'custom_name={{text:"{name}",color:"white",italic:false}}', "lore=[" + ",".join(lore) + "]"]
-    if comp and not r["item"].startswith("SET:") and r["item"] not in ("GLOCKE", "LATERNE", "KONTRAKT", "ZWERG"):
+    if comp and not r["item"].startswith("SET:") and r["item"] not in ("GLOCKE", "LATERNE", "KONTRAKT", "ZWERG", "FOCUS", "DECOY", "BOGI"):
         comps.insert(0, comp)
     elif r["item"] == "GLOCKE" and MODELL_GLOCKE:
         comps.insert(0, MODELL_GLOCKE[:-1])
@@ -998,8 +1276,14 @@ def menue_item(r):
         comps.insert(0, MODELL_LATERNE[:-1])
     elif r["item"] == "ZWERG" and MODELL_ZWERG:
         comps.insert(0, MODELL_ZWERG[:-1])
+    elif r["item"] == "BOGI" and RESSOURCENPAKET:
+        comps.insert(0, 'item_model="nachtwache:archer"')
     elif r["item"] == "KONTRAKT" and MODELL_KONTRAKT:
         comps.insert(0, MODELL_KONTRAKT[:-1])
+    elif r["item"] == "FOCUS" and MODELL_FOCUS:
+        comps.insert(0, MODELL_FOCUS[:-1])
+    elif r["item"] == "DECOY" and MODELL_DECOY:
+        comps.insert(0, MODELL_DECOY[:-1])
     elif r["item"].startswith("SET:") and MODELL_KIT:
         comps.insert(0, MODELL_KIT[:-1])
     return f"{iid}[{','.join(comps)}]"
@@ -1587,6 +1871,8 @@ fn("schutz/sekunde", [
     *[f"tag @a[name={n}] add nw.admin" for n in ADMINS],
     "scoreboard players enable @a[tag=nw.admin] reset", "scoreboard players enable @a[tag=nw.admin] yes", "scoreboard players enable @a[tag=nw.admin] night", "scoreboard players enable @a[tag=nw.admin] boss", "scoreboard players enable @a[tag=nw.admin] fraggle", "scoreboard players enable @a[tag=nw.admin] endnight", "scoreboard players enable @a[tag=nw.admin] money",
     f"function {NS}:laterne/sekunde",
+    f"function {NS}:focus/sekunde",
+    f"function {NS}:decoy/sekunde",
     f"function {NS}:gegner/enderman_wut",
     # Sammler fehlt laenger als 5 s (nicht nur beim Start, wenn die Entities noch nicht geladen sind)? Dann neu.
     "execute if entity @e[tag=nw.villager] run scoreboard players set #fehlt nw.tmp2 0",

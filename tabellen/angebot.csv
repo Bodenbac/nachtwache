@@ -103,3 +103,6 @@ id,stufe,name,preis,max,item,kat
 175,1,Book: Mending,2500,1,BUCH_MENDING_1,BOOKS
 176,1,Book: Infinity (bow),2000,1,BUCH_INFINITY_1,BOOKS
 177,1,Book: Flame (bow),1200,1,BUCH_FLAME_1,BOOKS
+32,2,Source Focus,800,16,FOCUS,SPECIAL
+33,2,Decoy Totem,600,16,DECOY,SPECIAL
+48,2,Bogi the Archer,7500,1,BOGI,SPECIAL

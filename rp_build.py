@@ -155,6 +155,70 @@ def kontrakt():
         "................",
     ], {"p": (120, 90, 50), "P": (226, 206, 160), "l": (110, 90, 70), "r": (150, 20, 20), "R": (220, 60, 50)})
 
+def bogi_icon():
+    """Bogi als 2D-Symbol: Zwergenkopf mit Kappe und Bogen."""
+    return pixel([
+        "....kkkkkkkk....",
+        "...kKKKKKKKKk...",
+        "..kKKKKKKKKKKk..",
+        "..kkkkkkkkkkkk..",
+        "..khhwkhhkwhhk..",
+        "..khhhhnnhhhhk..",
+        ".bkbBbbnnbbBbk..",
+        "b.kbbBbbbbBbbk..",
+        "b.kBbbbBbbbbBk..",
+        "b.kggkbbbbbbkg..",
+        "b.kggkbBbbBbkg..",
+        "b.kggkkbbbbkkg..",
+        "b.khhkggggggkh..",
+        ".b..kggggggk....",
+        "....kddkkddk....",
+        "................",
+    ], {"k": (24, 18, 14), "K": (96, 66, 36), "h": (222, 176, 138), "w": (250, 250, 250), "n": (196, 148, 112),
+        "b": (178, 74, 32), "B": (208, 104, 52), "g": (46, 96, 56), "d": (36, 24, 14)})
+
+def focus():
+    """Source Focus: violettes Auge im Amethystrahmen."""
+    return pixel([
+        "................",
+        ".....kkkkkk.....",
+        "...kkddddddkk...",
+        "..kdvvvvvvvvdk..",
+        ".kdvvVVVVVVvvdk.",
+        ".kdvVVwwwwVVvdk.",
+        "kdvVVwwPPwwVVvdk",
+        "kdvVwwPPPPwwVvdk",
+        "kdvVVwwPPwwVVvdk",
+        ".kdvVVwwwwVVvdk.",
+        ".kdvvVVVVVVvvdk.",
+        "..kdvvvvvvvvdk..",
+        "...kkddddddkk...",
+        ".....kkkkkk.....",
+        "................",
+        "................",
+    ], {"k": (30, 16, 44), "d": (78, 40, 116), "v": (128, 72, 190), "V": (170, 110, 240), "w": (226, 196, 255), "P": (54, 20, 80)})
+
+def decoy():
+    """Decoy Totem: Kuerbiskopf auf einem Kreuz aus Holz."""
+    return pixel([
+        "................",
+        "....kkkkkkkk....",
+        "...kooooooook...",
+        "..kooKKooKKook..",
+        "..kooooooooook..",
+        "..kooKooooKook..",
+        "..kookKKKKkook..",
+        "...kooooooook...",
+        "....kkkkkkkk....",
+        ".......hh.......",
+        "..hhhhhHHhhhhh..",
+        "..hHHHHHHHHHHh..",
+        "..hhhhhHHhhhhh..",
+        ".......hh.......",
+        ".......hh.......",
+        "................",
+    ], {"k": (92, 48, 8), "o": (226, 130, 26), "O": (250, 170, 60), "K": (60, 26, 4), "h": (96, 68, 38), "H": (140, 102, 58)})
+
 def zwerg_icon():
     """Der Zwerg als 2D-Symbol (Ei im Laden und in der Hand)."""
     return pixel([
@@ -250,13 +314,15 @@ def build(out_dir=None):
         w(mc / "textures" / "block" / f"{block}.png", umfaerben(VORLAGEN / "amethyst_block.png", stops))
 
     # Eigene Item-Symbole (item_model="nachtwache:watch_bell" / "nachtwache:kit")
-    for name, img in (("watch_bell", glocke()), ("kit", kiste()), ("lantern", laterne()), ("contract", kontrakt())):
+    for name, img in (("watch_bell", glocke()), ("kit", kiste()), ("lantern", laterne()), ("contract", kontrakt()),
+                      ("focus", focus()), ("decoy", decoy()), ("archer", bogi_icon())):
         w(nw / "textures" / "item" / f"{name}.png", img)
         w(nw / "models" / "item" / f"{name}.json", json.dumps({"parent": "minecraft:item/generated", "textures": {"layer0": f"nachtwache:item/{name}"}}))
         w(nw / "items" / f"{name}.json", json.dumps({"model": {"type": "minecraft:model", "model": f"nachtwache:item/{name}"}}))
 
     # Der Zwerg: 3D-Modelle (Koerper, Axt-Arm) mit Textur-Atlas, 2D-Symbol, unsichtbares Fass (facing=down) als Rucksack
-    for name, elemente in (("dwarf_body", zwerg.KOERPER), ("dwarf_arm", zwerg.ARM)):
+    for name, elemente in (("dwarf_body", zwerg.KOERPER), ("dwarf_arm", zwerg.ARM),
+                           ("archer_body", zwerg.KOERPER_BOGI), ("archer_arm", zwerg.ARM_BOGEN)):
         atlas, model = zwerg.atlas_und_modell(elemente, f"nachtwache:item/{name}")
         w(nw / "textures" / "item" / f"{name}.png", atlas)
         w(nw / "models" / "item" / f"{name}.json", json.dumps(model))

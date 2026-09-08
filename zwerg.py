@@ -185,3 +185,47 @@ if __name__ == "__main__":
     atlas, model = atlas_und_modell(KOERPER, "nachtwache:entity/dwarf")
     atlas.save("/tmp/zwerg_atlas.png")
     print("ok", len(model["elements"]))
+
+# ---------------------------------------------------------------------------
+# Bogi: derselbe Zwergenkoerper in Gruen mit Lederkappe, in der Hand ein Bogen
+# ---------------------------------------------------------------------------
+TUNIKA_B = (46, 96, 56); TUNIKA_BD = (32, 70, 40)
+KAPPE = (96, 66, 36); KAPPE_D = (68, 46, 24); KAPPE_H = (128, 92, 52)
+SEHNE = (238, 238, 230)
+
+def rumpf_vorn_b(w, h):
+    g = [[TUNIKA_B] * w for _ in range(h)]
+    for x in range(w):
+        g[h - 3][x] = GURT; g[h - 4][x] = GURT
+    for x in range(w // 2 - 1, w // 2 + 1):
+        g[h - 3][x] = SCHNALLE; g[h - 4][x] = SCHNALLE
+    return g
+
+def kappe_seite(w, h):
+    g = [[KAPPE] * w for _ in range(h)]
+    for x in range(w):
+        g[h - 1][x] = KAPPE_D; g[h - 2][x] = KAPPE_D
+        g[0][x] = KAPPE_H
+    return g
+
+KOERPER_BOGI = [
+    q("bein_r", [4, 0, 6], [7, 3, 10], alle(HOSE, down=flach(STIEFEL), north=flach(STIEFEL))),
+    q("bein_l", [9, 0, 6], [12, 3, 10], alle(HOSE, down=flach(STIEFEL), north=flach(STIEFEL))),
+    q("rumpf", [3, 3, 5], [13, 9, 11], alle(TUNIKA_B, north=rumpf_vorn_b, up=flach(TUNIKA_BD), down=flach(TUNIKA_BD))),
+    q("arm_l", [13, 4, 6], [16, 9, 9], alle(TUNIKA_B, down=flach(HAUT), up=flach(TUNIKA_BD))),
+    q("kopf", [3, 9, 4], [13, 16, 11], alle(HAUT, north=gesicht, up=flach(HAUT_D))),
+    q("bart", [4, 5, 3], [12, 10.5, 4], alle(BART, north=bart_vorn)),
+    q("kappe", [2.5, 14, 3.5], [13.5, 16.5, 11.5], alle(KAPPE, north=kappe_seite, south=kappe_seite, east=kappe_seite, west=kappe_seite, up=flach(KAPPE_H))),
+    q("kappenrand", [2, 13.5, 3], [14, 14.2, 12], alle(KAPPE_D)),
+]
+# Arm mit Bogen: der Bogen steht senkrecht vor dem Zwerg, die Sehne zeigt zu ihm
+ARM_BOGEN = [
+    q("arm_r", [0, 4, 6], [3, 9, 9], alle(TUNIKA_B, down=flach(HAUT), up=flach(TUNIKA_BD))),
+    q("hand", [0, 6.5, 4.5], [3, 8, 6.5], alle(HAUT)),
+    q("griff", [0, 6, 4.5], [2, 10, 5.5], alle(HOLZ)),
+    q("wurf_o", [0, 10, 4.2], [2, 13, 5.2], alle(HOLZ)),
+    q("wurf_u", [0, 3, 4.2], [2, 6, 5.2], alle(HOLZ)),
+    q("spitze_o", [0, 13, 3.4], [2, 14.5, 4.4], alle(HOLZ)),
+    q("spitze_u", [0, 1.5, 3.4], [2, 3, 4.4], alle(HOLZ)),
+    q("sehne", [0.8, 1.8, 5.9], [1.2, 14.2, 6.2], alle(SEHNE)),
+]
