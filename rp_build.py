@@ -243,6 +243,28 @@ def decoy():
         "................",
     ], {"k": (92, 48, 8), "o": (226, 130, 26), "O": (250, 170, 60), "K": (60, 26, 4), "h": (96, 68, 38), "H": (140, 102, 58)})
 
+def schaedel():
+    """Reaper's Skull: bleicher Totenkopf mit gruen gluehenden Augenhoehlen."""
+    return pixel([
+        "................",
+        "....dddddddd....",
+        "...dwwwwwwwwd...",
+        "..dwWWWWWWWWwd..",
+        "..dWWWWWWWWWWd..",
+        ".dWWggWWWWggWWd.",
+        ".dWWgGWWWWGgWWd.",
+        ".dWWggWWWWggWWd.",
+        ".dWWWWWdWWWWWWd.",
+        "..dWWWddWWWWWd..",
+        "..dwWWWWWWWWd...",
+        "...dWdWdWdWdd...",
+        "...dWdWdWdWdd...",
+        "....dddddddd....",
+        "................",
+        "................",
+    ], {"d": (24, 22, 26), "w": (150, 148, 138), "W": (214, 212, 200),
+        "g": (54, 200, 96), "G": (168, 255, 190)})
+
 def zwerg_icon():
     """Der Zwerg als 2D-Symbol (Ei im Laden und in der Hand)."""
     return pixel([
@@ -339,7 +361,7 @@ def build(out_dir=None):
 
     # Eigene Item-Symbole (item_model="nachtwache:watch_bell" / "nachtwache:kit")
     for name, img in (("watch_bell", glocke()), ("kit", kiste()), ("lantern", laterne()), ("contract", kontrakt()),
-                      ("focus", focus()), ("decoy", decoy()), ("archer", bogi_icon()), ("life", icons.herz()), ("generator", generator())):
+                      ("focus", focus()), ("decoy", decoy()), ("archer", bogi_icon()), ("life", icons.herz()), ("generator", generator()), ("skull_item", schaedel())):
         w(nw / "textures" / "item" / f"{name}.png", img)
         w(nw / "models" / "item" / f"{name}.json", json.dumps({"parent": "minecraft:item/generated", "textures": {"layer0": f"nachtwache:item/{name}"}}))
         w(nw / "items" / f"{name}.json", json.dumps({"model": {"type": "minecraft:model", "model": f"nachtwache:item/{name}"}}))

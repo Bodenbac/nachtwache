@@ -114,3 +114,4 @@ id,stufe,name,preis,max,item,kat
 181,5,Magma Cream,90,64,magma_cream,MOB
 182,6,Wither Skeleton Skull,1200,16,wither_skeleton_skull,MOB
 183,7,Nether Star,6000,1,nether_star,MOB
+184,2,Reaper Skull,700,16,SKULL,SPECIAL
