@@ -36,6 +36,9 @@ STUFEN_FARBEN = {
     "black_concrete":   ((6, 6, 10),     (34, 30, 42),    (98, 86, 114)),
 }
 
+# Gehaeuse des Generators: dunkler Schiefer mit hellen Kanten, im Amethyst-Stil wie die Stufenbloecke
+GENERATOR_FARBEN = ((26, 26, 34), (74, 76, 92), (162, 164, 186))
+
 def verlauf(t, stops):
     """t in 0..1 -> Farbe aus drei Stuetzstellen."""
     a, b, c = stops
@@ -353,10 +356,15 @@ def build(out_dir=None):
     w(nw / "items" / "dwarf.json", json.dumps({"model": {"type": "minecraft:model", "model": "nachtwache:item/dwarf"}}))
     # Der Generator ist ein Fass mit facing=down, das hier unsichtbar wird. Darueber steht ein Block-Display
     # in der Stufenfarbe, das Verkaufsfass am Tresen (facing=up) bleibt normal sichtbar.
-    w(nw / "models" / "block" / "empty.json", json.dumps({"textures": {"particle": "minecraft:block/barrel_side"}, "elements": []}))
+    # Seit v0.15 ist der Generator sichtbar: ein normaler Wuerfel in Steinoptik. Nur so zeigt Minecraft
+    # beim Abbauen die Risse (unsichtbare Modelle haben keine Flaechen, auf denen sie gezeichnet werden koennten).
+    # Die Stufenfarbe sitzt als kleiner Kristall oben auf dem Block (block_display aus build.py).
+    w(mc / "textures" / "block" / "nw_generator.png", umfaerben(VORLAGEN / "amethyst_block.png", GENERATOR_FARBEN))
+    w(nw / "models" / "block" / "generator.json", json.dumps({
+        "parent": "minecraft:block/cube_all", "textures": {"all": "minecraft:block/nw_generator"}}))
     fass = json.loads((VORLAGEN / "barrel.json").read_text())
     for k in ("facing=down,open=false", "facing=down,open=true"):
-        fass["variants"][k] = {"model": "nachtwache:block/empty"}
+        fass["variants"][k] = {"model": "nachtwache:block/generator"}
     w(mc / "blockstates" / "barrel.json", json.dumps(fass, indent=1))
 
     # Fraggles Rucksack ist eine Fallentruhe: unsichtbar durch leere Textur. Truhen sind keine vollen Bloecke,

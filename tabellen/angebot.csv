@@ -105,6 +105,6 @@ id,stufe,name,preis,max,item,kat
 177,1,Book: Flame (bow),1200,1,BUCH_FLAME_1,BOOKS
 32,2,Source Focus,800,16,FOCUS,SPECIAL
 33,2,Decoy Totem,600,16,DECOY,SPECIAL
-48,2,Bogi the Archer,7500,1,BOGI,SPECIAL
+48,1,Bogi the Archer,7500,1,BOGI,SPECIAL
 34,1,One more Life,1500,1,LEBEN,SPECIAL
 35,3,Source Generator,20000,1,GENERATOR,SPECIAL

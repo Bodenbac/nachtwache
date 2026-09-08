@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 46                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 47                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -302,6 +302,9 @@ w(f"{NS}/tags/block/weich.json", {"values": WEICH})
 w(f"{NS}/tags/block/mittel.json", {"values": MITTEL})
 w(f"{NS}/tags/block/hart.json", {"values": HART})
 w(f"{NS}/tags/block/quell.json", {"values": [st[0] for st in STUFEN]})
+# Der Generator ist ein Fass. Luis will Steineigenschaften: Spitzhacke statt Axt (v0.15).
+w("minecraft/tags/block/mineable/pickaxe.json", {"values": ["minecraft:barrel"]})
+w("minecraft/tags/block/mineable/axe.json", {"replace": True, "values": ["minecraft:note_block", "minecraft:bamboo", "minecraft:bee_nest", "minecraft:beehive", "minecraft:big_dripleaf_stem", "minecraft:big_dripleaf", "minecraft:bookshelf", "minecraft:brown_mushroom_block", "minecraft:campfire", "minecraft:cartography_table", "minecraft:carved_pumpkin", "minecraft:chest", "minecraft:chorus_flower", "minecraft:chorus_plant", "minecraft:cocoa", "minecraft:composter", "minecraft:crafting_table", "minecraft:daylight_detector", "minecraft:fletching_table", "minecraft:glow_lichen", "minecraft:jack_o_lantern", "minecraft:jukebox", "minecraft:ladder", "minecraft:lectern", "minecraft:loom", "minecraft:melon", "minecraft:mushroom_stem", "minecraft:pumpkin", "minecraft:red_mushroom_block", "minecraft:smithing_table", "minecraft:soul_campfire", "minecraft:trapped_chest", "minecraft:vine", "#minecraft:banners", "#minecraft:fence_gates", "#minecraft:logs", "#minecraft:planks", "#minecraft:signs", "#minecraft:wooden_buttons", "#minecraft:wooden_doors", "#minecraft:wooden_fences", "#minecraft:wooden_pressure_plates", "#minecraft:wooden_slabs", "#minecraft:wooden_stairs", "#minecraft:wooden_trapdoors", "minecraft:mangrove_roots", "#minecraft:all_hanging_signs", "minecraft:bamboo_mosaic", "minecraft:bamboo_mosaic_slab", "minecraft:bamboo_mosaic_stairs", "#minecraft:bamboo_blocks", "minecraft:chiseled_bookshelf", "#minecraft:wooden_shelves", "minecraft:creaking_heart"]})
 for p, c in MOB_CHANCE.items():
     w(f"{NS}/predicate/quell_mob_{p}.json", {"condition": "minecraft:random_chance", "chance": c})
 
@@ -382,6 +385,9 @@ fn("migration", [
     f"function {NS}:sammler/erscheinen", f"function {NS}:sammler/kaufmenue",
     f"function {NS}:beacon/aufbauen",
     "kill @e[tag=nw.herz]", "kill @e[tag=nw.herz_text]",
+    # v0.15: Generatoren sind jetzt sichtbar, die alten grossen Farbwuerfel weg (werden klein neu gesetzt)
+    "kill @e[type=block_display,tag=nw.gen_block]",
+    "attribute @e[tag=nw.welle] minecraft:follow_range base set 40",
     f"spawnpoint @a {SPAWN[0]} {SPAWN[1]} {SPAWN[2]}", f"setworldspawn {SPAWN[0]} {SPAWN[1]} {SPAWN[2]}",
     "tellraw @a " + J([txt("[Nightwatch] The island has been rebuilt: longer, the beacon at the far end, the stall off to the side.", "yellow")]),
 ])
@@ -1355,10 +1361,13 @@ fn("gen/aufbauen", [
     f"function {NS}:gen/anzeige",
 ])
 # Das sichtbare Aussehen: ein block_display in der Farbe der Stufe
+# Das Fass ist seit v0.15 sichtbar (Steinoptik, Spitzhacke, Abbaurisse). Die Stufenfarbe sitzt als
+# kleiner Kristall oben auf dem Block, damit sie den Block nicht ueberdeckt.
 farbe = ["kill @e[type=block_display,tag=nw.gen_block,distance=..1.2]"]
 for i, st in enumerate(STUFEN):
-    farbe.append(f'execute if score #phase nw.phase matches {i+1} run summon minecraft:block_display ~-0.5 ~-0.5 ~-0.5 '
-                 f'{{Tags:["nw.gen_block"],brightness:{{sky:15,block:15}},block_state:{{Name:"{st[0]}"}}}}')
+    farbe.append(f'execute if score #phase nw.phase matches {i+1} run summon minecraft:block_display ~-0.25 ~0.25 ~-0.25 '
+                 f'{{Tags:["nw.gen_block"],brightness:{{sky:15,block:15}},block_state:{{Name:"{st[0]}"}},'
+                 f'transformation:{{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[0.5f,0.5f,0.5f]}}}}')
 fn("gen/farbe", farbe)
 
 # Uebersicht im Fass: die Drops der aktuellen Stufe mit Wahrscheinlichkeit, unten rechts der Mitnehmen-Knopf
@@ -2161,7 +2170,23 @@ fn("gegner/einer", [
     # Kommt der Gegner dem naechsten Spieler laenger nicht naeher (egal ob er dabei herumlaeuft), taucht er neben ihm auf
     f"execute if score @s nw.still matches {EINGEBAUT_TICKS}.. if entity @a run function {NS}:gegner/eingebaut",
     f"execute if score @s nw.still matches {STILL_TICKS}.. if entity @a run function {NS}:gegner/blockiert",
+    f"execute if score #m20 nw.tmp matches 3 run function {NS}:gegner/fokus",
 ])
+# Wer naeher am Beacon ist als am naechsten Spieler, greift den Beacon an (Luis 08.09.2026: hinter dem
+# Beacon verstecken soll nichts bringen). Vanilla gibt dem Spielerziel immer Vorrang, deshalb wird die
+# Sichtweite des Gegners auf die Beacon-Entfernung gedrueckt: der Spieler liegt dann ausserhalb, der
+# winzige Dorfbewohner auf dem Beacon innerhalb. Wer zuschlaegt, wird trotzdem angegriffen (HurtByTarget).
+FOKUS_STUFEN = [40, 32, 26, 20, 16, 12, 9, 7, 5, 3]
+_bp = f"x={BEACON[0]+0.5},y={BEACON[1]+0.5},z={BEACON[2]+0.5}"
+_ziel = "@a[distance=..%d,gamemode=!spectator,gamemode=!creative]"
+fokus = ["scoreboard players set #bk nw.tmp2 0"]
+fokus += [f"execute if entity @s[{_bp},distance=..{r}] run scoreboard players set #bk nw.tmp2 {r}" for r in FOKUS_STUFEN]
+for r in FOKUS_STUFEN:
+    # Sichtweite etwas ueber die Beacon-Entfernung setzen, damit der Anker (steht 1 Block hoeher) sicher drin liegt
+    fokus.append(f"execute if score #bk nw.tmp2 matches {r} unless entity {_ziel % (r + 3)} run attribute @s minecraft:follow_range base set {r + 3}")
+    fokus.append(f"execute if score #bk nw.tmp2 matches {r} if entity {_ziel % (r + 3)} run attribute @s minecraft:follow_range base set 40")
+fokus.append("execute if score #bk nw.tmp2 matches 0 run attribute @s minecraft:follow_range base set 40")
+fn("gegner/fokus", fokus)
 # Komplett eingebaut: lange still und der Block Richtung Spieler ist weder Luft noch grabbar (Obsidian, Portalrahmen, Grundgestein)
 fn("gegner/eingebaut", [
     f"execute facing entity @p feet rotated ~ 0 positioned ^ ^ ^1 unless block ~ ~ ~ minecraft:air unless block ~ ~ ~ #{NS}:grabbar run function {NS}:gegner/festgefahren",
