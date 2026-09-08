@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 42                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 43                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -288,7 +288,7 @@ w(f"{NS}/tags/block/quell.json", {"values": [st[0] for st in STUFEN]})
 for p, c in MOB_CHANCE.items():
     w(f"{NS}/predicate/quell_mob_{p}.json", {"condition": "minecraft:random_chance", "chance": c})
 
-OBJEKTIVE = [(f"nw.mined{i+1}", "minecraft.mined:" + st[0].replace("minecraft:", "minecraft.")) for i, st in enumerate(STUFEN)] + [
+OBJEKTIVE = [("nw.mined_gen", "minecraft.mined:minecraft.barrel")] + [
     ("nw.konto", "dummy"), ("nw.abbau", "dummy"), ("nw.phase", "dummy"), ("nw.nacht", "dummy"), ("nw.gegner", "dummy"),
     ("nw.tmp", "dummy"), ("nw.tmp2", "dummy"), ("nw.zeit", "dummy"), ("nw.tick", "dummy"), ("nw.status", "dummy"),
     ("nw.kauf", "trigger"), ("nw.endlos", "trigger"), ("nw.hilfe", "trigger"),
@@ -328,6 +328,7 @@ fn("migration", [
     f"fill -1 {BODEN_Y} 6 1 {BODEN_Y} 8 minecraft:polished_deepslate",
     f"execute unless score #phase nw.phase matches 1.. run scoreboard players set #phase nw.phase 1",
     f"setblock {QUELL[0]} {QUELL[1]} {QUELL[2]} minecraft:air", f"function {NS}:quell/setzen",
+    'kill @e[type=item,x=-2,y=62,z=-2,dx=4,dy=4,dz=4,nbt={Item:{id:"minecraft:budding_amethyst"}}]',
     f"function {NS}:sammler/kaufmenue",
     f"scoreboard players set #zoff nw.status {ZWERG_YAW_VERSATZ}",
     # Fraggles Rucksack ist jetzt eine Doppeltruhe: bestehende Zwerge einmal neu aufbauen, der alte Inhalt faellt heraus
@@ -663,7 +664,7 @@ fn("zwerg/einer", [
 ])
 schlag = [
     "scoreboard players set @s nw.zwerg_t 0",
-    f"execute unless block {qx} {qy} {qz} #{NS}:quell run return 0",
+    f"execute unless entity @e[type=marker,tag=nw.gen,x={qx},y={qy},z={qz},dx=0,dy=0,dz=0] run return 0",
     "execute store result score #voll nw.tmp2 run data get block ~ ~ ~ Items",
     "execute if score #voll nw.tmp2 matches 27.. run return run title @a[distance=..8] actionbar " + J([txt("Fraggle's pack is full. Sell it or buy a bigger one.", "red")]),
     f"execute as @e[type=item_display,tag=nw.zwerg_a,distance=..0.1] run data merge entity @s {{start_interpolation:0,interpolation_duration:2,transformation:{_arm_transform(-75)}}}",
@@ -774,7 +775,6 @@ fn("tick", [
     "scoreboard players operation #m20 nw.tmp = #tick nw.tick",
     "scoreboard players operation #m20 nw.tmp %= #20 nw.const",
     f"execute unless score #init nw.status matches 1 run return 0",
-    f"function {NS}:quell/pruefen",
     f"function {NS}:uhr/tick",
     f"function {NS}:sammler/interaktion",
     f"function {NS}:sammler/kauf_tick",
@@ -787,6 +787,7 @@ fn("tick", [
     f"function {NS}:schutz/tick",
     f"function {NS}:zwerg/tick",
     f"function {NS}:bogi/tick",
+    f"function {NS}:gen/tick",
     f"execute as @a[tag=nw.admin,scores={{reset=1..}}] run function {NS}:admin/reset_trigger",
     f"execute as @a[tag=nw.admin,scores={{yes=1..}}] run function {NS}:admin/yes_trigger",
     f"execute as @a[tag=nw.admin,scores={{night=1..}}] run function {NS}:admin/night_trigger",
@@ -808,19 +809,13 @@ fn("tick", [
 # Quell
 # ----------------------------------------------------------------------------
 qx, qy, qz = QUELL
-pruefen = []
-for i, st in enumerate(STUFEN):
-    pruefen.append(f"execute if score #phase nw.phase matches {i+1} if block {qx} {qy} {qz} {st[0]} run return 0")
-pruefen.append("scoreboard players set #wer nw.tmp 0")
-for i, st in enumerate(STUFEN):
-    pruefen.append(f"execute if score #wer nw.tmp matches 0 as @a[scores={{nw.mined{i+1}=1..}},limit=1] run function {NS}:quell/abbau")
-for i, st in enumerate(STUFEN):
-    pruefen.append(f"scoreboard players reset @a nw.mined{i+1}")
-pruefen.append(f"function {NS}:quell/setzen")
-for st in STUFEN:
-    pruefen.append(f"kill @e[type=item,x={qx-1},y={qy-1},z={qz-1},dx=2,dy=2,dz=2,nbt={{Item:{{id:\"{st[0]}\"}}}}]")
-fn("quell/pruefen", pruefen)
-fn("quell/setzen", [f"execute if score #phase nw.phase matches {i+1} run setblock {qx} {qy} {qz} {st[0]}" for i, st in enumerate(STUFEN)])
+# Der Quell heisst jetzt Generator und steht als Marker in der Welt (siehe Abschnitt Generatoren).
+# quell/setzen stellt den ersten Generator an seinen Platz, falls dort keiner steht.
+fn("quell/setzen", [
+    f"execute unless entity @e[type=marker,tag=nw.gen,x={qx},y={qy},z={qz},dx=0,dy=0,dz=0] "
+    f"unless entity @e[type=marker,tag=nw.gen_neu,x={qx},y={qy},z={qz},dx=0,dy=0,dz=0] run "
+    f'summon minecraft:marker {qx+0.5} {qy+0.5} {qz+0.5} {{Tags:["nw.gen_neu"]}}',
+])
 
 def abbau_lines(wer, loot_ziel, mit_anzeige):
   abbau = [
@@ -862,6 +857,8 @@ fn("quell/phase_wechsel", [
     '$title @a title {"text":"Tier $(phase)","color":"dark_purple"}',
     'title @a subtitle {"text":"The Source changes colour. New goods at the Collector.","color":"gray"}',
     f"function {NS}:quell/setzen",
+    f"execute as @e[type=marker,tag=nw.gen] at @s run function {NS}:gen/farbe",
+    f"execute as @e[type=marker,tag=nw.gen] at @s run function {NS}:gen/anzeige",
     "playsound minecraft:block.beacon.power_select master @a ~ ~ ~ 1 0.5",
     f"function {NS}:sammler/kaufmenue",
     f"function {NS}:sammler/spruch/phase",
@@ -1244,6 +1241,125 @@ fn("beacon/ende", [
 ])
 
 # ----------------------------------------------------------------------------
+# Generatoren: der Quell als Gegenstand. Jeder Generator ist ein Marker, ein Fass mit facing=down
+# (im Ressourcenpaket unsichtbar) und ein block_display in der Farbe der aktuellen Stufe.
+# Rechtsklick oeffnet das Fass und zeigt die Drops der Stufe mit Wahrscheinlichkeit, unten rechts
+# liegt der Knopf zum Mitnehmen. Alle Generatoren zaehlen auf denselben Fortschritt ein.
+# ----------------------------------------------------------------------------
+GEN_PREIS = 20000
+GEN_SLOT_TAKE = 26
+GEN_ZEIGE = 26                      # so viele Eintraege passen in die Uebersicht
+def gen_item():
+    modell = 'item_model="nachtwache:generator",' if RESSOURCENPAKET else ""
+    lore = ('[{text:"Put it down anywhere on your island.",color:"gray",italic:false},'
+            '{text:"Mine it for blocks and coins, right-click to see what it gives.",color:"gray",italic:false},'
+            '{text:"Every generator counts towards the same tier.",color:"gray",italic:false}]')
+    return (f'minecraft:budding_amethyst[{modell}custom_name={{text:"Source Generator",color:"light_purple",italic:false}},custom_data={{nw_gen:1b}},'
+            f'entity_data={{id:"minecraft:marker",Tags:["nw.gen_neu"]}},lore={lore}]')
+
+GEN_TAKE_KNOPF = ('minecraft:ender_eye[custom_data={nw_gen_take:1b},custom_name={text:"Take the generator",color:"yellow",italic:false},'
+                  'lore=[{text:"Take this and it goes back into your inventory",color:"gray",italic:false},'
+                  '{text:"Everything it dropped so far stays with you",color:"dark_gray",italic:false}]]')
+
+fn("gen/tick", [
+    f"execute as @e[type=marker,tag=nw.gen_neu] at @s run function {NS}:gen/neu",
+    f"execute as @e[type=marker,tag=nw.gen] at @s run function {NS}:gen/einer",
+])
+fn("gen/neu", [
+    "tag @s remove nw.gen_neu",
+    "execute align xyz positioned ~0.5 ~0.5 ~0.5 run tp @s ~ ~ ~",
+    f"execute at @s unless block ~ ~ ~ minecraft:air run return run function {NS}:gen/zurueck",
+    "tag @s add nw.gen",
+    f"execute at @s run function {NS}:gen/aufbauen",
+    "playsound minecraft:block.amethyst_cluster.place block @a ~ ~ ~ 1 0.8",
+    "tellraw @a[distance=..12] " + J([txt("A generator hums. Mine it, right-click it to look inside.", "light_purple")]),
+])
+fn("gen/zurueck", [
+    f"execute as @p[distance=..10] run give @s {gen_item()}",
+    "tellraw @p[distance=..10] " + J([txt("The generator needs a free block.", "gray", italic=True)]),
+    "kill @s",
+])
+fn("gen/aufbauen", [
+    "setblock ~ ~ ~ minecraft:barrel[facing=down]",
+    f"function {NS}:gen/farbe",
+    f"function {NS}:gen/anzeige",
+])
+# Das sichtbare Aussehen: ein block_display in der Farbe der Stufe
+farbe = ["kill @e[type=block_display,tag=nw.gen_block,distance=..1.2]"]
+for i, st in enumerate(STUFEN):
+    farbe.append(f'execute if score #phase nw.phase matches {i+1} run summon minecraft:block_display ~-0.5 ~-0.5 ~-0.5 '
+                 f'{{Tags:["nw.gen_block"],brightness:{{sky:15,block:15}},block_state:{{Name:"{st[0]}"}}}}')
+fn("gen/farbe", farbe)
+
+# Uebersicht im Fass: die Drops der aktuellen Stufe mit Wahrscheinlichkeit, unten rechts der Mitnehmen-Knopf
+def gen_uebersicht_zeilen(p):
+    eintraege = []
+    for r in rows:                                   # rows = quell.csv
+        if p not in phasen_von(r["phasen"]): continue
+        eintraege.append((r["item"], int(r["gewicht"]), int(r["min"]), int(r["max"])))
+    gesamt = sum(g for _, g, _, _ in eintraege) or 1
+    eintraege.sort(key=lambda e: -e[1])
+    zeilen, rest = [], 0.0
+    for i, (item, g, mn, mx) in enumerate(eintraege):
+        pz = 100.0 * g / gesamt
+        if i >= GEN_ZEIGE - 1 and len(eintraege) > GEN_ZEIGE:
+            rest += pz; continue
+        ist_kiste = item.startswith("KISTE_")
+        iid = "minecraft:chest" if ist_kiste else f"minecraft:{item}"
+        nm = "Crate" if ist_kiste else item.replace("_", " ").title()
+        menge = f"{mn}" if mn == mx else f"{mn} to {mx}"
+        lore = [f'[{{text:"{pz:.2f} %",color:"gold",italic:false}}]', f'{{text:"{menge} per block",color:"gray",italic:false}}']
+        zeilen.append(f'{iid}[custom_data={{nw_gen_show:1b}},custom_name={{text:"{nm}",color:"white",italic:false}},lore=[{",".join(lore)}]]')
+    if rest > 0:
+        zeilen.append(f'minecraft:paper[custom_data={{nw_gen_show:1b}},custom_name={{text:"... and more",color:"gray",italic:false}},'
+                      f'lore=[[{{text:"{rest:.2f} %",color:"gold",italic:false}}],{{text:"rare leftovers",color:"dark_gray",italic:false}}]]')
+    return zeilen
+
+anzeige = []
+for p in range(1, ANZ_STUFEN + 1):
+    zeilen = gen_uebersicht_zeilen(p)
+    for slot in range(27):
+        if slot == GEN_SLOT_TAKE:
+            anzeige.append(f"execute if score #phase nw.phase matches {p} run item replace block ~ ~ ~ container.{slot} with {GEN_TAKE_KNOPF}")
+        elif slot < len(zeilen):
+            anzeige.append(f"execute if score #phase nw.phase matches {p} run item replace block ~ ~ ~ container.{slot} with {zeilen[slot]}")
+        else:
+            anzeige.append(f"execute if score #phase nw.phase matches {p} run item replace block ~ ~ ~ container.{slot} with minecraft:air")
+fn("gen/anzeige", anzeige)
+
+fn("gen/einer", [
+    # Block weg? Dann hat ihn jemand abgebaut: Ertrag geben und wieder aufstellen
+    f"execute unless block ~ ~ ~ minecraft:barrel run function {NS}:gen/abgebaut",
+    # Anzeigegegenstaende gehoeren nicht ins Spielerinventar
+    "clear @a[distance=..8] *[custom_data~{nw_gen_show:1b}]",
+    f"execute unless items block ~ ~ ~ container.{GEN_SLOT_TAKE} *[custom_data~{{nw_gen_take:1b}}] run function {NS}:gen/mitnehmen",
+    f"execute if score #m20 nw.tmp matches 7 run function {NS}:gen/anzeige",
+    "execute if score #m20 nw.tmp matches 7 unless entity @e[type=block_display,tag=nw.gen_block,distance=..1.2] run function " + f"{NS}:gen/farbe",
+])
+gen_abgebaut = [
+    'kill @e[type=item,distance=..2.5,nbt={Item:{id:"minecraft:barrel"}}]',
+    'kill @e[type=item,distance=..2.5,nbt={Item:{components:{"minecraft:custom_data":{nw_gen_show:1b}}}}]',
+    'kill @e[type=item,distance=..2.5,nbt={Item:{components:{"minecraft:custom_data":{nw_gen_take:1b}}}}]',
+    "scoreboard players set #wer nw.tmp 0",
+    f"execute as @a[distance=..8,scores={{nw.mined_gen=1..}},limit=1] run function {NS}:quell/abbau",
+    "scoreboard players reset @a nw.mined_gen",
+    "setblock ~ ~ ~ minecraft:barrel[facing=down]",
+    f"function {NS}:gen/anzeige",
+]
+fn("gen/abgebaut", gen_abgebaut)
+fn("gen/mitnehmen", [
+    f"clear @a[distance=..8] *[custom_data~{{nw_gen_take:1b}}]",
+    "clear @a[distance=..8] *[custom_data~{nw_gen_show:1b}]",
+    f"execute as @p[distance=..8] run give @s {gen_item()}",
+    "kill @e[type=block_display,tag=nw.gen_block,distance=..1.2]",
+    "setblock ~ ~ ~ minecraft:air",
+    'kill @e[type=item,distance=..2.5,nbt={Item:{id:"minecraft:barrel"}}]',
+    "playsound minecraft:entity.item.pickup player @p[distance=..8] ~ ~ ~ 1 0.8",
+    "tellraw @p[distance=..8] " + J([txt("The generator is in your inventory.", "light_purple")]),
+    "kill @s",
+])
+
+# ----------------------------------------------------------------------------
 # Source Focus (10 Minuten doppelte Coins) und Decoy Totem (zieht die Gegner auf sich)
 # ----------------------------------------------------------------------------
 MODELL_FOCUS = 'item_model="nachtwache:focus",' if RESSOURCENPAKET else ""
@@ -1349,6 +1465,9 @@ def item_spec(spec):
     if spec == "ZWERG":
         g = zwerg_item(0)
         return g[:g.index("[")], g[g.index("[") + 1:-1], 1
+    if spec == "GENERATOR":
+        g = gen_item()
+        return g[:g.index("[")], g[g.index("[") + 1:-1], 1
     if spec == "LEBEN":
         modell = 'item_model="nachtwache:life",' if RESSOURCENPAKET else ""
         return "minecraft:red_dye", modell + 'custom_name={text:"One more Life",color:"red",italic:false},custom_data={nw_leben:1b},lore=[' + ",".join(LORE_LEBEN_L) + ']', 1
@@ -1393,7 +1512,7 @@ def menue_item(r):
     if mx > 1:
         lore.append(f'[{{text:"Shift-click: buy {mx} for {preis * mx} ",color:"gray",italic:false}},{{text:"{COIN}",color:"white",italic:false}}]')
     comps = [f'custom_data={{nw_menu:{int(r["id"])}}}', f'custom_name={{text:"{name}",color:"white",italic:false}}', "lore=[" + ",".join(lore) + "]"]
-    if comp and not r["item"].startswith("SET:") and r["item"] not in ("GLOCKE", "LATERNE", "KONTRAKT", "ZWERG", "FOCUS", "DECOY", "BOGI", "LEBEN"):
+    if comp and not r["item"].startswith("SET:") and r["item"] not in ("GLOCKE", "LATERNE", "KONTRAKT", "ZWERG", "FOCUS", "DECOY", "BOGI", "LEBEN", "GENERATOR"):
         comps.insert(0, comp)
     elif r["item"] == "GLOCKE" and MODELL_GLOCKE:
         comps.insert(0, MODELL_GLOCKE[:-1])
@@ -1405,6 +1524,8 @@ def menue_item(r):
         comps.insert(0, 'item_model="nachtwache:archer"')
     elif r["item"] == "KONTRAKT" and MODELL_KONTRAKT:
         comps.insert(0, MODELL_KONTRAKT[:-1])
+    elif r["item"] == "GENERATOR" and RESSOURCENPAKET:
+        comps.insert(0, 'item_model="nachtwache:generator"')
     elif r["item"] == "LEBEN" and RESSOURCENPAKET:
         comps.insert(0, 'item_model="nachtwache:life"')
     elif r["item"] == "FOCUS" and MODELL_FOCUS:

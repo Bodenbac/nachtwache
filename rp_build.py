@@ -177,6 +177,27 @@ def bogi_icon():
     ], {"k": (24, 18, 14), "K": (96, 66, 36), "h": (222, 176, 138), "w": (250, 250, 250), "n": (196, 148, 112),
         "b": (178, 74, 32), "B": (208, 104, 52), "g": (46, 96, 56), "d": (36, 24, 14)})
 
+def generator():
+    """Source Generator: violetter Kristallwuerfel mit Kanten."""
+    return pixel([
+        "................",
+        "....kkkkkkkk....",
+        "...kvvvvvvvvk...",
+        "..kvVVVVVVVVvk..",
+        ".kvVVwwVVwwVVvk.",
+        ".kvVVwwVVwwVVvk.",
+        ".kvVVVVVVVVVVvk.",
+        ".kvVVVVVVVVVVvk.",
+        ".kvVwwVVVVwwVvk.",
+        ".kvVwwVVVVwwVvk.",
+        ".kvVVVVVVVVVVvk.",
+        "..kvVVVVVVVVvk..",
+        "...kvvvvvvvvk...",
+        "....kkkkkkkk....",
+        "................",
+        "................",
+    ], {"k": (34, 14, 52), "v": (110, 58, 168), "V": (156, 96, 224), "w": (226, 196, 255)})
+
 def focus():
     """Source Focus: violettes Auge im Amethystrahmen."""
     return pixel([
@@ -315,7 +336,7 @@ def build(out_dir=None):
 
     # Eigene Item-Symbole (item_model="nachtwache:watch_bell" / "nachtwache:kit")
     for name, img in (("watch_bell", glocke()), ("kit", kiste()), ("lantern", laterne()), ("contract", kontrakt()),
-                      ("focus", focus()), ("decoy", decoy()), ("archer", bogi_icon()), ("life", icons.herz())):
+                      ("focus", focus()), ("decoy", decoy()), ("archer", bogi_icon()), ("life", icons.herz()), ("generator", generator())):
         w(nw / "textures" / "item" / f"{name}.png", img)
         w(nw / "models" / "item" / f"{name}.json", json.dumps({"parent": "minecraft:item/generated", "textures": {"layer0": f"nachtwache:item/{name}"}}))
         w(nw / "items" / f"{name}.json", json.dumps({"model": {"type": "minecraft:model", "model": f"nachtwache:item/{name}"}}))
@@ -330,6 +351,14 @@ def build(out_dir=None):
     w(nw / "textures" / "item" / "dwarf.png", zwerg_icon())
     w(nw / "models" / "item" / "dwarf.json", json.dumps({"parent": "minecraft:item/generated", "textures": {"layer0": "nachtwache:item/dwarf"}}))
     w(nw / "items" / "dwarf.json", json.dumps({"model": {"type": "minecraft:model", "model": "nachtwache:item/dwarf"}}))
+    # Der Generator ist ein Fass mit facing=down, das hier unsichtbar wird. Darueber steht ein Block-Display
+    # in der Stufenfarbe, das Verkaufsfass am Tresen (facing=up) bleibt normal sichtbar.
+    w(nw / "models" / "block" / "empty.json", json.dumps({"textures": {"particle": "minecraft:block/barrel_side"}, "elements": []}))
+    fass = json.loads((VORLAGEN / "barrel.json").read_text())
+    for k in ("facing=down,open=false", "facing=down,open=true"):
+        fass["variants"][k] = {"model": "nachtwache:block/empty"}
+    w(mc / "blockstates" / "barrel.json", json.dumps(fass, indent=1))
+
     # Fraggles Rucksack ist eine Fallentruhe: unsichtbar durch leere Textur. Truhen sind keine vollen Bloecke,
     # deshalb bleiben die Flaechen der Nachbarbloecke sichtbar (mit einem Fass entstanden Loecher in der Welt).
     leer = Image.new("RGBA", (64, 64), (0, 0, 0, 0))

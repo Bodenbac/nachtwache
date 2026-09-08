@@ -107,3 +107,4 @@ id,stufe,name,preis,max,item,kat
 33,2,Decoy Totem,600,16,DECOY,SPECIAL
 48,2,Bogi the Archer,7500,1,BOGI,SPECIAL
 34,1,One more Life,1500,1,LEBEN,SPECIAL
+35,3,Source Generator,20000,1,GENERATOR,SPECIAL
