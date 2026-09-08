@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 45                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 46                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -313,7 +313,7 @@ OBJEKTIVE = [("nw.mined_gen", "minecraft.mined:minecraft.barrel")] + [
     ("nw.px", "dummy"), ("nw.py", "dummy"), ("nw.pz", "dummy"), ("nw.qx", "dummy"), ("nw.qy", "dummy"), ("nw.qz", "dummy"),
     ("nw.still", "dummy"), ("nw.kills", "dummy"), ("nw.verdient", "dummy"), ("nw.anzeige", "dummy"), ("nw.const", "dummy"),
     ("nw.boss", "dummy"), ("nw.upgrade", "dummy"), ("nw.laterne", "dummy"), ("nw.zwerg", "dummy"), ("nw.zwerg_t", "dummy"), ("nw.zwerg_b", "dummy"), ("nw.zwerg_d", "dummy"), ("nw.leben", "dummy"), ("nw.chan", "dummy"), ("nw.hpv", "dummy"), ("nw.hpp", "dummy"),
-    ("nw.b_sp", "dummy"), ("nw.b_st", "dummy"), ("nw.b_mu", "dummy"), ("nw.b_fl", "dummy"), ("nw.b_inf", "dummy"), ("nw.b_kb", "dummy"), ("nw.b_rg", "dummy"), ("nw.b_t", "dummy"), ("reset", "trigger"), ("yes", "trigger"), ("night", "trigger"), ("boss", "trigger"), ("fraggle", "trigger"), ("endnight", "trigger"), ("money", "trigger"), ("nw.schlaf", "dummy"), ("nw.fest", "dummy"), ("nw.dmin", "dummy"),
+    ("nw.b_sp", "dummy"), ("nw.b_st", "dummy"), ("nw.b_mu", "dummy"), ("nw.b_fl", "dummy"), ("nw.b_inf", "dummy"), ("nw.b_kb", "dummy"), ("nw.b_rg", "dummy"), ("nw.b_t", "dummy"), ("nw.b_nm", "dummy"), ("reset", "trigger"), ("yes", "trigger"), ("night", "trigger"), ("boss", "trigger"), ("fraggle", "trigger"), ("endnight", "trigger"), ("money", "trigger"), ("nw.schlaf", "dummy"), ("nw.fest", "dummy"), ("nw.dmin", "dummy"),
 ]
 
 # ---- load ------------------------------------------------------------------
@@ -703,6 +703,9 @@ for b in range(ZWERG_BP_MAX + 1):
                 symbol.append(f"execute if score @s nw.zwerg_b matches {b} if score @s nw.zwerg matches {l} run item replace block {ziel} with {zwerg_up_knopf(l)}")
         else:
             symbol.append(f"execute if score @s nw.zwerg_b matches {b} run item replace block {ziel} with {ZWERG_SPERRE}")
+for l in range(ZWERG_MAX + 1):
+    symbol.append(f'execute if score @s nw.zwerg matches {l} run data merge block ~ ~ ~ '
+                  f'{{CustomName:[{{text:"Fraggle   ",color:"aqua"}},{{text:"Level {l}",color:"gray"}}]}}')
 fn("zwerg/symbol", symbol)
 
 fn("zwerg/einer", [
@@ -1094,6 +1097,7 @@ fn("bogi/neu", [
     # ab hier auf der ausgerichteten Position weiterarbeiten, sonst stecken die Modelle im Boden
     # Stufen aus dem Marker lesen
     *[f"execute store result score @s nw.b_{k} run data get entity @s data.{k}" for k, *_ in BOGI_UPGRADES],
+    "execute store result score @s nw.b_nm run data get entity @s data.nm",
     "scoreboard players set @s nw.b_t 0",
     # Fallentruhe als Rucksack, Ausrichtung so, dass keine Doppeltruhe entsteht
     "execute at @s run setblock ~ ~ ~ minecraft:trapped_chest[facing=north,type=single]",
@@ -1212,6 +1216,10 @@ for k, name, ikon, maxst, preis, text in BOGI_UPGRADES:
         symbol_b.append(f"execute if score @s nw.b_{k} matches {n} run item replace block ~ ~ ~ container.{BOGI_SLOT[k]} with {it}")
 symbol_b += [f"execute if items block ~ ~ ~ container.{sl} *[custom_data~{{nw_bogi_lock:1b}}] run item replace block ~ ~ ~ container.{sl} with minecraft:air" for sl in BOGI_PFEIL_SLOTS]
 symbol_b += [f"execute unless items block ~ ~ ~ container.{sl} * run item replace block ~ ~ ~ container.{sl} with {BOGI_SPERRE}" for sl in range(BOGI_LAGER, 27)]
+for _n, _nm in enumerate(["Bogi"] + BOGI_NAMEN):
+    symbol_b.append(f'execute if score @s nw.b_nm matches {_n} run data merge block ~ ~ ~ '
+                    f'{{CustomName:{{text:"{_nm}",color:"green"}}}}')
+symbol_b.append('execute unless score @s nw.b_nm matches 0..%d run data merge block ~ ~ ~ {CustomName:{text:"Bogi",color:"green"}}' % len(BOGI_NAMEN))
 fn("bogi/symbol", symbol_b)
 
 for k, name, ikon, maxst, preis, text in BOGI_UPGRADES:
@@ -1387,6 +1395,10 @@ for p in range(1, ANZ_STUFEN + 1):
             anzeige.append(f"execute if score #phase nw.phase matches {p} run item replace block ~ ~ ~ container.{slot} with {zeilen[slot]}")
         else:
             anzeige.append(f"execute if score #phase nw.phase matches {p} run item replace block ~ ~ ~ container.{slot} with minecraft:air")
+# Fenstername je Stufe statt "Barrel"
+for p_ in range(1, ANZ_STUFEN + 1):
+    anzeige.append(f'execute if score #phase nw.phase matches {p_} run data merge block ~ ~ ~ '
+                   f'{{CustomName:[{{text:"Source Generator   ",color:"light_purple"}},{{text:"Tier {p_}",color:"gray"}}]}}')
 fn("gen/anzeige", anzeige)
 
 fn("gen/einer", [
