@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 41                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 42                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -106,6 +106,10 @@ BODEN_Y = 63                           # Oberkante Boden, gelaufen wird auf 64
 SAMMLER_POS = (0.5, 64, -6.5)
 RAMPE = (3, 64, -6)                    # Trichter der Lieferrampe
 SPAWN = (0, 64, 3)
+BEACON = (0, 64, 4)                    # roter Beacon: das Herz der Insel, die Gegner laufen darauf zu
+LEBEN_START, LEBEN_MAX, LEBEN_PREIS = 10, 20, 1500
+DURCHBRUCH_TICKS = 100                 # 5 s ungestoert am Beacon, dann kostet der Gegner ein Leben
+DURCHBRUCH_RADIUS = 3.5
 TRUHE = (2, 64, 2)
 
 # Uhr: die Spielzeit laeuft mit ZAEHLER/NENNER Zeiteinheiten je Tick (Akkumulator, dadurch fluessig). Tag = 13500 Einheiten.
@@ -291,7 +295,7 @@ OBJEKTIVE = [(f"nw.mined{i+1}", "minecraft.mined:" + st[0].replace("minecraft:",
     ("nw.tode", "deathCount"),
     ("nw.px", "dummy"), ("nw.py", "dummy"), ("nw.pz", "dummy"), ("nw.qx", "dummy"), ("nw.qy", "dummy"), ("nw.qz", "dummy"),
     ("nw.still", "dummy"), ("nw.kills", "dummy"), ("nw.verdient", "dummy"), ("nw.anzeige", "dummy"), ("nw.const", "dummy"),
-    ("nw.boss", "dummy"), ("nw.upgrade", "dummy"), ("nw.laterne", "dummy"), ("nw.zwerg", "dummy"), ("nw.zwerg_t", "dummy"), ("nw.zwerg_b", "dummy"), ("nw.zwerg_d", "dummy"),
+    ("nw.boss", "dummy"), ("nw.upgrade", "dummy"), ("nw.laterne", "dummy"), ("nw.zwerg", "dummy"), ("nw.zwerg_t", "dummy"), ("nw.zwerg_b", "dummy"), ("nw.zwerg_d", "dummy"), ("nw.leben", "dummy"), ("nw.chan", "dummy"), ("nw.hpv", "dummy"), ("nw.hpp", "dummy"),
     ("nw.b_sp", "dummy"), ("nw.b_st", "dummy"), ("nw.b_mu", "dummy"), ("nw.b_fl", "dummy"), ("nw.b_inf", "dummy"), ("nw.b_kb", "dummy"), ("nw.b_rg", "dummy"), ("nw.b_t", "dummy"), ("reset", "trigger"), ("yes", "trigger"), ("night", "trigger"), ("boss", "trigger"), ("fraggle", "trigger"), ("endnight", "trigger"), ("money", "trigger"), ("nw.schlaf", "dummy"), ("nw.fest", "dummy"), ("nw.dmin", "dummy"),
 ]
 
@@ -354,7 +358,7 @@ init = [
     "scoreboard players set #konto nw.konto 0", "scoreboard players set #abbau nw.abbau 0", "scoreboard players set #phase nw.phase 1",
     "scoreboard players set #nacht nw.nacht 0", "scoreboard players set #gegner nw.gegner 0", "scoreboard players set #status nw.status 0",
     "scoreboard players set #modus nw.status 0", "scoreboard players set #finale nw.status 0", "scoreboard players set #kills nw.kills 0",
-    "scoreboard players set #verdient nw.verdient 0", "scoreboard players set #tode nw.tode 0", "scoreboard players set #glocke nw.upgrade 0", "scoreboard players set #kontrakt nw.upgrade 0", "kill @e[type=marker,tag=nw.laterne]", "kill @e[tag=nw.zwerg]", "kill @e[tag=nw.zwerg_k]", "kill @e[tag=nw.zwerg_a]",
+    "scoreboard players set #verdient nw.verdient 0", "scoreboard players set #tode nw.tode 0", f"scoreboard players set #leben nw.leben {LEBEN_START}", "scoreboard players set #ende nw.status 0", "scoreboard players set #glocke nw.upgrade 0", "scoreboard players set #kontrakt nw.upgrade 0", "kill @e[type=marker,tag=nw.laterne]", "kill @e[tag=nw.zwerg]", "kill @e[tag=nw.zwerg_k]", "kill @e[tag=nw.zwerg_a]",
     "scoreboard players set #boss nw.boss 0",
     f"forceload add -20 -20 20 100",
     f"function {NS}:welt/startinsel", f"function {NS}:welt/stand", f"function {NS}:welt/gegnerinsel",
@@ -385,6 +389,10 @@ start += [
     "setblock -4 69 -1 minecraft:stripped_dark_oak_log", "setblock -5 68 -1 minecraft:stripped_dark_oak_log[axis=x]",
     "setblock -3 67 -1 minecraft:stripped_dark_oak_log[axis=x]", "setblock -3 67 0 minecraft:stripped_dark_oak_log[axis=z]",
     "setblock -4 70 -1 minecraft:dark_oak_leaves[persistent=true]",
+    # Herz der Insel: roter Beacon auf einem Eisensockel
+    f"fill {BEACON[0]-1} {BEACON[1]-1} {BEACON[2]-1} {BEACON[0]+1} {BEACON[1]-1} {BEACON[2]+1} minecraft:iron_block",
+    f"setblock {BEACON[0]} {BEACON[1]} {BEACON[2]} minecraft:beacon",
+    f"setblock {BEACON[0]} {BEACON[1]+1} {BEACON[2]} minecraft:red_stained_glass",
     # Lichter
     "setblock 5 64 3 minecraft:soul_lantern", "setblock -5 64 4 minecraft:soul_lantern", "setblock 3 64 -6 minecraft:air",
 ]
@@ -909,7 +917,7 @@ fn("anzeige/aktualisieren", [
     "scoreboard players display name sb_5 nw.anzeige " + J([icon("coin"), txt("Coins  ", "gold"), {"score": {"name": "#konto", "objective": "nw.konto"}, "color": "yellow", "bold": True}]),
     f"function {NS}:anzeige/stufe",
     "scoreboard players display name sb_3 nw.anzeige " + J([icon("moon"), txt("Night  ", "red"), {"score": {"name": "#nacht", "objective": "nw.nacht"}, "color": "white"}]),
-    "scoreboard players display name sb_2 nw.anzeige " + J([icon("zombie"), txt("Enemies  ", "dark_red"), {"score": {"name": "#gegner", "objective": "nw.gegner"}, "color": "white", "bold": True}]),
+    "scoreboard players display name sb_2 nw.anzeige " + J([icon("heart"), txt("Lives  ", "red"), {"score": {"name": "#leben", "objective": "nw.leben"}, "color": "white", "bold": True}]),
     "scoreboard players display name sb_1 nw.anzeige " + J([icon("skull"), txt("Deaths  ", "dark_gray"), {"score": {"name": "#tode", "objective": "nw.tode"}, "color": "gray"}]),
 ])
 
@@ -1183,12 +1191,67 @@ fn("bogi/kaputt", [
 ])
 
 # ----------------------------------------------------------------------------
+# Leben: der rote Beacon ist das Herz der Insel. Die Gegner laufen darauf zu (ein unsichtbarer
+# Eisengolem darauf zieht sie an), stehen sie fuenf Sekunden ungestoert davor, loesen sie sich auf
+# und kosten ein Leben. Ein Treffer bricht das ab. Bei null Leben ist Schluss.
+# ----------------------------------------------------------------------------
+BX, BY, BZ = BEACON
+fn("beacon/aufbauen", [
+    f"execute unless block {BX} {BY} {BZ} minecraft:beacon run setblock {BX} {BY} {BZ} minecraft:beacon",
+    f"execute unless block {BX} {BY+1} {BZ} minecraft:red_stained_glass run setblock {BX} {BY+1} {BZ} minecraft:red_stained_glass",
+    f"fill {BX-1} {BY-1} {BZ-1} {BX+1} {BY-1} {BZ+1} minecraft:iron_block replace #{NS}:beacon_sockel",
+    f"kill @e[type=item,x={BX-2},y={BY-2},z={BZ-2},dx=4,dy=4,dz=4,nbt={{Item:{{id:\"minecraft:iron_block\"}}}}]",
+    f"kill @e[type=item,x={BX-2},y={BY-2},z={BZ-2},dx=4,dy=4,dz=4,nbt={{Item:{{id:\"minecraft:beacon\"}}}}]",
+    # Zielpunkt der Gegner: ein winziger, unverwundbarer Dorfbewohner auf dem Beacon. Zombies suchen Dorfbewohner
+    # auch ohne Sichtlinie, deshalb laufen sie zuverlaessig hierher. Unsichtbare Entities werden dagegen ignoriert.
+    f"execute unless entity @e[tag=nw.herz] run summon minecraft:villager {BX+0.5} {BY+1.1} {BZ+0.5} "
+    f'{{Tags:["nw.herz"],NoAI:1b,Silent:1b,Invulnerable:1b,PersistenceRequired:1b,NoGravity:1b,Offers:{{Recipes:[]}},'
+    f'VillagerData:{{profession:"minecraft:nitwit",level:1,type:"minecraft:swamp"}},'
+    f'attributes:[{{id:"minecraft:scale",base:0.2d}},{{id:"minecraft:max_health",base:1024d}}],Health:1024f}}',
+    # Lebensanzeige ueber dem Beacon
+    f"execute unless entity @e[tag=nw.herz_text] run summon minecraft:text_display {BX+0.5} {BY+2.1} {BZ+0.5} "
+    f'{{Tags:["nw.herz_text"],billboard:"center",background:0,see_through:false,text:{J([txt(icons.ZEICHEN["heart"] + " ", "red"), {"score": {"name": "#leben", "objective": "nw.leben"}, "color": "red", "bold": True}])}}}',
+])
+w(f"{NS}/tags/block/beacon_sockel.json", {"values": ["minecraft:air", "minecraft:grass_block", "minecraft:dirt", "minecraft:water", "minecraft:cave_air"]})
+fn("beacon/anzeige", [
+    f'data modify entity @e[tag=nw.herz_text,limit=1] text set value {J([txt(icons.ZEICHEN["heart"] + " ", "red"), {"score": {"name": "#leben", "objective": "nw.leben"}, "color": "red", "bold": True}])}',
+])
+fn("beacon/verlust", [
+    "scoreboard players remove #leben nw.leben 1",
+    f"particle minecraft:dust{{color:[1.0,0.1,0.1],scale:2.0}} {BX+0.5} {BY+1.5} {BZ+0.5} 0.8 1.2 0.8 0 60",
+    f"playsound minecraft:entity.wither.hurt hostile @a {BX} {BY} {BZ} 1.4 0.6",
+    "tellraw @a " + J([txt("Something reached the beacon. ", "dark_red"), txt("-1 ", "red"), txt(icons.ZEICHEN["heart"], "red")]),
+    "title @a actionbar " + J([txt("Lives: ", "red"), {"score": {"name": "#leben", "objective": "nw.leben"}, "color": "white"}]),
+    f"function {NS}:beacon/anzeige",
+    f"execute if score #leben nw.leben matches ..0 run function {NS}:beacon/ende",
+])
+fn("beacon/ende", [
+    "scoreboard players set #leben nw.leben 0",
+    "scoreboard players set #ende nw.status 1",
+    "kill @e[tag=nw.welle]", f"function {NS}:gegner/vergessen",
+    "scoreboard players set #gegner nw.gegner 0", "scoreboard players set #boss nw.boss 0",
+    "bossbar set nw:welle visible false", "bossbar set nw:boss visible false", "bossbar set nw:uhr visible false",
+    f"function {NS}:strasse/entfernen", "scoreboard players set #status nw.status 0",
+    'title @a times 10 120 20',
+    "title @a title " + J([txt("GAME OVER", "dark_red", bold=True)]),
+    "title @a subtitle " + J([txt("The beacon is dark.", "gray")]),
+    "playsound minecraft:entity.wither.death master @a ~ ~ ~ 1 0.6",
+    "tellraw @a " + J([txt("The beacon went out on night ", "dark_red"), {"score": {"name": "#nacht", "objective": "nw.nacht"}, "color": "white"}, txt(".", "dark_red")]),
+    "tellraw @a " + J([txt("Enemies killed: ", "gray"), {"score": {"name": "#kills", "objective": "nw.kills"}, "color": "white"},
+                       txt("   Coins earned: ", "gray"), {"score": {"name": "#verdient", "objective": "nw.verdient"}, "color": "gold"},
+                       txt("   Blocks mined: ", "gray"), {"score": {"name": "#abbau", "objective": "nw.abbau"}, "color": "white"}]),
+    "tellraw @a " + J([txt("An admin can start over with ", "gray"), txt("/trigger reset", "yellow"), txt(".", "gray")]),
+])
+
+# ----------------------------------------------------------------------------
 # Source Focus (10 Minuten doppelte Coins) und Decoy Totem (zieht die Gegner auf sich)
 # ----------------------------------------------------------------------------
 MODELL_FOCUS = 'item_model="nachtwache:focus",' if RESSOURCENPAKET else ""
 MODELL_DECOY = 'item_model="nachtwache:decoy",' if RESSOURCENPAKET else ""
 FOCUS_TICKS = 12000                     # 10 Minuten
 DECOY_HP = 60                           # rund 20 Treffer
+LORE_LEBEN_L = ['{text:"Repairs the beacon by one heart.",color:"gray",italic:false}',
+                '{text:"Buy before the wave, not during it.",color:"gray",italic:false}']
 LORE_FOCUS_L = ['{text:"Right-click: the Source pays double for 10 minutes.",color:"gray",italic:false}',
                 '{text:"Burns up when used.",color:"gray",italic:false}']
 LORE_DECOY_L = ['{text:"Right-click: puts up a decoy where you stand.",color:"gray",italic:false}',
@@ -1286,6 +1349,9 @@ def item_spec(spec):
     if spec == "ZWERG":
         g = zwerg_item(0)
         return g[:g.index("[")], g[g.index("[") + 1:-1], 1
+    if spec == "LEBEN":
+        modell = 'item_model="nachtwache:life",' if RESSOURCENPAKET else ""
+        return "minecraft:red_dye", modell + 'custom_name={text:"One more Life",color:"red",italic:false},custom_data={nw_leben:1b},lore=[' + ",".join(LORE_LEBEN_L) + ']', 1
     if spec == "FOCUS":
         return "minecraft:amethyst_shard", MODELL_FOCUS + 'custom_name={text:"Source Focus",color:"light_purple",italic:false},custom_data={nw_focus:1b},' + KONSUM + ',lore=[' + ",".join(LORE_FOCUS_L) + ']', 1
     if spec == "DECOY":
@@ -1318,6 +1384,8 @@ def menue_item(r):
         lore = LORE_LATERNE_L + lore
     if r["item"] == "KONTRAKT":
         lore = LORE_KONTRAKT_L + lore
+    if r["item"] == "LEBEN":
+        lore = LORE_LEBEN_L + lore
     if r["item"] == "FOCUS":
         lore = LORE_FOCUS_L + lore
     if r["item"] == "DECOY":
@@ -1325,7 +1393,7 @@ def menue_item(r):
     if mx > 1:
         lore.append(f'[{{text:"Shift-click: buy {mx} for {preis * mx} ",color:"gray",italic:false}},{{text:"{COIN}",color:"white",italic:false}}]')
     comps = [f'custom_data={{nw_menu:{int(r["id"])}}}', f'custom_name={{text:"{name}",color:"white",italic:false}}', "lore=[" + ",".join(lore) + "]"]
-    if comp and not r["item"].startswith("SET:") and r["item"] not in ("GLOCKE", "LATERNE", "KONTRAKT", "ZWERG", "FOCUS", "DECOY", "BOGI"):
+    if comp and not r["item"].startswith("SET:") and r["item"] not in ("GLOCKE", "LATERNE", "KONTRAKT", "ZWERG", "FOCUS", "DECOY", "BOGI", "LEBEN"):
         comps.insert(0, comp)
     elif r["item"] == "GLOCKE" and MODELL_GLOCKE:
         comps.insert(0, MODELL_GLOCKE[:-1])
@@ -1337,6 +1405,8 @@ def menue_item(r):
         comps.insert(0, 'item_model="nachtwache:archer"')
     elif r["item"] == "KONTRAKT" and MODELL_KONTRAKT:
         comps.insert(0, MODELL_KONTRAKT[:-1])
+    elif r["item"] == "LEBEN" and RESSOURCENPAKET:
+        comps.insert(0, 'item_model="nachtwache:life"')
     elif r["item"] == "FOCUS" and MODELL_FOCUS:
         comps.insert(0, MODELL_FOCUS[:-1])
     elif r["item"] == "DECOY" and MODELL_DECOY:
@@ -1408,7 +1478,7 @@ fn("sammler/tresen", [
 
 fn("sammler/erscheinen", [
     "kill @e[tag=nw.villager]", "kill @e[tag=nw.sammler]", "kill @e[tag=nw.kasse]",
-    f'summon minecraft:villager {sx} {sy} {sz} {{Tags:["nw.villager"],NoAI:1b,Silent:1b,Invulnerable:1b,PersistenceRequired:1b,NoGravity:1b,CustomName:{{text:"The Collector",color:"dark_red"}},CustomNameVisible:1b,VillagerData:{{profession:"minecraft:nitwit",level:1,type:"minecraft:swamp"}},Offers:{{Recipes:[]}},Rotation:[0f,0f]}}',
+    f'summon minecraft:zombie_villager {sx} {sy} {sz} {{Tags:["nw.villager"],NoAI:1b,Silent:1b,Invulnerable:1b,PersistenceRequired:1b,NoGravity:1b,CustomName:{{text:"The Collector",color:"dark_red"}},CustomNameVisible:1b,VillagerData:{{profession:"minecraft:nitwit",level:1,type:"minecraft:swamp"}},Offers:{{Recipes:[]}},IsBaby:0b,Rotation:[0f,0f]}}',
     f'summon minecraft:interaction {sx} {sy} {sz} {{Tags:["nw.sammler"],width:1.6f,height:2.4f}}',
     f"function {NS}:sammler/tresen", f"function {NS}:sammler/kaufmenue",
 ])
@@ -1488,7 +1558,14 @@ for r in angebot:
         "execute if score #konto nw.konto < #preis nw.tmp run return 0",
         "scoreboard players operation #konto nw.konto -= #preis nw.tmp",
         "execute store result storage nachtwache:tmp n int 1 run scoreboard players get #anz nw.tmp",
-        *([f'data modify storage nachtwache:tmp item set value "{give_arg}"' if not comp else f"data modify storage nachtwache:tmp item set value '{give_arg}'",
+        *([f"execute if score #leben nw.leben matches {LEBEN_MAX}.. run scoreboard players add #konto nw.konto {preis}",
+           f"execute if score #leben nw.leben matches {LEBEN_MAX}.. run return run tellraw @s " + J([txt("[The Collector] ", "dark_red"), txt("The beacon is already whole.", "gray")]),
+           "scoreboard players add #leben nw.leben 1",
+           f"function {NS}:beacon/anzeige",
+           f"particle minecraft:heart {BEACON[0]+0.5} {BEACON[1]+1.6} {BEACON[2]+0.5} 0.4 0.5 0.4 0 12",
+           "tellraw @a " + J([txt("The beacon burns brighter. Lives: ", "red"), {"score": {"name": "#leben", "objective": "nw.leben"}, "color": "white"}]),
+        ] if r["item"] == "LEBEN" else
+        [f'data modify storage nachtwache:tmp item set value "{give_arg}"' if not comp else f"data modify storage nachtwache:tmp item set value '{give_arg}'",
            f"function {NS}:sammler/geben with storage nachtwache:tmp"] if r["item"] != "BOGI" else [
            # Bogis heissen der Reihe nach Tombo, Svenjo, Harzo, Django ...
            "scoreboard players add #bogi_nr nw.status 1",
@@ -1537,6 +1614,7 @@ verkauf_funktionen("rampe", RAMPE, 5, 80)
 # Uhr
 # ----------------------------------------------------------------------------
 fn("uhr/tick", [
+    "execute if score #ende nw.status matches 1 run return 0",     # nach dem Verlust steht die Zeit
     "execute unless entity @a run return 0",          # Zeit laeuft nur, wenn jemand auf dem Server ist
     "scoreboard players set #tagphase nw.tmp 1",
     f"execute if score #zeit nw.zeit matches {NACHT_START}..{TAG_START - 1} run scoreboard players set #tagphase nw.tmp 0",
@@ -1849,6 +1927,13 @@ gt += [
 ]
 fn("gegner/tick", gt)
 # Nach einem Admin-Kill kein Kopfgeld: Vorzaehler auf null
+fn("gegner/durchbruch", [
+    "execute at @s run particle minecraft:soul ~ ~1 ~ 0.3 0.5 0.3 0.05 30",
+    "execute at @s run playsound minecraft:entity.evoker.cast_spell hostile @a ~ ~ ~ 1 0.5",
+    "kill @s",
+    f"function {NS}:gegner/vergessen",
+    f"function {NS}:beacon/verlust",
+])
 fn("gegner/vergessen", [f"scoreboard players set #p_{t} nw.tmp2 0" for t in KOPFGELD])
 # Endermen sind von Haus aus neutral: jede Sekunde auf den naechsten Spieler wuetend machen
 fn("gegner/enderman_wut", [        # 1.21.11: angry_at (UUID) und anger_end_time (Spielzeit, absolut)
@@ -1864,6 +1949,14 @@ fn("gegner/glocke", [
     f"tellraw @a {J([txt('The watch bell rings. Something is on the road.', 'red')])}",
 ])
 fn("gegner/einer", [
+    # Am Beacon: fuenf Sekunden ungestoert, dann loest sich der Gegner auf und kostet ein Leben
+    "execute store result score @s nw.hpv run data get entity @s Health",
+    "execute if score @s nw.hpv < @s nw.hpp run scoreboard players set @s nw.chan 0",
+    "scoreboard players operation @s nw.hpp = @s nw.hpv",
+    f"execute unless entity @s[x={BEACON[0]+0.5},y={BEACON[1]+0.5},z={BEACON[2]+0.5},distance=..{DURCHBRUCH_RADIUS}] run scoreboard players set @s nw.chan 0",
+    f"execute if entity @s[x={BEACON[0]+0.5},y={BEACON[1]+0.5},z={BEACON[2]+0.5},distance=..{DURCHBRUCH_RADIUS}] run scoreboard players add @s nw.chan 1",
+    "execute if score @s nw.chan matches 1.. if score #m20 nw.tmp matches 0 at @s run particle minecraft:dust{color:[1.0,0.2,0.2],scale:1.0} ~ ~1 ~ 0.3 0.5 0.3 0 6",
+    f"execute if score @s nw.chan matches {DURCHBRUCH_TICKS}.. run return run function {NS}:gegner/durchbruch",
     "execute store result score @s nw.px run data get entity @s Pos[0]",
     "execute store result score @s nw.py run data get entity @s Pos[1]",
     "execute store result score @s nw.pz run data get entity @s Pos[2]",
@@ -1937,6 +2030,8 @@ fn("schutz/sekunde", [
     "scoreboard players enable @a[tag=nw.admin] reset", "scoreboard players enable @a[tag=nw.admin] yes", "scoreboard players enable @a[tag=nw.admin] night", "scoreboard players enable @a[tag=nw.admin] boss", "scoreboard players enable @a[tag=nw.admin] fraggle", "scoreboard players enable @a[tag=nw.admin] endnight", "scoreboard players enable @a[tag=nw.admin] money",
     f"function {NS}:laterne/sekunde",
     f"function {NS}:focus/sekunde",
+    f"function {NS}:beacon/aufbauen",
+    f"function {NS}:beacon/anzeige",
     f"function {NS}:decoy/sekunde",
     f"function {NS}:gegner/enderman_wut",
     # Sammler fehlt laenger als 5 s (nicht nur beim Start, wenn die Entities noch nicht geladen sind)? Dann neu.

@@ -315,7 +315,7 @@ def build(out_dir=None):
 
     # Eigene Item-Symbole (item_model="nachtwache:watch_bell" / "nachtwache:kit")
     for name, img in (("watch_bell", glocke()), ("kit", kiste()), ("lantern", laterne()), ("contract", kontrakt()),
-                      ("focus", focus()), ("decoy", decoy()), ("archer", bogi_icon())):
+                      ("focus", focus()), ("decoy", decoy()), ("archer", bogi_icon()), ("life", icons.herz())):
         w(nw / "textures" / "item" / f"{name}.png", img)
         w(nw / "models" / "item" / f"{name}.json", json.dumps({"parent": "minecraft:item/generated", "textures": {"layer0": f"nachtwache:item/{name}"}}))
         w(nw / "items" / f"{name}.json", json.dumps({"model": {"type": "minecraft:model", "model": f"nachtwache:item/{name}"}}))

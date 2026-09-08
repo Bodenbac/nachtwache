@@ -140,11 +140,33 @@ STERN = [
 def stern():
     return bild(STERN, {"o": (110, 70, 10), "g": (232, 176, 40), "G": (255, 222, 90)})
 
+HERZ = [
+    "..oooo....oooo..",
+    ".orrrro..orrrro.",
+    "orrRRrrooRRrrrro",
+    "orRRRrrrrrrrrrro",
+    "orRRrrrrrrrrrrro",
+    "orRrrrrrrrrrrrro",
+    ".orrrrrrrrrrrro.",
+    ".oorrrrrrrrrroo.",
+    "..oorrrrrrrroo..",
+    "...oorrrrrroo...",
+    "....oorrrroo....",
+    ".....oorroo.....",
+    "......oooo......",
+    ".......oo.......",
+    "................",
+    "................",
+]
+
+def herz():
+    return bild(HERZ, {"o": (78, 10, 14), "r": (214, 34, 44), "R": (255, 120, 120)})
+
 # Zeichen in der Standardschrift: Muenze bleibt ● (U+25CF), Rest im Private-Use-Bereich
-ZEICHEN = {"coin": "\u25cf", "moon": "\ue010", "zombie": "\ue011", "skull": "\ue012", "star": "\u2605"}
+ZEICHEN = {"coin": "\u25cf", "moon": "\ue010", "zombie": "\ue011", "skull": "\ue012", "star": "\u2605", "heart": "\ue013"}
 for _n in range(1, 8):
     ZEICHEN[f"tier{_n}"] = chr(0xE000 + _n)
 
-ALLE = {"coin": muenze, "moon": mond, "zombie": zombie, "skull": totenkopf, "star": stern}
+ALLE = {"coin": muenze, "moon": mond, "zombie": zombie, "skull": totenkopf, "star": stern, "heart": herz}
 for _n in range(1, 8):
     ALLE[f"tier{_n}"] = (lambda n: (lambda: stufe(n)))(_n)
