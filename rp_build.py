@@ -321,7 +321,17 @@ REITER_SYMBOLE = {"BLOCKS": "stone", "MINERALS": "iron_ingot", "MOB": "rotten_fl
                   "BOOKS": "enchanted_book", "SPECIAL": "nether_star"}
 
 def reiter_platte(quelle, fuell, rand, hell):
-    """Farbplatte (16x16, Rahmen 2 px, Ecken frei) mit dem Symbol auf 12x12 in der Mitte."""
+    """STANDARD fuer jedes Fach, das kein normales Truhenfach ist (Luis 09.09.2026).
+
+    Reiter, Knoepfe, Upgrade-Slots und gesperrte Faecher bekommen eine eigene Textur: ein Zeichen
+    auf einer Farbplatte, die den ganzen Slot fuellt. Rahmen 2 px, Ecken frei, Zeichen 12 px mittig.
+    Farben stehen in PLATTE_FARBEN: dunkelviolett = kaufbar oder Aktion, goldgelb = gekauft, aktiv
+    oder Maximum, rot = gekauft aber ausgeschaltet. Der aktive Zustand glaenzt zusaetzlich.
+    Nie ueber generic_54.png loesen, die gilt fuer jede Truhe im Spiel.
+
+    quelle ist entweder eine Vorlagendatei in vorlagen/ oder "zeichen:<name>" fuer ein eigenes
+    5x5-Zeichen aus buecher.py (wird auf 10 px verdoppelt).
+    """
     im = Image.new("RGBA", (16, 16), fuell + (255,))
     px = im.load()
     for d in range(2):
