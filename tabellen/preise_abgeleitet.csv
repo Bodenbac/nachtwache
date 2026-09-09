@@ -183,6 +183,10 @@ cartography_table,Cartography Table,22,rezept
 carved_pumpkin,Carved Pumpkin,10,muster
 cauldron,Cauldron,154,rezept
 chain,Chain,1,rest
+chainmail_boots,Chainmail Boots,80,basis
+chainmail_chestplate,Chainmail Chestplate,160,basis
+chainmail_helmet,Chainmail Helmet,100,basis
+chainmail_leggings,Chainmail Leggings,140,basis
 charcoal,Charcoal,19,rezept
 cherry_boat,Cherry Boat,28,rezept
 cherry_button,Cherry Button,6,rezept
@@ -378,9 +382,17 @@ deepslate_tile_wall,Deepslate Tile Wall,2,rezept
 deepslate_tiles,Deepslate Tiles,2,rezept
 detector_rail,Detector Rail,24,rezept
 diamond,Diamond,400,basis
+diamond_axe,Diamond Axe,825,basis
 diamond_block,Block of Diamond,4000,basis
+diamond_boots,Diamond Boots,1100,basis
+diamond_chestplate,Diamond Chestplate,2200,basis
+diamond_helmet,Diamond Helmet,1375,basis
+diamond_leggings,Diamond Leggings,1925,basis
 diamond_ore,Diamond Ore,300,basis
+diamond_pickaxe,Diamond Pickaxe,825,basis
+diamond_shovel,Diamond Shovel,275,basis
 diamond_spear,Diamond Spear,445,rezept
+diamond_sword,Diamond Sword,550,basis
 diorite,Diorite,1,basis
 diorite_slab,Diorite Slab,1,rest
 diorite_stairs,Diorite Stairs,1,rest
@@ -539,14 +551,22 @@ host_armor_trim_smithing_template,Smithing Template,300,rezept
 howl_pottery_sherd,Howl Pottery Sherd,20,muster
 ice,Ice,3,basis
 ink_sac,Ink Sac,3,basis
+iron_axe,Iron Axe,83,basis
 iron_bars,Iron Bars,9,rezept
 iron_block,Block of Iron,200,basis
+iron_boots,Iron Boots,110,basis
 iron_chain,Iron Chain,29,rezept
+iron_chestplate,Iron Chestplate,220,basis
 iron_door,Iron Door,44,rezept
+iron_helmet,Iron Helmet,138,basis
 iron_ingot,Iron Ingot,20,basis
+iron_leggings,Iron Leggings,193,basis
 iron_nugget,Iron Nugget,3,rezept
 iron_ore,Iron Ore,15,basis
+iron_pickaxe,Iron Pickaxe,83,basis
+iron_shovel,Iron Shovel,28,basis
 iron_spear,Iron Spear,27,rezept
+iron_sword,Iron Sword,55,basis
 iron_trapdoor,Iron Trapdoor,88,rezept
 item_frame,Item Frame,27,rezept
 jack_o_lantern,Jack o'Lantern,15,rezept
@@ -581,6 +601,10 @@ lava_bucket,Lava Bucket,400,basis
 lead,Lead,11,rezept
 leaf_litter,Leaf Litter,2,rezept
 leather,Leather,8,basis
+leather_boots,Leather Boots,26,basis
+leather_chestplate,Leather Tunic,53,basis
+leather_helmet,Leather Cap,33,basis
+leather_leggings,Leather Pants,46,basis
 lectern,Lectern,53,rezept
 lever,Lever,4,rezept
 light_blue_banner,Light Blue Banner,56,rezept
@@ -734,10 +758,18 @@ nether_sprouts,Nether Sprouts,1,basis
 nether_star,Nether Star,3000,muster
 nether_wart,Nether Wart,6,basis
 nether_wart_block,Nether Wart Block,3,basis
+netherite_axe,Netherite Axe,1500,basis
 netherite_block,Block of Netherite,12633,rezept
+netherite_boots,Netherite Boots,1625,basis
+netherite_chestplate,Netherite Chestplate,2250,basis
+netherite_helmet,Netherite Helmet,1750,basis
 netherite_ingot,Netherite Ingot,1276,rezept
+netherite_leggings,Netherite Leggings,2000,basis
+netherite_pickaxe,Netherite Pickaxe,1500,basis
 netherite_scrap,Netherite Scrap,250,basis
+netherite_shovel,Netherite Shovel,1125,basis
 netherite_spear,Netherite Spear,1,rest
+netherite_sword,Netherite Sword,1375,basis
 netherite_upgrade_smithing_template,Smithing Template,300,rezept
 netherrack,Netherrack,2,basis
 note_block,Note Block,30,rezept
@@ -1113,15 +1145,19 @@ spruce_wood,Spruce Wood,22,rezept
 stick,Stick,2,rezept
 sticky_piston,Sticky Piston,53,rezept
 stone,Stone,1,basis
+stone_axe,Stone Axe,15,basis
 stone_brick_slab,Stone Brick Slab,1,rest
 stone_brick_stairs,Stone Brick Stairs,1,rest
 stone_brick_wall,Stone Brick Wall,1,rest
 stone_bricks,Stone Bricks,1,rest
 stone_button,Stone Button,2,rezept
+stone_pickaxe,Stone Pickaxe,15,basis
 stone_pressure_plate,Stone Pressure Plate,3,rezept
+stone_shovel,Stone Shovel,10,basis
 stone_slab,Stone Slab,1,rest
 stone_spear,Stone Spear,6,rezept
 stone_stairs,Stone Stairs,1,rest
+stone_sword,Stone Sword,15,basis
 stonecutter,Stonecutter,26,rezept
 string,String,4,basis
 stripped_acacia_log,Stripped Acacia Log,15,muster
@@ -1288,6 +1324,7 @@ weathered_cut_copper_stairs,Weathered Cut Copper Stairs,13,rezept
 weathered_lightning_rod,Weathered Lightning Rod,18,muster
 weeping_vines,Weeping Vines,2,basis
 wet_sponge,Wet Sponge,50,muster
+wheat,Wheat Crops,3,basis
 wheat_seeds,Wheat Seeds,2,muster
 white_banner,White Banner,29,rezept
 white_bed,White Bed,24,rezept
@@ -1309,7 +1346,11 @@ wildflowers,Wildflowers,2,muster
 wind_charge,Wind Charge,6,rezept
 wither_rose,Wither Rose,15,basis
 wither_skeleton_skull,Wither Skeleton Skull,150,basis
+wooden_axe,Wooden Axe,13,basis
+wooden_pickaxe,Wooden Pickaxe,13,basis
+wooden_shovel,Wooden Shovel,8,basis
 wooden_spear,Wooden Spear,8,rezept
+wooden_sword,Wooden Sword,10,basis
 writable_book,Book and Quill,30,rezept
 yellow_banner,Yellow Banner,49,rezept
 yellow_bed,Yellow Bed,29,rezept

@@ -2,116 +2,152 @@
 # max = wie viel ein Shift-Klick kauft (Standard 64, bei Werkzeug und Sets 1).
 # item: normale Item-ID, Kurzname aus SONDERITEMS (Tranke, Buecher) oder SET:<a:n;b:n> fuer eine gefuellte Truhe.
 # id muss eindeutig und stabil bleiben.
-# kat = Reiter im Laden: BLOCKS, MINERALS, MOB, FOOD, TOOLS, BREW, BOOKS, SPECIAL
-id,stufe,name,preis,max,item,kat
-1,1,Dirt,2,64,dirt,BLOCKS
-2,1,Cobblestone,2,64,cobblestone,BLOCKS
-3,1,Stone,3,64,stone,BLOCKS
-4,1,Sand,10,64,sand,BLOCKS
-5,1,Gravel,10,64,gravel,BLOCKS
-6,1,Oak Log,50,64,oak_log,BLOCKS
-7,1,Oak Planks,15,64,oak_planks,BLOCKS
-12,1,Bread,50,64,bread,FOOD
-13,1,Apple,30,64,apple,FOOD
-15,1,Water Bucket,500,1,water_bucket,TOOLS
-16,1,Lava Bucket,500,1,lava_bucket,TOOLS
-21,3,Oak Sapling,4000,64,oak_sapling,FOOD
-22,3,Wheat Seeds,200,64,wheat_seeds,FOOD
-23,1,Stone Pickaxe,30,1,stone_pickaxe,TOOLS
-24,1,Stone Sword,30,1,stone_sword,TOOLS
-25,1,Stone Axe,30,1,stone_axe,TOOLS
-26,1,Stone Shovel,20,1,stone_shovel,TOOLS
-29,1,Iron Ingot,50,64,iron_ingot,MINERALS
-141,1,Bone,35,64,bone,MOB
-30,1,Collector Lantern,300,1,LATERNE,SPECIAL
-31,1,Bounty Contract,150,1,KONTRAKT,SPECIAL
-62,1,Obsidian,500,64,obsidian,BLOCKS
-50,1,End Portal Frame,2500,64,end_portal_frame,BLOCKS
-49,1,Fraggle the Dwarf,10000,1,ZWERG,SPECIAL
-28,1,Coal,15,64,coal,MINERALS
-131,3,Diamond,500,64,diamond,MINERALS
-40,1,Arrow,20,64,arrow,MOB
-42,2,Redstone,10,64,redstone,TOOLS
-45,2,Steak,100,64,cooked_beef,FOOD
-46,4,Leather,30,64,leather,MOB
-47,2,String,10,64,string,MOB
-61,3,Gold Ingot,100,64,gold_ingot,MINERALS
-63,3,Enchanting Table,4000,1,enchanting_table,BREW
-64,3,Bookshelf,150,64,bookshelf,BLOCKS
-65,3,Lapis Lazuli,20,64,lapis_lazuli,MINERALS
-67,3,Potion of Healing II,150,1,TRANK_HEILUNG,BREW
-68,3,Potion of Strength,200,1,TRANK_STAERKE,BREW
-69,3,Potion of Night Vision (long),100,1,TRANK_NACHTSICHT,BREW
-72,3,Observer,60,64,observer,TOOLS
-74,3,Slimeball,30,64,slime_ball,MOB
-75,3,TNT,200,64,tnt,TOOLS
-76,2,Cobweb,20,64,cobweb,MOB
-77,3,Magma Block,20,64,magma_block,BLOCKS
-101,5,Bottle o' Enchanting,50,64,experience_bottle,BREW
-102,5,Ender Pearl,100,16,ender_pearl,MOB
-103,5,Totem of Undying,1500,1,totem_of_undying,SPECIAL
-104,5,Elytra,5000,1,elytra,SPECIAL
-105,5,Iron Golem Egg,2000,1,iron_golem_spawn_egg,SPECIAL
-80,4,Copper Ingot,20,64,copper_ingot,MINERALS
-81,4,Amethyst Shard,40,64,amethyst_shard,MINERALS
-82,4,Quartz,25,64,quartz,MINERALS
-83,4,Glowstone Dust,30,64,glowstone_dust,BLOCKS
-84,4,Blaze Rod,120,64,blaze_rod,BREW
-85,4,Nether Wart,60,64,nether_wart,BREW
-86,4,Honeycomb,40,64,honeycomb,BLOCKS
-87,4,Sea Lantern,120,64,sea_lantern,BLOCKS
-88,4,Sponge,300,64,sponge,BLOCKS
-89,4,Name Tag,200,1,name_tag,TOOLS
-90,4,Saddle,300,1,saddle,TOOLS
-110,6,Ghast Tear,300,64,ghast_tear,BREW
-111,6,Phantom Membrane,150,64,phantom_membrane,MOB
-112,6,Shulker Shell,800,64,shulker_shell,MINERALS
-113,6,Dragon's Breath,400,64,dragon_breath,BREW
-114,6,Wither Skeleton Skull,1500,64,wither_skeleton_skull,SPECIAL
-115,6,Sculk Sensor,300,64,sculk_sensor,TOOLS
-116,6,Heart of the Sea,2500,1,heart_of_the_sea,SPECIAL
-117,6,Enchanted Golden Apple,3000,64,enchanted_golden_apple,FOOD
-120,7,Netherite Scrap,600,64,netherite_scrap,MINERALS
-121,7,Netherite Upgrade Template,1500,1,netherite_upgrade_smithing_template,MINERALS
-124,7,Trident,2000,1,trident,SPECIAL
-125,7,Beacon,8000,1,beacon,SPECIAL
-150,1,Book: Sharpness IV,2200,1,BUCH_SHARPNESS_4,BOOKS
-151,1,Book: Sharpness V,3800,1,BUCH_SHARPNESS_5,BOOKS
-152,1,Book: Protection III,1500,1,BUCH_PROTECTION_3,BOOKS
-153,1,Book: Protection IV,3500,1,BUCH_PROTECTION_4,BOOKS
-154,1,Book: Efficiency IV,2000,1,BUCH_EFFICIENCY_4,BOOKS
-155,1,Book: Efficiency V,3000,1,BUCH_EFFICIENCY_5,BOOKS
-156,1,Book: Fortune II,1500,1,BUCH_FORTUNE_2,BOOKS
-157,1,Book: Fortune III,3000,1,BUCH_FORTUNE_3,BOOKS
-158,1,Book: Looting II,1000,1,BUCH_LOOTING_2,BOOKS
-159,1,Book: Looting III,2000,1,BUCH_LOOTING_3,BOOKS
-160,1,Book: Unbreaking II,800,1,BUCH_UNBREAKING_2,BOOKS
-161,1,Book: Unbreaking III,1200,1,BUCH_UNBREAKING_3,BOOKS
-162,1,Book: Power IV (bow),2000,1,BUCH_POWER_4,BOOKS
-163,1,Book: Power V (bow),3000,1,BUCH_POWER_5,BOOKS
-164,1,Book: Punch I (bow),500,1,BUCH_PUNCH_1,BOOKS
-165,1,Book: Punch II (bow),1000,1,BUCH_PUNCH_2,BOOKS
-166,1,Book: Fire Aspect I,800,1,BUCH_FIRE_ASPECT_1,BOOKS
-167,1,Book: Fire Aspect II,1500,1,BUCH_FIRE_ASPECT_2,BOOKS
-168,1,Book: Knockback I,400,1,BUCH_KNOCKBACK_1,BOOKS
-169,1,Book: Knockback II,800,1,BUCH_KNOCKBACK_2,BOOKS
-170,1,Book: Sweeping Edge II,500,1,BUCH_SWEEPING_EDGE_2,BOOKS
-171,1,Book: Sweeping Edge III,1000,1,BUCH_SWEEPING_EDGE_3,BOOKS
-172,1,Book: Feather Falling III,800,1,BUCH_FEATHER_FALLING_3,BOOKS
-173,1,Book: Feather Falling IV,1500,1,BUCH_FEATHER_FALLING_4,BOOKS
-174,1,Book: Silk Touch,2000,1,BUCH_SILK_TOUCH_1,BOOKS
-175,1,Book: Mending,2500,1,BUCH_MENDING_1,BOOKS
-176,1,Book: Infinity (bow),2000,1,BUCH_INFINITY_1,BOOKS
-177,1,Book: Flame (bow),1200,1,BUCH_FLAME_1,BOOKS
-32,2,Source Focus,800,16,FOCUS,SPECIAL
-33,2,Decoy Totem,600,16,DECOY,SPECIAL
-48,1,Bogi the Archer,7500,1,BOGI,SPECIAL
-34,1,One more Life,1500,1,LEBEN,SPECIAL
-35,3,Source Generator,20000,1,GENERATOR,SPECIAL
-178,1,Rotten Flesh,10,64,rotten_flesh,MOB
-179,2,Spider Eye,25,64,spider_eye,MOB
-180,3,Gunpowder,40,64,gunpowder,MOB
-181,5,Magma Cream,90,64,magma_cream,MOB
-182,6,Wither Skeleton Skull,1200,16,wither_skeleton_skull,MOB
-183,7,Nether Star,6000,1,nether_star,MOB
-184,2,Reaper Skull,700,16,SKULL,SPECIAL
+# kat = Reiter im Laden: BLOCKS, MINERALS, MOB, FOOD, TOOLS, UTIL, BREW, BOOKS, SPECIAL
+id,stufe,name,preis,max,item,kat,pos
+1,1,Dirt,2,64,dirt,BLOCKS,
+2,1,Cobblestone,2,64,cobblestone,BLOCKS,
+3,1,Stone,3,64,stone,BLOCKS,
+4,1,Sand,10,64,sand,BLOCKS,
+5,1,Gravel,10,64,gravel,BLOCKS,
+6,1,Oak Log,50,64,oak_log,BLOCKS,
+7,1,Oak Planks,15,64,oak_planks,BLOCKS,
+12,1,Bread,50,64,bread,FOOD,
+13,1,Apple,30,64,apple,FOOD,
+15,1,Water Bucket,500,1,water_bucket,UTIL,
+16,1,Lava Bucket,500,1,lava_bucket,UTIL,
+21,3,Oak Sapling,4000,64,oak_sapling,FOOD,
+22,3,Wheat Seeds,200,64,wheat_seeds,FOOD,
+29,1,Iron Ingot,50,64,iron_ingot,MINERALS,
+141,1,Bone,35,64,bone,MOB,
+30,1,Collector Lantern,300,1,LATERNE,SPECIAL,
+31,1,Bounty Contract,150,1,KONTRAKT,SPECIAL,
+62,1,Obsidian,500,64,obsidian,BLOCKS,
+50,1,End Portal Frame,2500,64,end_portal_frame,BLOCKS,
+49,1,Fraggle the Dwarf,10000,1,ZWERG,SPECIAL,
+28,1,Coal,15,64,coal,MINERALS,
+131,3,Diamond,500,64,diamond,MINERALS,
+40,1,Arrow,20,64,arrow,MOB,
+42,2,Redstone,10,64,redstone,UTIL,
+45,2,Steak,100,64,cooked_beef,FOOD,
+46,4,Leather,30,64,leather,MOB,
+47,2,String,10,64,string,MOB,
+61,3,Gold Ingot,100,64,gold_ingot,MINERALS,
+63,3,Enchanting Table,4000,1,enchanting_table,BREW,
+64,3,Bookshelf,150,64,bookshelf,BLOCKS,
+65,3,Lapis Lazuli,20,64,lapis_lazuli,MINERALS,
+67,3,Potion of Healing II,150,1,TRANK_HEILUNG,BREW,
+68,3,Potion of Strength,200,1,TRANK_STAERKE,BREW,
+69,3,Potion of Night Vision (long),100,1,TRANK_NACHTSICHT,BREW,
+72,3,Observer,60,64,observer,UTIL,
+74,3,Slimeball,30,64,slime_ball,MOB,
+75,3,TNT,200,64,tnt,UTIL,
+76,2,Cobweb,20,64,cobweb,MOB,
+77,3,Magma Block,20,64,magma_block,BLOCKS,
+101,5,Bottle o' Enchanting,50,64,experience_bottle,BREW,
+102,5,Ender Pearl,100,16,ender_pearl,MOB,
+103,5,Totem of Undying,1500,1,totem_of_undying,SPECIAL,
+104,5,Elytra,5000,1,elytra,SPECIAL,
+105,5,Iron Golem Egg,2000,1,iron_golem_spawn_egg,SPECIAL,
+80,4,Copper Ingot,20,64,copper_ingot,MINERALS,
+81,4,Amethyst Shard,40,64,amethyst_shard,MINERALS,
+82,4,Quartz,25,64,quartz,MINERALS,
+83,4,Glowstone Dust,30,64,glowstone_dust,BLOCKS,
+84,4,Blaze Rod,120,64,blaze_rod,BREW,
+85,4,Nether Wart,60,64,nether_wart,BREW,
+86,4,Honeycomb,40,64,honeycomb,BLOCKS,
+87,4,Sea Lantern,120,64,sea_lantern,BLOCKS,
+88,4,Sponge,300,64,sponge,BLOCKS,
+89,4,Name Tag,200,1,name_tag,UTIL,
+90,4,Saddle,300,1,saddle,UTIL,
+110,6,Ghast Tear,300,64,ghast_tear,BREW,
+111,6,Phantom Membrane,150,64,phantom_membrane,MOB,
+112,6,Shulker Shell,800,64,shulker_shell,MINERALS,
+113,6,Dragon's Breath,400,64,dragon_breath,BREW,
+114,6,Wither Skeleton Skull,1500,64,wither_skeleton_skull,SPECIAL,
+115,6,Sculk Sensor,300,64,sculk_sensor,UTIL,
+116,6,Heart of the Sea,2500,1,heart_of_the_sea,SPECIAL,
+117,6,Enchanted Golden Apple,3000,64,enchanted_golden_apple,FOOD,
+120,7,Netherite Scrap,600,64,netherite_scrap,MINERALS,
+121,7,Netherite Upgrade Template,1500,1,netherite_upgrade_smithing_template,MINERALS,
+124,7,Trident,2000,1,trident,SPECIAL,
+125,7,Beacon,8000,1,beacon,SPECIAL,
+150,1,Book: Sharpness IV,2200,1,BUCH_SHARPNESS_4,BOOKS,
+151,1,Book: Sharpness V,3800,1,BUCH_SHARPNESS_5,BOOKS,
+152,1,Book: Protection III,1500,1,BUCH_PROTECTION_3,BOOKS,
+153,1,Book: Protection IV,3500,1,BUCH_PROTECTION_4,BOOKS,
+154,1,Book: Efficiency IV,2000,1,BUCH_EFFICIENCY_4,BOOKS,
+155,1,Book: Efficiency V,3000,1,BUCH_EFFICIENCY_5,BOOKS,
+156,1,Book: Fortune II,1500,1,BUCH_FORTUNE_2,BOOKS,
+157,1,Book: Fortune III,3000,1,BUCH_FORTUNE_3,BOOKS,
+158,1,Book: Looting II,1000,1,BUCH_LOOTING_2,BOOKS,
+159,1,Book: Looting III,2000,1,BUCH_LOOTING_3,BOOKS,
+160,1,Book: Unbreaking II,800,1,BUCH_UNBREAKING_2,BOOKS,
+161,1,Book: Unbreaking III,1200,1,BUCH_UNBREAKING_3,BOOKS,
+162,1,Book: Power IV (bow),2000,1,BUCH_POWER_4,BOOKS,
+163,1,Book: Power V (bow),3000,1,BUCH_POWER_5,BOOKS,
+164,1,Book: Punch I (bow),500,1,BUCH_PUNCH_1,BOOKS,
+165,1,Book: Punch II (bow),1000,1,BUCH_PUNCH_2,BOOKS,
+166,1,Book: Fire Aspect I,800,1,BUCH_FIRE_ASPECT_1,BOOKS,
+167,1,Book: Fire Aspect II,1500,1,BUCH_FIRE_ASPECT_2,BOOKS,
+168,1,Book: Knockback I,400,1,BUCH_KNOCKBACK_1,BOOKS,
+169,1,Book: Knockback II,800,1,BUCH_KNOCKBACK_2,BOOKS,
+170,1,Book: Sweeping Edge II,500,1,BUCH_SWEEPING_EDGE_2,BOOKS,
+171,1,Book: Sweeping Edge III,1000,1,BUCH_SWEEPING_EDGE_3,BOOKS,
+172,1,Book: Feather Falling III,800,1,BUCH_FEATHER_FALLING_3,BOOKS,
+173,1,Book: Feather Falling IV,1500,1,BUCH_FEATHER_FALLING_4,BOOKS,
+174,1,Book: Silk Touch,2000,1,BUCH_SILK_TOUCH_1,BOOKS,
+175,1,Book: Mending,2500,1,BUCH_MENDING_1,BOOKS,
+176,1,Book: Infinity (bow),2000,1,BUCH_INFINITY_1,BOOKS,
+177,1,Book: Flame (bow),1200,1,BUCH_FLAME_1,BOOKS,
+32,2,Source Focus,800,16,FOCUS,SPECIAL,
+33,2,Decoy Totem,600,16,DECOY,SPECIAL,
+48,1,Bogi the Archer,7500,1,BOGI,SPECIAL,
+34,1,One more Life,1500,1,LEBEN,SPECIAL,
+35,3,Source Generator,20000,1,GENERATOR,SPECIAL,
+178,1,Rotten Flesh,10,64,rotten_flesh,MOB,
+179,2,Spider Eye,25,64,spider_eye,MOB,
+180,3,Gunpowder,40,64,gunpowder,MOB,
+181,5,Magma Cream,90,64,magma_cream,MOB,
+182,6,Wither Skeleton Skull,1200,16,wither_skeleton_skull,MOB,
+183,7,Nether Star,6000,1,nether_star,MOB,
+184,2,Reaper Skull,700,16,SKULL,SPECIAL,
+200,1,Wooden Sword,20,1,wooden_sword,TOOLS,0
+201,1,Wooden Pickaxe,25,1,wooden_pickaxe,TOOLS,1
+202,1,Wooden Axe,25,1,wooden_axe,TOOLS,2
+203,1,Wooden Shovel,15,1,wooden_shovel,TOOLS,3
+204,1,Leather Helmet,66,1,leather_helmet,TOOLS,5
+205,1,Leather Chestplate,106,1,leather_chestplate,TOOLS,6
+206,1,Leather Leggings,92,1,leather_leggings,TOOLS,7
+207,1,Leather Boots,52,1,leather_boots,TOOLS,8
+208,1,Stone Sword,30,1,stone_sword,TOOLS,9
+209,1,Stone Pickaxe,30,1,stone_pickaxe,TOOLS,10
+210,1,Stone Axe,30,1,stone_axe,TOOLS,11
+211,1,Stone Shovel,20,1,stone_shovel,TOOLS,12
+212,1,Chainmail Helmet,200,1,chainmail_helmet,TOOLS,14
+213,1,Chainmail Chestplate,320,1,chainmail_chestplate,TOOLS,15
+214,1,Chainmail Leggings,280,1,chainmail_leggings,TOOLS,16
+215,1,Chainmail Boots,160,1,chainmail_boots,TOOLS,17
+216,2,Iron Sword,110,1,iron_sword,TOOLS,18
+217,2,Iron Pickaxe,165,1,iron_pickaxe,TOOLS,19
+218,2,Iron Axe,165,1,iron_axe,TOOLS,20
+219,2,Iron Shovel,55,1,iron_shovel,TOOLS,21
+220,2,Iron Helmet,275,1,iron_helmet,TOOLS,23
+221,2,Iron Chestplate,440,1,iron_chestplate,TOOLS,24
+222,2,Iron Leggings,385,1,iron_leggings,TOOLS,25
+223,2,Iron Boots,220,1,iron_boots,TOOLS,26
+224,4,Diamond Sword,1100,1,diamond_sword,TOOLS,27
+225,4,Diamond Pickaxe,1650,1,diamond_pickaxe,TOOLS,28
+226,4,Diamond Axe,1650,1,diamond_axe,TOOLS,29
+227,4,Diamond Shovel,550,1,diamond_shovel,TOOLS,30
+228,4,Diamond Helmet,2750,1,diamond_helmet,TOOLS,32
+229,4,Diamond Chestplate,4400,1,diamond_chestplate,TOOLS,33
+230,4,Diamond Leggings,3850,1,diamond_leggings,TOOLS,34
+231,4,Diamond Boots,2200,1,diamond_boots,TOOLS,35
+232,6,Netherite Sword,2750,1,netherite_sword,TOOLS,36
+233,6,Netherite Pickaxe,3000,1,netherite_pickaxe,TOOLS,37
+234,6,Netherite Axe,3000,1,netherite_axe,TOOLS,38
+235,6,Netherite Shovel,2250,1,netherite_shovel,TOOLS,39
+236,6,Netherite Helmet,3500,1,netherite_helmet,TOOLS,41
+237,6,Netherite Chestplate,4500,1,netherite_chestplate,TOOLS,42
+238,6,Netherite Leggings,4000,1,netherite_leggings,TOOLS,43
+239,6,Netherite Boots,3250,1,netherite_boots,TOOLS,44

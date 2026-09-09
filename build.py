@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 59                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 61                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -1731,7 +1731,8 @@ fn("decoy/zerbricht", [
 # ----------------------------------------------------------------------------
 # Laden: Kaufen-Truhe (Doppeltruhe, 54 Felder) und Verkaufen-Fass am Tresen. Geld bleibt virtuell (Konto).
 # Kaufen: Klick auf ein Symbol = 1 Stueck, Shift-Klick = max (meist 64). Verkaufen: Ware ins Fass legen
-# (Shift-Klick aus dem Inventar), wird sofort verkauft. Nur Ware aus preise.csv, nie Werkzeug.
+# (Shift-Klick aus dem Inventar), wird sofort verkauft. Ware aus preise.csv; seit v0.28 auch Werkzeug und
+# Ruestung, die der Laden fuehrt (halber Kaufpreis, aufgerundet) - Schadenswert wird dabei nicht beachtet.
 # ----------------------------------------------------------------------------
 REITER_SLOTS = 9           # oberste Reihe: Reiter (Starter, Tier 2..7, Books)
 PLATZ_PRO_REITER = 45      # fuenf Reihen Ware je Reiter
@@ -1840,7 +1841,8 @@ KATEGORIEN = [
     ("MINERALS", "Minerals & Drops", "minecraft:iron_ingot"),
     ("MOB",      "Mob Drops",        "minecraft:rotten_flesh"),
     ("FOOD",     "Food",             "minecraft:bread"),
-    ("TOOLS",    "Tools",            "minecraft:redstone"),
+    ("TOOLS",    "Tools",            "minecraft:iron_pickaxe"),
+    ("UTIL",     "Utility",          "minecraft:redstone"),
     ("BREW",     "Brewing & Magic",  "minecraft:brewing_stand"),
     ("BOOKS",    "Enchanted Books",  "minecraft:enchanted_book"),
     ("SPECIAL",  "Special",          "minecraft:nether_star"),
@@ -1856,6 +1858,16 @@ def reiter_liste(phase):
                       else (lambda r: (int(r["stufe"]), int(r["id"]))))
         rows = sorted((r for r in angebot if r["kat"] == key and int(r["stufe"]) <= phase), key=schluessel)
         if not rows: continue
+        # Spalte pos: fester Platz im Reiter (0..44), sonst wird von oben links durchgefuellt
+        fest = {int(r["pos"]): r for r in rows if r.get("pos", "").strip()}
+        if fest:
+            frei = [r for r in rows if not r.get("pos", "").strip()]
+            gitter = []
+            for platz in range(PLATZ_PRO_REITER):
+                if platz in fest: gitter.append(fest[platz])
+                elif frei: gitter.append(frei.pop(0))
+                else: gitter.append(None)
+            rows = gitter
         out.append((i, len(out), name, icon, rows))
     return out
 
@@ -1872,7 +1884,8 @@ for p in range(1, ANZ_STUFEN + 1):
         for ridx, slot, name, iid, _ in reiter:
             belegt[slot] = reiter_item(ridx, name, iid, ridx == idx)
         for i, r in enumerate(rows[:PLATZ_PRO_REITER]):
-            belegt[REITER_SLOTS + i] = menue_item(r)
+            if r is not None:
+                belegt[REITER_SLOTS + i] = menue_item(r)
         for slot in range(54):
             blk, ls = kauf_block(slot)
             lines.append(f"item replace block {blk[0]} {blk[1]} {blk[2]} container.{ls} with {belegt.get(slot, 'minecraft:air')}")
@@ -1928,6 +1941,7 @@ for p in range(1, ANZ_STUFEN + 1):
     reiter = reiter_liste(p)
     for idx, _, _, _, rows in reiter:
         for i, r in enumerate(rows[:PLATZ_PRO_REITER]):
+            if r is None: continue
             blk, ls = kauf_block(REITER_SLOTS + i)
             kauf_tick.append(f"execute if score #phase nw.phase matches {p} if score #seite nw.status matches {idx} unless items block {blk[0]} {blk[1]} {blk[2]} container.{ls} *[custom_data~{{nw_menu:{int(r['id'])}}}] run function {NS}:sammler/kauf/{int(r['id'])}")
         for ridx, slot, _, _, _ in reiter:

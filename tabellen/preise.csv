@@ -1,7 +1,8 @@
 # Ankaufspreise des Sammlers, wert = Coins je Stueck (Verkaufsfass und Lieferrampe, Rampe zahlt 80 Prozent).
 # Massstab: Kaufpreise im Laden (Eisen 50, Gold 100, Diamant 1000, Obsidian 500) und Seltenheit am Quell.
 # Verarbeitung lohnt sich: Erz < Rohstoff < Barren < Block (Kupfererz 4, Kupferbarren 5, Kupferblock 50).
-# Werkzeuge, Ruestung und Waffen stehen absichtlich nicht drin, die nimmt der Sammler nicht.
+# Werkzeuge und Ruestung, die der Laden verkauft, kauft der Sammler zur Haelfte zurueck (aufgerundet, Luis 09.09.2026).
+# Alles andere an Werkzeug und Waffen nimmt er weiterhin nicht.
 item,name,wert
 cobblestone,Cobblestone,1
 stone,Stone,1
@@ -201,3 +202,43 @@ wither_rose,Wither Rose,15
 cooked_rabbit,Cooked Rabbit,20
 cooked_cod,Cooked Cod,15
 cooked_salmon,Cooked Salmon,15
+wooden_sword,Wooden Sword,10
+wooden_pickaxe,Wooden Pickaxe,13
+wooden_axe,Wooden Axe,13
+wooden_shovel,Wooden Shovel,8
+leather_helmet,Leather Helmet,33
+leather_chestplate,Leather Chestplate,53
+leather_leggings,Leather Leggings,46
+leather_boots,Leather Boots,26
+stone_sword,Stone Sword,15
+stone_pickaxe,Stone Pickaxe,15
+stone_axe,Stone Axe,15
+stone_shovel,Stone Shovel,10
+chainmail_helmet,Chainmail Helmet,100
+chainmail_chestplate,Chainmail Chestplate,160
+chainmail_leggings,Chainmail Leggings,140
+chainmail_boots,Chainmail Boots,80
+iron_sword,Iron Sword,55
+iron_pickaxe,Iron Pickaxe,83
+iron_axe,Iron Axe,83
+iron_shovel,Iron Shovel,28
+iron_helmet,Iron Helmet,138
+iron_chestplate,Iron Chestplate,220
+iron_leggings,Iron Leggings,193
+iron_boots,Iron Boots,110
+diamond_sword,Diamond Sword,550
+diamond_pickaxe,Diamond Pickaxe,825
+diamond_axe,Diamond Axe,825
+diamond_shovel,Diamond Shovel,275
+diamond_helmet,Diamond Helmet,1375
+diamond_chestplate,Diamond Chestplate,2200
+diamond_leggings,Diamond Leggings,1925
+diamond_boots,Diamond Boots,1100
+netherite_sword,Netherite Sword,1375
+netherite_pickaxe,Netherite Pickaxe,1500
+netherite_axe,Netherite Axe,1500
+netherite_shovel,Netherite Shovel,1125
+netherite_helmet,Netherite Helmet,1750
+netherite_chestplate,Netherite Chestplate,2250
+netherite_leggings,Netherite Leggings,2000
+netherite_boots,Netherite Boots,1625

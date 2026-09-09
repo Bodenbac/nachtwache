@@ -32,6 +32,8 @@ basis = {}
 for r in csv.DictReader(l for l in open(HERE / "tabellen" / "preise.csv", encoding="utf-8") if not l.startswith("#")):
     basis[r["item"]] = int(r["wert"])
 
+# Was in preise.csv einen festen Wert hat, wird IMMER angekauft, auch Werkzeug und Ruestung.
+# So kann der Laden Ausruestung verkaufen und der Sammler sie zur Haelfte zurueckkaufen (Luis 09.09.2026).
 # --- Nie ankaufen -------------------------------------------------------------------------------------
 NIE_SUFFIX = ("_sword", "_pickaxe", "_axe", "_shovel", "_hoe", "_helmet", "_chestplate", "_leggings", "_boots",
               "_spawn_egg", "_command_block", "_armor", "_bundle", "_candle_cake", "_pottery_shard", "_minecart_x")
@@ -48,6 +50,7 @@ NIE = {"bow", "crossbow", "trident", "shield", "mace", "elytra", "fishing_rod", 
        "chorus_plant", "frogspawn", "command_block_minecart", "lava_cauldron", "water_cauldron", "powder_snow_cauldron",
        "copper_golem_statue", "copper_bars_x"}
 def nie(item):
+    if item in basis: return False        # steht mit festem Preis in preise.csv, wird immer angekauft
     return item in NIE or item.endswith(NIE_SUFFIX) or item.startswith("infested_") or "_wall_" in item and item.endswith(("_sign", "_banner", "_head", "_skull", "_torch", "_fan"))
 
 # --- Rezepte ------------------------------------------------------------------------------------------
