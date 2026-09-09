@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 63                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 64                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -211,8 +211,11 @@ BUECHER = [  # (Verzauberung, [Stufen], Name, [Preise]) fuer den Reiter Books: H
 ROEMISCH = {1: "I", 2: "II", 3: "III", 4: "IV", 5: "V"}
 for _n, _ls, _, _ in BUECHER:
     for _l in _ls:
+        # Eigenes Symbol aus dem Ressourcenpaket (buecher.py): Buch im Farbton der Ausruestung,
+        # Zeichen der Faehigkeit, Punkte je Stufe. Ohne Paket bleibt das normale Verzauberungsbuch.
+        _modell = f'item_model="nachtwache:buch_{_n.lower()}_{_l}",' if RESSOURCENPAKET else ""
         SONDERITEMS[f"BUCH_{_n}_{_l}"] = ("minecraft:enchanted_book", 1,
-                                          '[stored_enchantments={"minecraft:%s":%d}]' % (_n.lower(), _l))
+                                          '[%sstored_enchantments={"minecraft:%s":%d}]' % (_modell, _n.lower(), _l))
 
 # Vorgefuellte Kisten aus dem Quell (Name -> Liste von (item, anzahl))
 KISTEN = {

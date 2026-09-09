@@ -19,7 +19,8 @@ Braucht Pillow (pip install pillow). Vorlagen liegen in vorlagen/ (aus dem 1.21.
 import hashlib, json, os, shutil, zipfile
 from pathlib import Path
 from PIL import Image, ImageDraw
-import icons, zwerg
+import icons
+import buecher, zwerg
 
 HERE = Path(__file__).resolve().parent
 VORLAGEN = HERE / "vorlagen"
@@ -362,6 +363,13 @@ def build(out_dir=None):
     # Eigene Item-Symbole (item_model="nachtwache:watch_bell" / "nachtwache:kit")
     for name, img in (("watch_bell", glocke()), ("kit", kiste()), ("lantern", laterne()), ("contract", kontrakt()),
                       ("focus", focus()), ("decoy", decoy()), ("archer", bogi_icon()), ("life", icons.herz()), ("generator", generator()), ("skull_item", schaedel())):
+        w(nw / "textures" / "item" / f"{name}.png", img)
+        w(nw / "models" / "item" / f"{name}.json", json.dumps({"parent": "minecraft:item/generated", "textures": {"layer0": f"nachtwache:item/{name}"}}))
+        w(nw / "items" / f"{name}.json", json.dumps({"model": {"type": "minecraft:model", "model": f"nachtwache:item/{name}"}}))
+
+    # Verzauberungsbuecher: Buch im Farbton der Ausruestung, Zeichen der Faehigkeit, Punkte je Stufe (buecher.py)
+    for kurz, img in buecher.alle().items():
+        name = "buch_" + kurz.lower()
         w(nw / "textures" / "item" / f"{name}.png", img)
         w(nw / "models" / "item" / f"{name}.json", json.dumps({"parent": "minecraft:item/generated", "textures": {"layer0": f"nachtwache:item/{name}"}}))
         w(nw / "items" / f"{name}.json", json.dumps({"model": {"type": "minecraft:model", "model": f"nachtwache:item/{name}"}}))
