@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 67                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 68                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -379,6 +379,8 @@ fn("migration", [
     f"setblock {QUELL[0]} {QUELL[1]} {QUELL[2]} minecraft:air", f"function {NS}:quell/setzen",
     'kill @e[type=item,x=-2,y=62,z=-2,dx=4,dy=4,dz=4,nbt={Item:{id:"minecraft:budding_amethyst"}}]',
     f"function {NS}:sammler/kaufmenue",
+    # Lebenszahl ueber dem Beacon neu setzen: Hintergrund, Farbe und Hoehe haben sich geaendert
+    "kill @e[tag=nw.herz_text]", f"function {NS}:beacon/aufbauen", f"function {NS}:beacon/anzeige",
     f"scoreboard players set #zoff nw.status {ZWERG_YAW_VERSATZ}",
     # Fraggles Rucksack ist jetzt eine Doppeltruhe: bestehende Zwerge einmal neu aufbauen, der alte Inhalt faellt heraus
     f"execute as @e[type=marker,tag=nw.zwerg] at @s run function {NS}:zwerg/migrieren",
@@ -1458,6 +1460,10 @@ fn("bogi/kaputt", [
 # und kosten ein Leben. Ein Treffer bricht das ab. Bei null Leben ist Schluss.
 # ----------------------------------------------------------------------------
 BX, BY, BZ = BEACON
+# Dunkler, fast deckender Hintergrund hinter der Lebenszahl. Ohne ihn stand rote Schrift auf dem
+# roten Beacon-Strahl und die erste Ziffer war nicht zu erkennen (Luis 09.09.2026).
+HERZ_HINTERGRUND = -15462372          # ARGB 0xFF14101C
+
 fn("beacon/aufbauen", [
     f"execute unless block {BX} {BY} {BZ} minecraft:beacon run setblock {BX} {BY} {BZ} minecraft:beacon",
     f"execute unless block {BX} {BY+1} {BZ} minecraft:red_stained_glass run setblock {BX} {BY+1} {BZ} minecraft:red_stained_glass",
@@ -1471,12 +1477,12 @@ fn("beacon/aufbauen", [
     f'VillagerData:{{profession:"minecraft:nitwit",level:1,type:"minecraft:swamp"}},'
     f'attributes:[{{id:"minecraft:scale",base:0.2d}},{{id:"minecraft:max_health",base:1024d}}],Health:1024f}}',
     # Lebensanzeige ueber dem Beacon
-    f"execute unless entity @e[tag=nw.herz_text] run summon minecraft:text_display {BX+0.5} {BY+2.1} {BZ+0.5} "
-    f'{{Tags:["nw.herz_text"],billboard:"center",background:0,see_through:false,text:{J([txt(icons.ZEICHEN["heart"] + " ", "red"), {"score": {"name": "#leben", "objective": "nw.leben"}, "color": "red", "bold": True}])}}}',
+    f"execute unless entity @e[tag=nw.herz_text] run summon minecraft:text_display {BX+0.5} {BY+2.6} {BZ+0.5} "
+    f'{{Tags:["nw.herz_text"],billboard:"center",background:{HERZ_HINTERGRUND},see_through:false,text:{J([txt(icons.ZEICHEN["heart"] + " ", "red"), {"score": {"name": "#leben", "objective": "nw.leben"}, "color": "white", "bold": True}])}}}',
 ])
 w(f"{NS}/tags/block/beacon_sockel.json", {"values": ["minecraft:air", "minecraft:grass_block", "minecraft:dirt", "minecraft:water", "minecraft:cave_air"]})
 fn("beacon/anzeige", [
-    f'data modify entity @e[tag=nw.herz_text,limit=1] text set value {J([txt(icons.ZEICHEN["heart"] + " ", "red"), {"score": {"name": "#leben", "objective": "nw.leben"}, "color": "red", "bold": True}])}',
+    f'data modify entity @e[tag=nw.herz_text,limit=1] text set value {J([txt(icons.ZEICHEN["heart"] + " ", "red"), {"score": {"name": "#leben", "objective": "nw.leben"}, "color": "white", "bold": True}])}',
 ])
 fn("beacon/verlust", [
     "scoreboard players remove #leben nw.leben 1",
