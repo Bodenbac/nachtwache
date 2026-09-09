@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 74                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 75                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -39,8 +39,10 @@ def knopf_modell(kurz, zustand="aus"):
     aus = kaufbar oder Aktion, an = gekauft/aktiv/Maximum, off = gekauft aber ausgeschaltet."""
     return f'item_model="nachtwache:knopf_{kurz}_{zustand}",' if RESSOURCENPAKET else ""
 
+SLOT_TAKE = 26                                # unten rechts, in jedem Minion-Rucksack der Mitnehmen-Knopf
 ZWERG_KNOEPFE = lambda a: 4 if a == 0 else 3   # ohne Auto-Verkauf vier Knoepfe, mit ihm faellt "Alles verkaufen" weg
-zwerg_faecher = lambda b, a=0: (ZWERG_REIHEN_START + b) * 9 - ZWERG_KNOEPFE(a)   # nutzbare Lagerfaecher
+# In der letzten Reihe (drei Reihen offen) geht zusaetzlich Fach 26 an den Mitnehmen-Knopf.
+zwerg_faecher = lambda b, a=0: (ZWERG_REIHEN_START + b) * 9 - ZWERG_KNOEPFE(a) - (1 if ZWERG_REIHEN_START + b == 3 else 0)
 ZWERG_A_BED = {0: "unless score @s nw.zwerg_a matches 1..2", 1: "if score @s nw.zwerg_a matches 1..2"}
 ZWERG_SPERRE = ('minecraft:gray_stained_glass_pane[' + ('item_model="nachtwache:knopf_sperre_aus",' if RESSOURCENPAKET else "") + 'custom_data={nw_zwerg_lock:1b},'
                 'custom_name={text:"Locked",color:"dark_gray",italic:false},'
@@ -49,6 +51,15 @@ ZWERG_VERKAUF_KNOPF = ('minecraft:emerald[' + ('item_model="nachtwache:knopf_sel
                        'lore=[{text:"Sells the whole pack at the Collector price",color:"gray",italic:false},'
                        '{text:"Take this to sell",color:"dark_gray",italic:false}]]')
 ZWERG_AUTO_PREIS = 2000                 # einmaliger Ausbau: Fraggle verkauft von allein
+def take_knopf(pred, name):
+    """Mitnehmen-Knopf unten rechts, gleiche Optik wie beim Generator (Luis 09.09.2026).
+    Minions lassen sich seit v0.40 nicht mehr abbauen, das hier ist der einzige Weg zurueck."""
+    modell = 'item_model="nachtwache:knopf_gen_take_aus",' if RESSOURCENPAKET else ""
+    return (f'minecraft:ender_eye[{modell}custom_data={{{pred}:1b}},custom_name={{text:"Take {name}",color:"yellow",italic:false}},'
+            f'lore=[{{text:"Take this and he goes back into your inventory",color:"gray",italic:false}},'
+            f'{{text:"Level, upgrades and pack contents come along",color:"dark_gray",italic:false}}]]')
+ZWERG_TAKE_KNOPF = take_knopf("nw_zwerg_take", "Fraggle")
+ZWERG_TAKE_PRED = '*[custom_data~{nw_zwerg_take:1b}]'
 def zwerg_auto_knopf(a):
     """0 = noch nicht gekauft, 1 = gekauft und aus, 2 = gekauft und an."""
     kopf = ('minecraft:hopper[' + knopf_modell("auto", ("aus", "off", "an")[a]) + 'custom_data={nw_zwerg_auto:1b},'
@@ -720,7 +731,7 @@ def zwerg_slot(feld, gui):
     eigen, aussen, _ = zwerg_bloecke(*feld)
     return (eigen if gui < 27 else aussen), (gui if gui < 27 else gui - 27)
 
-ZWERG_LAGER_ENDE = lambda reihen, a=0: reihen * 9 - ZWERG_KNOEPFE(a)   # Faecher 0 .. ENDE-1 sind Lager, danach die Knoepfe
+ZWERG_LAGER_ENDE = lambda reihen, a=0: reihen * 9 - ZWERG_KNOEPFE(a) - (1 if reihen == 3 else 0)   # Faecher 0 .. ENDE-1 sind Lager, danach die Knoepfe
 
 fn("zwerg/migrieren", [
     "kill @e[type=item_display,tag=nw.zwerg_k,distance=..0.1]", "kill @e[type=item_display,tag=nw.zwerg_a,distance=..0.1]",
@@ -845,6 +856,8 @@ for b in range(ZWERG_BP_MAX + 1):
                 else:
                     for l in range(ZWERG_MAX + 1):
                         symbol.append(f"{vor} if score @s nw.zwerg matches {l} run item replace block {ziel} with {zwerg_up_knopf(l)}")
+            elif sl == SLOT_TAKE:
+                symbol.append(f"{vor} run item replace block {ziel} with {ZWERG_TAKE_KNOPF}")
             else:
                 symbol.append(f"{vor} run item replace block {ziel} with {ZWERG_SPERRE}")
 for l in range(ZWERG_MAX + 1):
@@ -868,6 +881,7 @@ fn("zwerg/einer", [
                                (2, ZWERG_BP_PRED, "rucksack"), (3, ZWERG_UP_PRED, "upgrade")) if a == 0 else
                               ((0, ZWERG_AUTO_PRED, "auto_klick"), (1, ZWERG_BP_PRED, "rucksack"),
                                (2, ZWERG_UP_PRED, "upgrade")))],
+    f"execute unless items block ~ ~ ~ container.{SLOT_TAKE} * run function {NS}:zwerg/mitnehmen",
     f"clear @a[distance=..8] {ZWERG_AUTO_PRED}",
     # Auto-Verkauf: alle fuenf Sekunden, ohne Meldung
     "scoreboard players operation #m100 nw.tmp2 = #tick nw.tick", f"scoreboard players operation #m100 nw.tmp2 %= #{100} nw.const",
@@ -883,6 +897,7 @@ for b in range(ZWERG_BP_MAX + 1):
     for a in (0, 1):
         for sl in range(ZWERG_LAGER_ENDE(ZWERG_REIHEN_START + b, a), 27):
             merken.append(f"execute if score @s nw.zwerg_b matches {b} {ZWERG_A_BED[a]} run data remove entity @s data.inv[{{Slot:{sl}b}}]")
+merken.append(f"data remove entity @s data.inv[{{Slot:{SLOT_TAKE}b}}]")
 fn("zwerg/merken", merken)
 schlag = ["scoreboard players set @s nw.zwerg_t 0", "scoreboard players set #gen nw.tmp2 0"]
 for d in range(4):
@@ -1025,11 +1040,30 @@ for l in range(ZWERG_MAX + 1):
         kaputt.append(f"execute if score @s nw.zwerg matches {l} if score @s nw.zwerg_b matches {b} "
                       f"as @p[distance=..10] run function {NS}:zwerg/geben_{l}_{b} with storage nachtwache:tmp")
 kaputt += [
+    # Der Knopf ist seit v0.40 der einzige Weg zurueck, also muss hier auch die Truhe weg.
+    # Frueher lief das nur nach dem Abbauen, da war sie schon fort.
+    "setblock ~ ~ ~ minecraft:air",
+    'kill @e[type=item,distance=..2.5,nbt={Item:{id:"minecraft:trapped_chest"}}]',
+    f'kill @e[type=item,distance=..2.5,nbt={{Item:{{components:{{"minecraft:custom_data":{{nw_zwerg_take:1b}}}}}}}}]',
     "tellraw @p[distance=..10] " + J([txt("[Fraggle] ", "aqua"), txt("Packing up. I am in your inventory.", "gray")]),
     "playsound minecraft:entity.item.pickup player @p[distance=..10] ~ ~ ~ 1 0.8",
     "kill @s",
 ]
-fn("zwerg/kaputt", kaputt)
+fn("zwerg/mitnehmen", kaputt)
+# Abbauen geht seit v0.40 nicht mehr (Luis). Fehlt die Truhe trotzdem, wird sie samt Inhalt wieder
+# hergestellt, statt Fraggle zurueckzugeben. Der Inhalt steht im Marker (zwerg/merken, jede Sekunde).
+fn("zwerg/kaputt", [
+    "kill @e[type=item,distance=..2.0]",
+    "execute store result score #cx nw.tmp2 run data get entity @s Pos[0] 2",
+    "execute store result score #cz nw.tmp2 run data get entity @s Pos[2] 2",
+    "scoreboard players remove #cx nw.tmp2 1", "scoreboard players remove #cz nw.tmp2 1",
+    "scoreboard players operation #cx nw.tmp2 /= #2 nw.const", "scoreboard players operation #cz nw.tmp2 /= #2 nw.const",
+    "scoreboard players operation #cx nw.tmp2 += #cz nw.tmp2", "scoreboard players operation #cx nw.tmp2 %= #2 nw.const",
+    "execute if score #cx nw.tmp2 matches 0 run setblock ~ ~ ~ minecraft:trapped_chest[facing=north,type=single]",
+    "execute if score #cx nw.tmp2 matches 1 run setblock ~ ~ ~ minecraft:trapped_chest[facing=east,type=single]",
+    "execute if data entity @s data.inv run data modify block ~ ~ ~ Items set from entity @s data.inv",
+    f"function {NS}:zwerg/symbol",
+])
 fn("laterne/eine", [
     "execute unless block ~ ~ ~ minecraft:soul_lantern run return run kill @s",
     "effect give @e[tag=nw.welle,distance=..8] minecraft:slowness 2 1 true",
@@ -1354,6 +1388,7 @@ fn("bogi/einer", [
     f"execute if score @s nw.b_t matches 5 as @e[type=item_display,tag=nw.bogi_a,distance=..0.1] run data merge entity @s {{start_interpolation:0,interpolation_duration:8,transformation:{_arm_transform(0)}}}",
     # Knoepfe und Sperren
     *[f"execute unless items block ~ ~ ~ container.{BOGI_SLOT[k]} *[custom_data~{{nw_bogi_{k}:1b}}] run function {NS}:bogi/kauf_{k}" for k, *_ in BOGI_UPGRADES],
+    f"execute unless items block ~ ~ ~ container.{SLOT_TAKE} * run function {NS}:bogi/mitnehmen",
     "clear @a[distance=..8] *[custom_data~{nw_bogi_lock:1b}]",
     f"execute if score #m20 nw.tmp matches 13 run function {NS}:bogi/symbol",
     f"execute if score #m20 nw.tmp matches 15 run function {NS}:bogi/merken",
@@ -1435,7 +1470,11 @@ for k, name, ikon, maxst, preis, text in BOGI_UPGRADES:
                   f'lore=[{{text:"{text(n)}",color:"gray",italic:false}}]]')
         symbol_b.append(f"execute if score @s nw.b_{k} matches {n} run item replace block ~ ~ ~ container.{BOGI_SLOT[k]} with {it}")
 symbol_b += [f"execute if items block ~ ~ ~ container.{sl} *[custom_data~{{nw_bogi_lock:1b}}] run item replace block ~ ~ ~ container.{sl} with minecraft:air" for sl in BOGI_PFEIL_SLOTS]
-symbol_b += [f"execute unless items block ~ ~ ~ container.{sl} * run item replace block ~ ~ ~ container.{sl} with {BOGI_SPERRE}" for sl in range(BOGI_LAGER, 27)]
+symbol_b += [f"execute unless items block ~ ~ ~ container.{sl} * run item replace block ~ ~ ~ container.{sl} with {BOGI_SPERRE}"
+             for sl in range(BOGI_LAGER, 27) if sl != SLOT_TAKE]
+# Mitnehmen-Knopf unten rechts, beschriftet mit dem Namen des jeweiligen Bogenschuetzen
+symbol_b += [f'execute if score @s nw.b_nm matches {_n} run item replace block ~ ~ ~ container.{SLOT_TAKE} with {take_knopf("nw_bogi_take", _nm)}'
+             for _n, _nm in enumerate(["Bogi"] + BOGI_NAMEN)]
 for _n, _nm in enumerate(["Bogi"] + BOGI_NAMEN):
     symbol_b.append(f'execute if score @s nw.b_nm matches {_n} run data merge block ~ ~ ~ '
                     f'{{CustomName:{{text:"{_nm}",color:"green"}}}}')
@@ -1463,7 +1502,7 @@ for k, name, ikon, maxst, preis, text in BOGI_UPGRADES:
         "tellraw @s " + J([txt("[Bogi] ", "green"), txt(f"{name} improved.", "gray")]),
     ])
 
-fn("bogi/kaputt", [
+fn("bogi/mitnehmen", [
     "kill @e[type=item_display,tag=nw.bogi_k,distance=..0.1]", "kill @e[type=item_display,tag=nw.bogi_a,distance=..0.1]",
     "kill @e[type=item,distance=..2.0]",
     'kill @e[type=item,distance=..2.5,nbt={Item:{id:"minecraft:trapped_chest"}}]',
@@ -1475,9 +1514,21 @@ fn("bogi/kaputt", [
     "execute if data entity @s data.inv run data modify storage nachtwache:tmp inv set from entity @s data.inv",
     "execute store result score #bnm nw.tmp2 run data get entity @s data.nm",
     f"execute as @p[distance=..10] run function {NS}:bogi/geben",
+    "setblock ~ ~ ~ minecraft:air",
+    'kill @e[type=item,distance=..2.5,nbt={Item:{id:"minecraft:trapped_chest"}}]',
+    'kill @e[type=item,distance=..2.5,nbt={Item:{components:{"minecraft:custom_data":{nw_bogi_take:1b}}}}]',
     "tellraw @p[distance=..10] " + J([txt("[Bogi] ", "green"), txt("Packing up. I am in your inventory.", "gray")]),
     "playsound minecraft:entity.item.pickup player @p[distance=..10] ~ ~ ~ 1 0.8",
     "kill @s",
+])
+# Abbauen geht seit v0.40 nicht mehr: fehlt die Truhe, wird sie samt Pfeilen wieder hergestellt
+fn("bogi/kaputt", [
+    "kill @e[type=item,distance=..2.0]",
+    "setblock ~ ~ ~ minecraft:trapped_chest[facing=north,type=single]",
+    *[f"unless block ~ ~ ~ minecraft:trapped_chest[type=single] run setblock ~ ~ ~ minecraft:trapped_chest[facing={d},type=single]".replace("unless", "execute unless")
+      for d in ("east", "south", "west")],
+    "execute if data entity @s data.inv run data modify block ~ ~ ~ Items set from entity @s data.inv",
+    f"function {NS}:bogi/symbol",
 ])
 
 # ----------------------------------------------------------------------------
