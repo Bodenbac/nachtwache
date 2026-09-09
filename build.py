@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 72                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 74                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -345,13 +345,15 @@ OBJEKTIVE = [("nw.mined_gen", "minecraft.mined:minecraft.barrel")] + [
     ("nw.tode", "deathCount"),
     ("nw.px", "dummy"), ("nw.py", "dummy"), ("nw.pz", "dummy"), ("nw.qx", "dummy"), ("nw.qy", "dummy"), ("nw.qz", "dummy"),
     ("nw.still", "dummy"), ("nw.kills", "dummy"), ("nw.verdient", "dummy"), ("nw.anzeige", "dummy"), ("nw.const", "dummy"),
-    ("nw.boss", "dummy"), ("nw.upgrade", "dummy"), ("nw.laterne", "dummy"), ("nw.zwerg", "dummy"), ("nw.zwerg_t", "dummy"), ("nw.zwerg_b", "dummy"), ("nw.zwerg_d", "dummy"), ("nw.zwerg_a", "dummy"), ("nw.leben", "dummy"), ("nw.chan", "dummy"), ("nw.wut", "dummy"), ("nw.hpv", "dummy"), ("nw.hpp", "dummy"),
+    ("nw.boss", "dummy"), ("nw.upgrade", "dummy"), ("nw.laterne", "dummy"), ("nw.zwerg", "dummy"), ("nw.zwerg_t", "dummy"), ("nw.zwerg_b", "dummy"), ("nw.zwerg_d", "dummy"), ("nw.zwerg_a", "dummy"), ("nw.leben", "dummy"), ("nw.chan", "dummy"), ("nw.wut", "dummy"), ("nw.sockel", "dummy"), ("nw.hpv", "dummy"), ("nw.hpp", "dummy"),
     ("nw.b_sp", "dummy"), ("nw.b_st", "dummy"), ("nw.b_mu", "dummy"), ("nw.b_fl", "dummy"), ("nw.b_inf", "dummy"), ("nw.b_kb", "dummy"), ("nw.b_rg", "dummy"), ("nw.b_t", "dummy"), ("nw.b_nm", "dummy"), ("nw.ziel", "dummy"), ("reset", "trigger"), ("yes", "trigger"), ("night", "trigger"), ("boss", "trigger"), ("fraggle", "trigger"), ("endnight", "trigger"), ("money", "trigger"), ("nw.schlaf", "dummy"), ("nw.fest", "dummy"), ("nw.dmin", "dummy"),
 ]
 
 # ---- load ------------------------------------------------------------------
 load = [f"scoreboard objectives add {o} {c}" for o, c in OBJEKTIVE]
 load += [
+    # Team nur fuer die Umrissfarbe: wer gerade am Beacon channelt, leuchtet rot (v0.39)
+    "team add nw_chan", 'team modify nw_chan color red', "team modify nw_chan seeFriendlyInvisibles false",
     "scoreboard objectives modify nw.anzeige numberformat blank",
     'scoreboard objectives modify nw.anzeige displayname {"text":"NIGHTWATCH","color":"dark_red","bold":true}',
     "scoreboard objectives setdisplay sidebar nw.anzeige",
@@ -1486,7 +1488,11 @@ fn("bogi/kaputt", [
 BX, BY, BZ = BEACON
 # Der Eisensockel um den Beacon: die neun Bloecke bei BY-1, oben also BY. Nur wer dort steht,
 # faengt an zu channeln (Luis 09.09.2026: "die zombies sollen darauf laufen und dann anfangen zu channeln").
-SOCKEL_BOX = f"x={BX-1},y={BY},z={BZ-1},dx=3,dy=2,dz=3"
+# Geprueft wird der Block unter den Fuessen, nicht ein Kasten-Selektor: ein Kasten mit dx/dy/dz greift
+# deutlich weiter, als seine Zahlen vermuten lassen, gemessen hat er noch drei Bloecke davor gezogen.
+SOCKEL_PRUEFUNG = (f"execute at @s if block ~ ~-1 ~ minecraft:iron_block "
+                   f"if entity @s[x={BX+0.5},y={BY},z={BZ+0.5},distance=..3] "
+                   f"run scoreboard players set @s nw.sockel 1")
 # Dunkler, fast deckender Hintergrund hinter der Lebenszahl. Ohne ihn stand rote Schrift auf dem
 # roten Beacon-Strahl und die erste Ziffer war nicht zu erkennen (Luis 09.09.2026).
 HERZ_HINTERGRUND = -15462372          # ARGB 0xFF14101C
@@ -2495,9 +2501,20 @@ fn("gegner/einer", [
     "scoreboard players operation @s nw.hpp = @s nw.hpv",
     "execute if score @s nw.wut matches 1.. run scoreboard players remove @s nw.wut 1",
     # Channeln nur, wer auf dem Eisensockel steht, nicht schon im Umkreis (Luis 09.09.2026)
-    f"execute unless entity @s[{SOCKEL_BOX}] run scoreboard players set @s nw.chan 0",
-    f"execute if entity @s[{SOCKEL_BOX}] unless score @s nw.wut matches 1.. run scoreboard players add @s nw.chan 1",
+    "scoreboard players set @s nw.sockel 0",
+    SOCKEL_PRUEFUNG,
+    "execute if score @s nw.sockel matches 0 run scoreboard players set @s nw.chan 0",
+    "execute if score @s nw.sockel matches 1 unless score @s nw.wut matches 1.. run scoreboard players add @s nw.chan 1",
     "execute if score @s nw.chan matches 1.. if score #m20 nw.tmp matches 0 at @s run particle minecraft:dust{color:[1.0,0.2,0.2],scale:1.0} ~ ~1 ~ 0.3 0.5 0.3 0 6",
+    # Waehrend des Channelns rot umrandet, damit man auf einen Blick sieht, wer gerade am Beacon steht
+    # (Luis 09.09.2026). Die Farbe kommt vom Team, das Leuchten vom Effekt.
+    "execute if score @s nw.chan matches 1.. run team join nw_chan @s",
+    "execute if score @s nw.chan matches 1.. run effect give @s minecraft:glowing 2 0 true",
+    "execute if score @s nw.chan matches ..0 run team leave @s",
+    "execute if score @s nw.chan matches ..0 run effect clear @s minecraft:glowing",
+    # Channeln heisst stillstehen. Ohne das hier wuerde die Blockade-Erkennung nach vier Sekunden
+    # anspringen und der Gegner finge an, den Eisensockel wegzugraben.
+    "execute if score @s nw.chan matches 1.. run scoreboard players set @s nw.still 0",
     f"execute if score @s nw.chan matches {DURCHBRUCH_TICKS}.. run return run function {NS}:gegner/durchbruch",
     "execute store result score @s nw.px run data get entity @s Pos[0]",
     "execute store result score @s nw.py run data get entity @s Pos[1]",
@@ -2526,9 +2543,16 @@ MARSCH_TOR = (0.5, BODEN_Y + 1.5, GEGNER_Z - GEGNER_RADIUS + 0.5)
 _MZ = f"{BEACON[0]+0.5} {BEACON[1]+0.5} {BEACON[2]+0.5}"
 _SP = "@a[distance=..%d,gamemode=!spectator,gamemode=!creative]"
 fn("gegner/marsch", [
-    # Ist der Spieler das naehere Ziel, wird er angemarschiert, sonst der Beacon
+    # Am Beacon wird bis auf den Eisensockel marschiert. Vorher endete der Marsch sechs Bloecke davor
+    # und die Vanilla-KI blieb in Angriffsreichweite des Ankers stehen, also im Gras davor
+    # (Luis 09.09.2026: "bleiben derzeit vor dem beacon stehen und greifen nicht an").
+    "execute if score @s nw.sockel matches 1 run return 0",
+    # In Beacon-Naehe zaehlt der Sockel mehr als ein naher Spieler, sonst stehen sie ewig davor.
+    # Ausnahme: wer gerade getroffen wurde (nw.wut), geht auf den Spieler los.
+    f"execute if entity @s[x={BEACON[0]+0.5},y={BEACON[1]+0.5},z={BEACON[2]+0.5},distance=..{MARSCH_AB}] "
+    f"unless score @s nw.wut matches 1.. run return run function {NS}:gegner/marsch_ziel",
+    # Sonst: ist der Spieler das naehere Ziel, wird er angemarschiert, sonst der Beacon
     f"execute if score @s nw.ziel matches 1 run return run function {NS}:gegner/marsch_spieler",
-    f"execute if entity @s[x={BEACON[0]+0.5},y={BEACON[1]+0.5},z={BEACON[2]+0.5},distance=..{MARSCH_AB}] run return 0",
     f"execute if score @s nw.pz matches {GEGNER_Z - GEGNER_RADIUS + 2}.. run return run function {NS}:gegner/marsch_tor",
     f"function {NS}:gegner/marsch_ziel",
 ])
