@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 71                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 72                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -568,8 +568,11 @@ geg += [
 # auf. Mit dem Abraeumen wurde die halbe Insel zehnmal je Sekunde auf Luft und zurueck gesetzt, das
 # hat die Lichtberechnung dauernd neu angeworfen. Gleiche fills ohne echte Aenderung sind dagegen
 # gratis, Minecraft verwirft einen setBlock auf denselben Zustand.
-fn("welt/gegnerinsel", [f"fill -{GR+1} {BODEN_Y+1} {GZ-GR-1} {GR+1} {BODEN_Y+12} {GZ+GR+1} minecraft:air"] + geg)
-fn("welt/gegnerinsel_pflege", [f"fill -{GR+1} {BODEN_Y+6} {GZ-GR-1} {GR+1} {BODEN_Y+12} {GZ+GR+1} minecraft:air"] + geg)
+# Abgeraeumt wird erst ab GZ-GR, also ab der Insel selbst. Eine Reihe frueher lag das Gitterdach der
+# Bruecke, das die Insel damit jeden zweiten Tick weggenommen und die Strasse jeden zweiten Tick
+# wieder gesetzt hat (Luis 09.09.2026: "letzte reihe der decke von der bruecke" flackert).
+fn("welt/gegnerinsel", [f"fill -{GR+1} {BODEN_Y+1} {GZ-GR} {GR+1} {BODEN_Y+12} {GZ+GR+1} minecraft:air"] + geg)
+fn("welt/gegnerinsel_pflege", [f"fill -{GR+1} {BODEN_Y+6} {GZ-GR} {GR+1} {BODEN_Y+12} {GZ+GR+1} minecraft:air"] + geg)
 
 # Strasse
 # REGEL (Lehre vom 06.09.2026): Bloecke, die einen Traeger brauchen (Fackeln, Laternen, Schilder, Zaeune mit
