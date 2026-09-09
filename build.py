@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 56                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 57                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -2413,6 +2413,38 @@ fn("gegner/einer", [
     f"execute if score @s nw.still matches {EINGEBAUT_TICKS}.. run function {NS}:gegner/eingebaut",
     f"execute if score @s nw.still matches {STILL_TICKS}.. run function {NS}:gegner/blockiert",
     f"execute if score #m20 nw.tmp matches 3 run function {NS}:gegner/fokus",
+    f"function {NS}:gegner/marsch",
+])
+# Marsch (Luis 09.09.2026): Gegner sollen rastlos sein und nie herumstehen. Vanilla schafft das nicht, weil
+# der Wegfinder ueber 90 Bloecke keinen Pfad baut und die meisten Typen (Skelett, Spinne, Hexe, Witherskelett)
+# den Dorfbewohner am Beacon gar nicht als Ziel kennen. Deshalb schiebt das Datapack alle, die weit vom Beacon
+# weg sind und keinen Spieler in der Naehe haben, Schritt fuer Schritt vorwaerts: erst zum Tor der Gegnerinsel,
+# dann durch die Bruecke. Ab MARSCH_AB Bloecken uebernimmt wieder die normale KI.
+MARSCH_AB = 6                           # so nah am Ziel uebernimmt wieder die Vanilla-KI
+MARSCH_SCHRITT = 0.11                   # je Tick, entspricht gut zwei Bloecken je Sekunde
+MARSCH_TOR = (0.5, BODEN_Y + 1.5, GEGNER_Z - GEGNER_RADIUS + 0.5)
+_MZ = f"{BEACON[0]+0.5} {BEACON[1]+0.5} {BEACON[2]+0.5}"
+_SP = "@a[distance=..%d,gamemode=!spectator,gamemode=!creative]"
+fn("gegner/marsch", [
+    # Ist der Spieler das naehere Ziel, wird er angemarschiert, sonst der Beacon
+    f"execute if score @s nw.ziel matches 1 run return run function {NS}:gegner/marsch_spieler",
+    f"execute if entity @s[x={BEACON[0]+0.5},y={BEACON[1]+0.5},z={BEACON[2]+0.5},distance=..{MARSCH_AB}] run return 0",
+    f"execute if score @s nw.pz matches {GEGNER_Z - GEGNER_RADIUS + 2}.. run return run function {NS}:gegner/marsch_tor",
+    f"function {NS}:gegner/marsch_ziel",
+])
+fn("gegner/marsch_spieler", [
+    f"execute if entity {_SP % 12} run return 0",
+    f"execute unless entity {_SP % 200} run return 0",
+    f"execute facing entity @p[gamemode=!spectator,gamemode=!creative] feet rotated ~ 0 "
+    f"if block ^ ^ ^1 minecraft:air if block ^ ^1 ^1 minecraft:air run tp @s ^ ^ ^{MARSCH_SCHRITT} ~ ~",
+])
+fn("gegner/marsch_tor", [
+    f"execute facing {MARSCH_TOR[0]} {MARSCH_TOR[1]} {MARSCH_TOR[2]} rotated ~ 0 "
+    f"if block ^ ^ ^1 minecraft:air if block ^ ^1 ^1 minecraft:air run tp @s ^ ^ ^{MARSCH_SCHRITT} ~ ~",
+])
+fn("gegner/marsch_ziel", [
+    f"execute facing {_MZ} rotated ~ 0 "
+    f"if block ^ ^ ^1 minecraft:air if block ^ ^1 ^1 minecraft:air run tp @s ^ ^ ^{MARSCH_SCHRITT} ~ ~",
 ])
 # Zielwahl (Luis 08.09.2026): Gegner wollen IMMER zum Beacon, egal wie weit weg sie sind. Nur wenn ein
 # Spieler naeher ist als der Beacon, gehen sie auf den Spieler. Vanilla gibt dem Spielerziel immer Vorrang,
