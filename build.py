@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 57                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 58                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -1839,7 +1839,7 @@ KATEGORIEN = [
     ("BLOCKS",   "Building Blocks",  "minecraft:stone"),
     ("MINERALS", "Minerals & Drops", "minecraft:iron_ingot"),
     ("MOB",      "Mob Drops",        "minecraft:rotten_flesh"),
-    ("FOOD",     "Food & Farming",   "minecraft:bread"),
+    ("FOOD",     "Food",             "minecraft:bread"),
     ("TOOLS",    "Tools & Redstone", "minecraft:redstone"),
     ("BREW",     "Brewing & Magic",  "minecraft:brewing_stand"),
     ("BOOKS",    "Enchanted Books",  "minecraft:enchanted_book"),
@@ -1850,8 +1850,11 @@ def reiter_liste(phase):
     Ein Reiter je Kategorie, sichtbar sobald er in dieser Stufe mindestens ein Angebot hat."""
     out = []
     for i, (key, name, icon) in enumerate(KATEGORIEN, 1):
-        rows = sorted((r for r in angebot if r["kat"] == key and int(r["stufe"]) <= phase),
-                      key=lambda r: (int(r["stufe"]), int(r["id"])))
+        # Mob Drops und Food sind Verbrauchsware, dort sortiert der Preis (Luis 09.09.2026),
+        # in den anderen Reitern bleibt es bei Stufe und Reihenfolge aus der Tabelle
+        schluessel = ((lambda r: (int(r["preis"]), int(r["id"]))) if key in ("MOB", "FOOD")
+                      else (lambda r: (int(r["stufe"]), int(r["id"]))))
+        rows = sorted((r for r in angebot if r["kat"] == key and int(r["stufe"]) <= phase), key=schluessel)
         if not rows: continue
         out.append((i, len(out), name, icon, rows))
     return out
