@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 70                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 71                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -142,7 +142,8 @@ SPAWN = (0, 64, -10)
 BEACON = (0, 64, -17)                  # roter Beacon: 25 Bloecke vom Brueckenende, am hinteren Ende der Insel
 LEBEN_START, LEBEN_MAX, LEBEN_PREIS = 10, 20, 1500
 DURCHBRUCH_TICKS = 100                 # 5 s ungestoert am Beacon, dann kostet der Gegner ein Leben
-DURCHBRUCH_RADIUS = 3.5
+DURCHBRUCH_RADIUS = 3.5                # nur noch fuer Partikel und Meldungen, das Channeln haengt am Sockel
+WUT_TICKS = 200                        # 10 s: so lange greift ein getroffener Gegner den Spieler an statt den Beacon
 TRUHE = (2, 64, 2)                     # alte Starttruhe, nur noch fuer die Migration
 
 # Uhr: die Spielzeit laeuft mit ZAEHLER/NENNER Zeiteinheiten je Tick (Akkumulator, dadurch fluessig). Tag = 13500 Einheiten.
@@ -344,7 +345,7 @@ OBJEKTIVE = [("nw.mined_gen", "minecraft.mined:minecraft.barrel")] + [
     ("nw.tode", "deathCount"),
     ("nw.px", "dummy"), ("nw.py", "dummy"), ("nw.pz", "dummy"), ("nw.qx", "dummy"), ("nw.qy", "dummy"), ("nw.qz", "dummy"),
     ("nw.still", "dummy"), ("nw.kills", "dummy"), ("nw.verdient", "dummy"), ("nw.anzeige", "dummy"), ("nw.const", "dummy"),
-    ("nw.boss", "dummy"), ("nw.upgrade", "dummy"), ("nw.laterne", "dummy"), ("nw.zwerg", "dummy"), ("nw.zwerg_t", "dummy"), ("nw.zwerg_b", "dummy"), ("nw.zwerg_d", "dummy"), ("nw.zwerg_a", "dummy"), ("nw.leben", "dummy"), ("nw.chan", "dummy"), ("nw.hpv", "dummy"), ("nw.hpp", "dummy"),
+    ("nw.boss", "dummy"), ("nw.upgrade", "dummy"), ("nw.laterne", "dummy"), ("nw.zwerg", "dummy"), ("nw.zwerg_t", "dummy"), ("nw.zwerg_b", "dummy"), ("nw.zwerg_d", "dummy"), ("nw.zwerg_a", "dummy"), ("nw.leben", "dummy"), ("nw.chan", "dummy"), ("nw.wut", "dummy"), ("nw.hpv", "dummy"), ("nw.hpp", "dummy"),
     ("nw.b_sp", "dummy"), ("nw.b_st", "dummy"), ("nw.b_mu", "dummy"), ("nw.b_fl", "dummy"), ("nw.b_inf", "dummy"), ("nw.b_kb", "dummy"), ("nw.b_rg", "dummy"), ("nw.b_t", "dummy"), ("nw.b_nm", "dummy"), ("nw.ziel", "dummy"), ("reset", "trigger"), ("yes", "trigger"), ("night", "trigger"), ("boss", "trigger"), ("fraggle", "trigger"), ("endnight", "trigger"), ("money", "trigger"), ("nw.schlaf", "dummy"), ("nw.fest", "dummy"), ("nw.dmin", "dummy"),
 ]
 
@@ -480,7 +481,7 @@ fn("welt/startinsel", start)
 # Stand des Sammlers: 3 Bloecke Front (Doppeltruhe + Fass), der Sammler direkt dahinter, Wand im Ruecken,
 # Dach direkt darueber. Bauwerk x LADEN[0]-2 .. +2, z LADEN[2]-2 .. LADEN[2], y 63..66 (Luis 08.09.2026).
 LX, LY, LZ = LADEN
-SCHUTT = ('minecraft:polished_deepslate', 'minecraft:deepslate_bricks', 'minecraft:crimson_slab',
+SCHUTT = ('minecraft:polished_deepslate', 'minecraft:deepslate_bricks', 'minecraft:crimson_slab', 'minecraft:crimson_planks',
           'minecraft:soul_lantern', 'minecraft:crimson_wall_sign', 'minecraft:chest', 'minecraft:barrel')
 stand = [
     f"fill {LX-2} {BODEN_Y} {LZ-2} {LX+2} {BODEN_Y} {LZ} minecraft:polished_deepslate",          # Boden
@@ -489,7 +490,14 @@ stand = [
     f"fill {LX+2} 64 {LZ-1} {LX+2} 65 {LZ} minecraft:deepslate_bricks",                          # Seite rechts
     f"fill {LX-1} 64 {LZ-1} {LX+1} 65 {LZ-1} minecraft:air",                                     # ein Block Platz fuer den Sammler
     f"fill {LX-1} 65 {LZ} {LX+1} 65 {LZ} minecraft:air",                                         # Front ueber dem Tresen offen
-    f"fill {LX-2} 66 {LZ-2} {LX+2} 66 {LZ} minecraft:crimson_slab[type=bottom]",                 # Dach
+    # Dach aus Halbstufen, aber unter den beiden Laternen ein ganzer Block. Auf der Halbstufe
+    # schwebten sie einen halben Block ueber dem Dach (Luis 09.09.2026). Die Fuellung laesst die
+    # beiden Ecken aus, sonst wuerde sie den ganzen Block jeden zweiten Tick wieder ersetzen und
+    # die Laterne als Item abwerfen.
+    f"fill {LX-2} 66 {LZ-2} {LX+2} 66 {LZ-1} minecraft:crimson_slab[type=bottom]",
+    f"fill {LX-1} 66 {LZ} {LX+1} 66 {LZ} minecraft:crimson_slab[type=bottom]",
+    f"execute unless block {LX-2} 66 {LZ} minecraft:crimson_planks run setblock {LX-2} 66 {LZ} minecraft:crimson_planks",
+    f"execute unless block {LX+2} 66 {LZ} minecraft:crimson_planks run setblock {LX+2} 66 {LZ} minecraft:crimson_planks",
     f"execute unless block {LX-2} 67 {LZ} minecraft:soul_lantern run setblock {LX-2} 67 {LZ} minecraft:soul_lantern",
     f"execute unless block {LX+2} 67 {LZ} minecraft:soul_lantern run setblock {LX+2} 67 {LZ} minecraft:soul_lantern",
     f'execute unless block {LX-2} 65 {LZ+1} minecraft:crimson_wall_sign run setblock {LX-2} 65 {LZ+1} '
@@ -1473,9 +1481,20 @@ fn("bogi/kaputt", [
 # und kosten ein Leben. Ein Treffer bricht das ab. Bei null Leben ist Schluss.
 # ----------------------------------------------------------------------------
 BX, BY, BZ = BEACON
+# Der Eisensockel um den Beacon: die neun Bloecke bei BY-1, oben also BY. Nur wer dort steht,
+# faengt an zu channeln (Luis 09.09.2026: "die zombies sollen darauf laufen und dann anfangen zu channeln").
+SOCKEL_BOX = f"x={BX-1},y={BY},z={BZ-1},dx=3,dy=2,dz=3"
 # Dunkler, fast deckender Hintergrund hinter der Lebenszahl. Ohne ihn stand rote Schrift auf dem
 # roten Beacon-Strahl und die erste Ziffer war nicht zu erkennen (Luis 09.09.2026).
 HERZ_HINTERGRUND = -15462372          # ARGB 0xFF14101C
+# Vier Tafeln, je 5 cm vor einer Seite des roten Glases. Gierwinkel: 0 = Sued (+z), 90 = West (-x),
+# 180 = Nord (-z), 270 = Ost (+x). Eine Tafel zeigt in die Richtung, in die sie schaut.
+HERZ_SEITEN = [("sued",  BX + 0.5,  BZ + 1.05,   0),
+               ("nord",  BX + 0.5,  BZ - 0.05, 180),
+               ("west",  BX - 0.05, BZ + 0.5,   90),
+               ("ost",   BX + 1.05, BZ + 0.5,  270)]
+HERZ_TEXT = J([txt(icons.ZEICHEN["heart"] + " ", "red"),
+               {"score": {"name": "#leben", "objective": "nw.leben"}, "color": "white", "bold": True}])
 
 fn("beacon/aufbauen", [
     f"execute unless block {BX} {BY} {BZ} minecraft:beacon run setblock {BX} {BY} {BZ} minecraft:beacon",
@@ -1489,13 +1508,17 @@ fn("beacon/aufbauen", [
     f'{{Tags:["nw.herz"],NoAI:1b,Silent:1b,Invulnerable:1b,PersistenceRequired:1b,NoGravity:1b,Offers:{{Recipes:[]}},'
     f'VillagerData:{{profession:"minecraft:nitwit",level:1,type:"minecraft:swamp"}},'
     f'attributes:[{{id:"minecraft:scale",base:0.2d}},{{id:"minecraft:max_health",base:1024d}}],Health:1024f}}',
-    # Lebensanzeige ueber dem Beacon
-    f"execute unless entity @e[tag=nw.herz_text] run summon minecraft:text_display {BX+0.5} {BY+2.6} {BZ+0.5} "
-    f'{{Tags:["nw.herz_text"],billboard:"center",background:{HERZ_HINTERGRUND},see_through:false,text:{J([txt(icons.ZEICHEN["heart"] + " ", "red"), {"score": {"name": "#leben", "objective": "nw.leben"}, "color": "white", "bold": True}])}}}',
+    # Lebensanzeige: vier feste Tafeln, je eine an jeder Seite des roten Glases (Luis 09.09.2026).
+    # Sie schweben nicht mehr darueber, wo sie im Leuchtstrahl lag und nicht zu lesen war.
+    *[f"execute unless entity @e[tag=nw.herz_text,tag=nw.ht_{seite}] run summon minecraft:text_display {x} {BY+1.5} {z} "
+      f'{{Tags:["nw.herz_text","nw.ht_{seite}"],Rotation:[{yaw}f,0f],billboard:"fixed",background:{HERZ_HINTERGRUND},'
+      f'see_through:false,transformation:{{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],'
+      f'translation:[0f,0f,0f],scale:[0.55f,0.55f,0.55f]}},text:{HERZ_TEXT}}}'
+      for seite, x, z, yaw in HERZ_SEITEN],
 ])
 w(f"{NS}/tags/block/beacon_sockel.json", {"values": ["minecraft:air", "minecraft:grass_block", "minecraft:dirt", "minecraft:water", "minecraft:cave_air"]})
 fn("beacon/anzeige", [
-    f'data modify entity @e[tag=nw.herz_text,limit=1] text set value {J([txt(icons.ZEICHEN["heart"] + " ", "red"), {"score": {"name": "#leben", "objective": "nw.leben"}, "color": "white", "bold": True}])}',
+    f'execute as @e[tag=nw.herz_text] run data modify entity @s text set value {HERZ_TEXT}',
 ])
 fn("beacon/verlust", [
     "scoreboard players remove #leben nw.leben 1",
@@ -1547,7 +1570,7 @@ def gen_item(stufe=0):
             f'custom_data={{nw_gen:1b{daten}}},'
             f'entity_data={{id:"minecraft:marker",Tags:["nw.gen_neu"]}},lore={lore}]')
 
-GEN_TAKE_KNOPF = ('minecraft:ender_eye[custom_data={nw_gen_take:1b},custom_name={text:"Take the generator",color:"yellow",italic:false},'
+GEN_TAKE_KNOPF = ('minecraft:ender_eye[' + knopf_modell("gen_take") + 'custom_data={nw_gen_take:1b},custom_name={text:"Take the generator",color:"yellow",italic:false},'
                   'lore=[{text:"Take this and it goes back into your inventory",color:"gray",italic:false},'
                   '{text:"Everything it dropped so far stays with you",color:"dark_gray",italic:false}]]')
 
@@ -2463,10 +2486,14 @@ fn("gegner/glocke", [
 fn("gegner/einer", [
     # Am Beacon: fuenf Sekunden ungestoert, dann loest sich der Gegner auf und kostet ein Leben
     "execute store result score @s nw.hpv run data get entity @s Health",
+    # Treffer: Channeln abbrechen und fuer eine Weile auf den Spieler losgehen (Luis 09.09.2026)
     "execute if score @s nw.hpv < @s nw.hpp run scoreboard players set @s nw.chan 0",
+    f"execute if score @s nw.hpv < @s nw.hpp run scoreboard players set @s nw.wut {WUT_TICKS}",
     "scoreboard players operation @s nw.hpp = @s nw.hpv",
-    f"execute unless entity @s[x={BEACON[0]+0.5},y={BEACON[1]+0.5},z={BEACON[2]+0.5},distance=..{DURCHBRUCH_RADIUS}] run scoreboard players set @s nw.chan 0",
-    f"execute if entity @s[x={BEACON[0]+0.5},y={BEACON[1]+0.5},z={BEACON[2]+0.5},distance=..{DURCHBRUCH_RADIUS}] run scoreboard players add @s nw.chan 1",
+    "execute if score @s nw.wut matches 1.. run scoreboard players remove @s nw.wut 1",
+    # Channeln nur, wer auf dem Eisensockel steht, nicht schon im Umkreis (Luis 09.09.2026)
+    f"execute unless entity @s[{SOCKEL_BOX}] run scoreboard players set @s nw.chan 0",
+    f"execute if entity @s[{SOCKEL_BOX}] unless score @s nw.wut matches 1.. run scoreboard players add @s nw.chan 1",
     "execute if score @s nw.chan matches 1.. if score #m20 nw.tmp matches 0 at @s run particle minecraft:dust{color:[1.0,0.2,0.2],scale:1.0} ~ ~1 ~ 0.3 0.5 0.3 0 6",
     f"execute if score @s nw.chan matches {DURCHBRUCH_TICKS}.. run return run function {NS}:gegner/durchbruch",
     "execute store result score @s nw.px run data get entity @s Pos[0]",
@@ -2533,6 +2560,9 @@ for r in FOKUS_STUFEN:
     fokus.append(f"execute if score #bk nw.tmp2 matches {r} if entity {_ziel % (r + 1)} run scoreboard players set @s nw.ziel 1")
 # Weiter weg als die groesste Stufe: volle Sichtweite, damit sie den Beacon trotzdem kennen und loslaufen
 fokus.append(f"execute if score #bk nw.tmp2 matches 0 run attribute @s minecraft:follow_range base set {FOKUS_WEIT}")
+# Wer gerade getroffen wurde, laesst den Beacon links liegen und geht auf den Spieler los.
+fokus.append(f"execute if score @s nw.wut matches 1.. run attribute @s minecraft:follow_range base set {FOKUS_WEIT}")
+fokus.append("execute if score @s nw.wut matches 1.. run scoreboard players set @s nw.ziel 1")
 fn("gegner/fokus", fokus)
 # Komplett eingebaut: lange still und der Block Richtung Spieler ist weder Luft noch grabbar (Obsidian, Portalrahmen, Grundgestein)
 # Graben immer in Richtung des aktuellen Ziels: Beacon, oder der Spieler, wenn der gerade naeher ist.

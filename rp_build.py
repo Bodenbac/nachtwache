@@ -377,6 +377,7 @@ KNOPF_SYMBOLE = {
     "b_kb":     ("zeichen:stoss", ("aus", "an")),      # Bogi: Knockback, Pfeil statt Kolbenflaeche
     "b_rg":     ("spyglass", ("aus", "an")),           # Bogi: Range
     "sperre":   ("gray_stained_glass", ("aus",)),      # gesperrtes Lagerfach
+    "gen_take": ("ender_eye", ("aus",)),               # Generator ins Inventar zurueckholen
 }
 PLATTE_FARBEN = {"aus": ((74, 64, 92), (38, 32, 50)),
                  "an":  ((206, 178, 86), (255, 244, 168)),

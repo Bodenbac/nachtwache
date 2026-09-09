@@ -36,7 +36,8 @@ DATEIEN = {"assets/minecraft/textures/block/amethyst_block.png": "amethyst_block
            "assets/minecraft/textures/item/end_crystal.png": "end_crystal.png",
            "assets/minecraft/textures/item/spyglass.png": "spyglass.png",
            "assets/minecraft/textures/block/piston_top.png": "piston_top.png",
-           "assets/minecraft/textures/block/gray_stained_glass.png": "gray_stained_glass.png"}
+           "assets/minecraft/textures/block/gray_stained_glass.png": "gray_stained_glass.png",
+           "assets/minecraft/textures/item/ender_eye.png": "ender_eye.png"}
 ziel = Path(__file__).resolve().parent / "vorlagen"; ziel.mkdir(exist_ok=True)
 m = json.load(urllib.request.urlopen("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"))
 v = json.load(urllib.request.urlopen([x for x in m["versions"] if x["id"] == VERSION][0]["url"]))
