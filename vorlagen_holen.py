@@ -13,7 +13,16 @@ DATEIEN = {"assets/minecraft/textures/block/amethyst_block.png": "amethyst_block
            "assets/minecraft/textures/item/diamond_chestplate.png": "diamond_chestplate.png",
            "assets/minecraft/textures/item/diamond_boots.png": "diamond_boots.png",
            "assets/minecraft/textures/item/enchanted_book.png": "enchanted_book.png",
-           "assets/minecraft/textures/item/book.png": "book.png"}
+           "assets/minecraft/textures/item/book.png": "book.png",
+           # Symbole der Ladenreiter, kommen in rp_build.py auf eine Farbplatte
+           "assets/minecraft/textures/block/stone.png": "stone.png",
+           "assets/minecraft/textures/item/rotten_flesh.png": "rotten_flesh.png",
+           "assets/minecraft/textures/item/bread.png": "bread.png",
+           "assets/minecraft/textures/item/iron_ingot.png": "iron_ingot.png",
+           "assets/minecraft/textures/item/iron_pickaxe.png": "iron_pickaxe.png",
+           "assets/minecraft/textures/item/redstone.png": "redstone.png",
+           "assets/minecraft/textures/item/brewing_stand.png": "brewing_stand.png",
+           "assets/minecraft/textures/item/nether_star.png": "nether_star.png"}
 ziel = Path(__file__).resolve().parent / "vorlagen"; ziel.mkdir(exist_ok=True)
 m = json.load(urllib.request.urlopen("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"))
 v = json.load(urllib.request.urlopen([x for x in m["versions"] if x["id"] == VERSION][0]["url"]))

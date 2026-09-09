@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 64                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 65                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -1891,7 +1891,11 @@ def reiter_liste(phase):
 def reiter_item(idx, name, iid, aktiv):
     glanz = "enchantment_glint_override=true," if aktiv else ""
     hint = "Open" if aktiv else "Click to open"
-    return f'{iid}[{glanz}custom_data={{nw_menu:{9000 + idx}}},custom_name={{text:"{name}",color:"yellow",italic:false}},lore=[{{text:"{hint}",color:"gray",italic:false}}]]'
+    # Eigenes Symbol aus dem Ressourcenpaket: Kategoriezeichen auf einer Farbplatte, damit sich die
+    # Reiterzeile von der Ware darunter abhebt (Luis 09.09.2026). Aktiv goldgelb, inaktiv dunkel.
+    kat = KATEGORIEN[idx - 1][0].lower()   # idx ist 1-basiert (siehe reiter_liste)
+    modell = f'item_model="nachtwache:reiter_{kat}_{"an" if aktiv else "aus"}",' if RESSOURCENPAKET else ""
+    return f'{iid}[{modell}{glanz}custom_data={{nw_menu:{9000 + idx}}},custom_name={{text:"{name}",color:"yellow",italic:false}},lore=[{{text:"{hint}",color:"gray",italic:false}}]]'
 
 for p in range(1, ANZ_STUFEN + 1):
     reiter = reiter_liste(p)

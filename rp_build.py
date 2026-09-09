@@ -315,6 +315,31 @@ def gui_daemmerung(src):
             px[x, y] = verlauf(l, stops) + (a,)
     return im
 
+# Reiter des Ladens: Kategorie -> Vorlagendatei mit dem Symbol (muss zu KATEGORIEN in build.py passen)
+REITER_SYMBOLE = {"BLOCKS": "stone", "MINERALS": "iron_ingot", "MOB": "rotten_flesh", "FOOD": "bread",
+                  "TOOLS": "iron_pickaxe", "UTIL": "redstone", "BREW": "brewing_stand",
+                  "BOOKS": "enchanted_book", "SPECIAL": "nether_star"}
+
+def reiter_platte(quelle, fuell, rand, hell):
+    """Farbplatte (16x16, Rahmen 2 px, Ecken frei) mit dem Symbol auf 12x12 in der Mitte."""
+    im = Image.new("RGBA", (16, 16), fuell + (255,))
+    px = im.load()
+    for d in range(2):
+        for i in range(16):
+            px[i, d] = rand + (255,); px[i, 15 - d] = rand + (255,)
+            px[d, i] = rand + (255,); px[15 - d, i] = rand + (255,)
+    for x, y in ((0, 0), (15, 0), (0, 15), (15, 15)):
+        px[x, y] = (0, 0, 0, 0)
+    sym = Image.open(VORLAGEN / f"{quelle}.png").convert("RGBA").crop((0, 0, 16, 16))
+    if not hell:                                  # inaktiv leicht abgedunkelt
+        sp = sym.load()
+        for y in range(16):
+            for x in range(16):
+                r, g, b, a = sp[x, y]
+                sp[x, y] = (int(r * 0.78), int(g * 0.78), int(b * 0.78), a)
+    im.alpha_composite(sym.resize((12, 12), Image.NEAREST), (2, 2))
+    return im
+
 def pack_icon():
     im = Image.new("RGBA", (128, 128), (14, 10, 20, 255))
     d = ImageDraw.Draw(im)
@@ -366,6 +391,16 @@ def build(out_dir=None):
         w(nw / "textures" / "item" / f"{name}.png", img)
         w(nw / "models" / "item" / f"{name}.json", json.dumps({"parent": "minecraft:item/generated", "textures": {"layer0": f"nachtwache:item/{name}"}}))
         w(nw / "items" / f"{name}.json", json.dumps({"model": {"type": "minecraft:model", "model": f"nachtwache:item/{name}"}}))
+
+    # Ladenreiter: Symbol auf einer Farbplatte, damit sich die Reiterzeile von der Ware abhebt
+    # (Luis 09.09.2026). Inaktiv dunkelviolett, aktiv goldgelb, Rahmen 2 px, Symbol 12 px.
+    # Der aktive Reiter glaenzt zusaetzlich, das macht das Datapack per enchantment_glint_override.
+    for kat, quelle in REITER_SYMBOLE.items():
+        for zustand, fuell, rand in (("aus", (74, 64, 92), (38, 32, 50)), ("an", (206, 178, 86), (255, 244, 168))):
+            name = f"reiter_{kat.lower()}_{zustand}"
+            w(nw / "textures" / "item" / f"{name}.png", reiter_platte(quelle, fuell, rand, zustand == "an"))
+            w(nw / "models" / "item" / f"{name}.json", json.dumps({"parent": "minecraft:item/generated", "textures": {"layer0": f"nachtwache:item/{name}"}}))
+            w(nw / "items" / f"{name}.json", json.dumps({"model": {"type": "minecraft:model", "model": f"nachtwache:item/{name}"}}))
 
     # Verzauberungsbuecher: Buch im Farbton der Ausruestung, Zeichen der Faehigkeit, Punkte je Stufe (buecher.py)
     for kurz, img in buecher.alle().items():
