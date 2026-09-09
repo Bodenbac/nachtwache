@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 62                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 63                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -34,7 +34,9 @@ ZWERG_UPGRADE_PREIS = 250               # mal (Stufe + 1)
 ZWERG_REIHEN_START = 1
 ZWERG_BP_PREIS = [500, 500]             # zwei Erweiterungen, dann sind die drei Reihen der Truhe voll
 ZWERG_BP_MAX = len(ZWERG_BP_PREIS)
-ZWERG_FAECHER = [(ZWERG_REIHEN_START + b) * 9 - 4 for b in range(ZWERG_BP_MAX + 1)]   # nutzbare Lagerfaecher je Stufe
+ZWERG_KNOEPFE = lambda a: 4 if a == 0 else 3   # ohne Auto-Verkauf vier Knoepfe, mit ihm faellt "Alles verkaufen" weg
+zwerg_faecher = lambda b, a=0: (ZWERG_REIHEN_START + b) * 9 - ZWERG_KNOEPFE(a)   # nutzbare Lagerfaecher
+ZWERG_A_BED = {0: "unless score @s nw.zwerg_a matches 1..2", 1: "if score @s nw.zwerg_a matches 1..2"}
 ZWERG_SPERRE = ('minecraft:gray_stained_glass_pane[custom_data={nw_zwerg_lock:1b},'
                 'custom_name={text:"Locked",color:"dark_gray",italic:false},'
                 'lore=[{text:"Buy a bigger pack to use this slot",color:"dark_gray",italic:false}]]')
@@ -59,8 +61,8 @@ def zwerg_auto_knopf(a):
             'lore=[{text:"He sells his pack every five seconds",color:"gray",italic:false},'
             '{text:"Take this to switch off",color:"dark_gray",italic:false}]]')
 
-def zwerg_bp_knopf(b):
-    faecher = ZWERG_FAECHER[b]
+def zwerg_bp_knopf(b, a=0):
+    faecher = zwerg_faecher(b, a)
     if b < ZWERG_BP_MAX:
         return (f'minecraft:bundle[custom_data={{nw_zwerg_bp:1b}},custom_name={{text:"Bigger pack",color:"yellow",italic:false}},'
                 f'lore=[{{text:"Now: {faecher} slots ({ZWERG_REIHEN_START + b} rows)",color:"gray",italic:false}},'
@@ -87,7 +89,7 @@ def zwerg_item(lvl, bp=0, inv=None):
             '{text:"He mines the generator right in front of him. Four dwarves fit around one.",color:"gray",italic:false},'
             '{text:"Right-click: open his pack, buy speed and space, sell everything.",color:"gray",italic:false},'
             f'{{text:"Speed: one block every {sek} s (level {lvl})",color:"aqua",italic:false}},'
-            f'{{text:"Pack: {ZWERG_FAECHER[bp]} slots ({ZWERG_REIHEN_START + bp} rows)",color:"aqua",italic:false}}]')
+            f'{{text:"Pack: {ZWERG_REIHEN_START + bp} row(s)",color:"aqua",italic:false}}]')
     daten = f',data:{{inv:{inv}}}' if inv else ""
     return (f'minecraft:zombie_spawn_egg[{modell}custom_name={{text:"Fraggle",color:"aqua",italic:false}},custom_data={{nw_zwerg:1b,lvl:{lvl},bp:{bp}}},'
             f'entity_data={{id:"minecraft:marker",Tags:["nw.zwerg_neu","nw.lvl{lvl}","nw.bp{bp}","nw.as$(a)"]{daten}}},lore={lore}]')
@@ -674,7 +676,7 @@ def zwerg_slot(feld, gui):
     eigen, aussen, _ = zwerg_bloecke(*feld)
     return (eigen if gui < 27 else aussen), (gui if gui < 27 else gui - 27)
 
-ZWERG_LAGER_ENDE = lambda reihen: reihen * 9 - 4     # Faecher 0 .. ENDE-1 sind Lager, danach die vier Knoepfe
+ZWERG_LAGER_ENDE = lambda reihen, a=0: reihen * 9 - ZWERG_KNOEPFE(a)   # Faecher 0 .. ENDE-1 sind Lager, danach die Knoepfe
 
 fn("zwerg/migrieren", [
     "kill @e[type=item_display,tag=nw.zwerg_k,distance=..0.1]", "kill @e[type=item_display,tag=nw.zwerg_a,distance=..0.1]",
@@ -771,28 +773,36 @@ fn("zwerg/setzen", setzen)
 
 # Knoepfe rechts in der letzten offenen Reihe, davor Lager, danach gesperrt
 symbol = []
+MIN_ENDE = ZWERG_LAGER_ENDE(ZWERG_REIHEN_START, 0)
 for b in range(ZWERG_BP_MAX + 1):
-    ende = ZWERG_LAGER_ENDE(ZWERG_REIHEN_START + b)
-    for sl in range(27):
-        ziel = f"~ ~ ~ container.{sl}"
-        if sl < ende:
-            symbol.append(f"execute if score @s nw.zwerg_b matches {b} if items block {ziel} {ZWERG_LOCK_PRED} run item replace block {ziel} with minecraft:air")
-            if sl >= ZWERG_LAGER_ENDE(ZWERG_REIHEN_START):
-                for pred in (ZWERG_SELL_PRED, ZWERG_BP_PRED, ZWERG_UP_PRED, ZWERG_AUTO_PRED):
-                    symbol.append(f"execute if score @s nw.zwerg_b matches {b} if items block {ziel} {pred} run item replace block {ziel} with minecraft:air")
-        elif sl == ende:
-            for a in range(3):
-                symbol.append(f"execute if score @s nw.zwerg_b matches {b} if score @s nw.zwerg_a matches {a} run item replace block {ziel} with {zwerg_auto_knopf(a)}")
-            symbol.append(f"execute if score @s nw.zwerg_b matches {b} unless score @s nw.zwerg_a matches 0..2 run item replace block {ziel} with {zwerg_auto_knopf(0)}")
-        elif sl == ende + 1:
-            symbol.append(f"execute if score @s nw.zwerg_b matches {b} run item replace block {ziel} with {ZWERG_VERKAUF_KNOPF}")
-        elif sl == ende + 2:
-            symbol.append(f"execute if score @s nw.zwerg_b matches {b} run item replace block {ziel} with {zwerg_bp_knopf(b)}")
-        elif sl == ende + 3:
-            for l in range(ZWERG_MAX + 1):
-                symbol.append(f"execute if score @s nw.zwerg_b matches {b} if score @s nw.zwerg matches {l} run item replace block {ziel} with {zwerg_up_knopf(l)}")
-        else:
-            symbol.append(f"execute if score @s nw.zwerg_b matches {b} run item replace block {ziel} with {ZWERG_SPERRE}")
+    for a in (0, 1):                       # 0 = Auto-Verkauf nicht gekauft (vier Knoepfe), 1 = gekauft (drei)
+        vor = f"execute if score @s nw.zwerg_b matches {b} {ZWERG_A_BED[a]}"
+        ende = ZWERG_LAGER_ENDE(ZWERG_REIHEN_START + b, a)
+        # Knopfreihenfolge von links: Auto-Verkauf, [Alles verkaufen], Rucksack, Tempo
+        knoepfe = ["auto"] + ([] if a else ["sell"]) + ["bp", "up"]
+        for sl in range(27):
+            ziel = f"~ ~ ~ container.{sl}"
+            if sl < ende:
+                symbol.append(f"{vor} if items block {ziel} {ZWERG_LOCK_PRED} run item replace block {ziel} with minecraft:air")
+                if sl >= MIN_ENDE:
+                    for pred in (ZWERG_SELL_PRED, ZWERG_BP_PRED, ZWERG_UP_PRED, ZWERG_AUTO_PRED):
+                        symbol.append(f"{vor} if items block {ziel} {pred} run item replace block {ziel} with minecraft:air")
+            elif sl - ende < len(knoepfe):
+                art = knoepfe[sl - ende]
+                if art == "auto":
+                    for av in ((0,) if a == 0 else (1, 2)):
+                        symbol.append(f"{vor} if score @s nw.zwerg_a matches {av} run item replace block {ziel} with {zwerg_auto_knopf(av)}")
+                    if a == 0:
+                        symbol.append(f"{vor} unless score @s nw.zwerg_a matches 0 run item replace block {ziel} with {zwerg_auto_knopf(0)}")
+                elif art == "sell":
+                    symbol.append(f"{vor} run item replace block {ziel} with {ZWERG_VERKAUF_KNOPF}")
+                elif art == "bp":
+                    symbol.append(f"{vor} run item replace block {ziel} with {zwerg_bp_knopf(b, a)}")
+                else:
+                    for l in range(ZWERG_MAX + 1):
+                        symbol.append(f"{vor} if score @s nw.zwerg matches {l} run item replace block {ziel} with {zwerg_up_knopf(l)}")
+            else:
+                symbol.append(f"{vor} run item replace block {ziel} with {ZWERG_SPERRE}")
 for l in range(ZWERG_MAX + 1):
     symbol.append(f'execute if score @s nw.zwerg matches {l} run data merge block ~ ~ ~ '
                   f'{{CustomName:[{{text:"Fraggle   ",color:"aqua"}},{{text:"Level {l}",color:"gray"}}]}}')
@@ -807,10 +817,13 @@ fn("zwerg/einer", [
     "scoreboard players operation #takt nw.tmp2 -= #iv nw.tmp2",
     f"execute if score @s nw.zwerg_t >= #takt nw.tmp2 run function {NS}:zwerg/schlag",
     f"execute if score @s nw.zwerg_t matches 6 as @e[type=item_display,tag=nw.zwerg_a,distance=..0.1] run data merge entity @s {{start_interpolation:0,interpolation_duration:8,transformation:{_arm_transform(0)}}}",
-    *[f"execute if score @s nw.zwerg_b matches {b} unless items block ~ ~ ~ container.{ZWERG_LAGER_ENDE(ZWERG_REIHEN_START + b) + off} {pred} run function {NS}:zwerg/{ziel}"
-      for b in range(ZWERG_BP_MAX + 1)
-      for off, pred, ziel in ((0, ZWERG_AUTO_PRED, "auto_klick"), (1, ZWERG_SELL_PRED, "verkauf_alles"),
-                              (2, ZWERG_BP_PRED, "rucksack"), (3, ZWERG_UP_PRED, "upgrade"))],
+    *[f"execute if score @s nw.zwerg_b matches {b} {ZWERG_A_BED[a]} unless items block ~ ~ ~ "
+      f"container.{ZWERG_LAGER_ENDE(ZWERG_REIHEN_START + b, a) + off} * run function {NS}:zwerg/{ziel}"
+      for b in range(ZWERG_BP_MAX + 1) for a in (0, 1)
+      for off, pred, ziel in (((0, ZWERG_AUTO_PRED, "auto_klick"), (1, ZWERG_SELL_PRED, "verkauf_alles"),
+                               (2, ZWERG_BP_PRED, "rucksack"), (3, ZWERG_UP_PRED, "upgrade")) if a == 0 else
+                              ((0, ZWERG_AUTO_PRED, "auto_klick"), (1, ZWERG_BP_PRED, "rucksack"),
+                               (2, ZWERG_UP_PRED, "upgrade")))],
     f"clear @a[distance=..8] {ZWERG_AUTO_PRED}",
     # Auto-Verkauf: alle fuenf Sekunden, ohne Meldung
     "scoreboard players operation #m100 nw.tmp2 = #tick nw.tick", f"scoreboard players operation #m100 nw.tmp2 %= #{100} nw.const",
@@ -823,9 +836,9 @@ fn("zwerg/einer", [
 merken = ["execute unless data entity @s data run data modify entity @s data set value {}",
           "data modify entity @s data.inv set from block ~ ~ ~ Items"]
 for b in range(ZWERG_BP_MAX + 1):
-    ende = ZWERG_LAGER_ENDE(ZWERG_REIHEN_START + b)
-    for sl in range(ende, 27):
-        merken.append(f"execute if score @s nw.zwerg_b matches {b} run data remove entity @s data.inv[{{Slot:{sl}b}}]")
+    for a in (0, 1):
+        for sl in range(ZWERG_LAGER_ENDE(ZWERG_REIHEN_START + b, a), 27):
+            merken.append(f"execute if score @s nw.zwerg_b matches {b} {ZWERG_A_BED[a]} run data remove entity @s data.inv[{{Slot:{sl}b}}]")
 fn("zwerg/merken", merken)
 schlag = ["scoreboard players set @s nw.zwerg_t 0", "scoreboard players set #gen nw.tmp2 0"]
 for d in range(4):
@@ -888,9 +901,10 @@ fn("zwerg/rucksack_kauf", [
 # Kern: alle Lagerfaecher durchgehen und verkaufen. Zwei Huellen, laut (Knopf) und leise (Auto-Verkauf).
 kern = ["scoreboard players set #erloes nw.tmp2 0"]
 for b in range(ZWERG_BP_MAX + 1):
-    for sl in range(ZWERG_LAGER_ENDE(ZWERG_REIHEN_START + b)):
-        kern.append(f"execute if score @s nw.zwerg_b matches {b} if items block ~ ~ ~ container.{sl} * "
-                    f"unless items block ~ ~ ~ container.{sl} {ZWERG_LOCK_PRED} run function {NS}:zwerg/verkauf_fach {{slot:{sl}}}")
+    for a in (0, 1):
+        for sl in range(ZWERG_LAGER_ENDE(ZWERG_REIHEN_START + b, a)):
+            kern.append(f"execute if score @s nw.zwerg_b matches {b} {ZWERG_A_BED[a]} if items block ~ ~ ~ container.{sl} * "
+                        f"unless items block ~ ~ ~ container.{sl} {ZWERG_LOCK_PRED} run function {NS}:zwerg/verkauf_fach {{slot:{sl}}}")
 fn("zwerg/verkauf_kern", kern)
 fn("zwerg/verkauf_alles", [
     f"clear @a[distance=..8] {ZWERG_SELL_PRED}",

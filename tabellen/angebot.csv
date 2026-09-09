@@ -52,7 +52,6 @@ id,stufe,name,preis,max,item,kat,pos
 110,6,Ghast Tear,300,64,ghast_tear,BREW,
 111,6,Phantom Membrane,150,64,phantom_membrane,MOB,
 113,6,Dragon's Breath,400,64,dragon_breath,BREW,
-114,6,Wither Skeleton Skull,1500,64,wither_skeleton_skull,SPECIAL,
 115,6,Sculk Sensor,300,64,sculk_sensor,UTIL,
 116,6,Heart of the Sea,2500,1,heart_of_the_sea,SPECIAL,
 117,6,Enchanted Golden Apple,3000,64,enchanted_golden_apple,FOOD,
