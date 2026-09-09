@@ -5,7 +5,15 @@ from pathlib import Path
 VERSION = "1.21.11"
 DATEIEN = {"assets/minecraft/textures/block/amethyst_block.png": "amethyst_block.png",
            "assets/minecraft/textures/item/bell.png": "bell.png",
-           "assets/minecraft/textures/gui/container/generic_54.png": "generic_54.png"}
+           "assets/minecraft/textures/gui/container/generic_54.png": "generic_54.png",
+           # Grundlage der Buchsymbole: das echte Werkzeug, darauf ein eigenes Zeichen (buecher.py)
+           "assets/minecraft/textures/item/diamond_sword.png": "diamond_sword.png",
+           "assets/minecraft/textures/item/diamond_pickaxe.png": "diamond_pickaxe.png",
+           "assets/minecraft/textures/item/bow.png": "bow.png",
+           "assets/minecraft/textures/item/diamond_chestplate.png": "diamond_chestplate.png",
+           "assets/minecraft/textures/item/diamond_boots.png": "diamond_boots.png",
+           "assets/minecraft/textures/item/enchanted_book.png": "enchanted_book.png",
+           "assets/minecraft/textures/item/book.png": "book.png"}
 ziel = Path(__file__).resolve().parent / "vorlagen"; ziel.mkdir(exist_ok=True)
 m = json.load(urllib.request.urlopen("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"))
 v = json.load(urllib.request.urlopen([x for x in m["versions"] if x["id"] == VERSION][0]["url"]))
