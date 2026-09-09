@@ -57,42 +57,42 @@ cooked_porkchop,Cooked Porkchop,40
 chicken,Chicken,15
 cooked_chicken,Cooked Chicken,25
 coal_ore,Coal Ore,5
-coal,Coal,6
+coal,Coal,8
 coal_block,Coal Block,60
 copper_ore,Copper Ore,4
 raw_copper,Raw Copper,3
-copper_ingot,Copper Ingot,5
+copper_ingot,Copper Ingot,10
 copper_block,Copper Block,50
 iron_ore,Iron Ore,15
 raw_iron,Raw Iron,12
-iron_ingot,Iron Ingot,20
+iron_ingot,Iron Ingot,25
 iron_block,Iron Block,200
 gold_ore,Gold Ore,30
 raw_gold,Raw Gold,25
-gold_ingot,Gold Ingot,40
+gold_ingot,Gold Ingot,50
 gold_block,Gold Block,400
 redstone_ore,Redstone Ore,8
-redstone,Redstone,3
+redstone,Redstone,5
 redstone_block,Redstone Block,30
 lapis_ore,Lapis Ore,20
-lapis_lazuli,Lapis Lazuli,4
+lapis_lazuli,Lapis Lazuli,10
 lapis_block,Lapis Block,40
 diamond_ore,Diamond Ore,300
-diamond,Diamond,400
+diamond,Diamond,250
 diamond_block,Diamond Block,4000
 emerald_ore,Emerald Ore,200
-emerald,Emerald,250
+emerald,Emerald,125
 emerald_block,Emerald Block,2500
-nether_quartz_ore,Nether Quartz Ore,10
-quartz,Quartz,6
+nether_quartz_ore,Nether Quartz Ore,30
+quartz,Quartz,13
 obsidian,Obsidian,120
-amethyst_shard,Amethyst Shard,6
+amethyst_shard,Amethyst Shard,20
 amethyst_block,Amethyst Block,20
 netherrack,Netherrack,2
 soul_sand,Soul Sand,4
 soul_soil,Soul Soil,4
 nether_wart,Nether Wart,6
-glowstone_dust,Glowstone Dust,4
+glowstone_dust,Glowstone Dust,15
 glowstone,Glowstone,15
 magma_block,Magma Block,8
 blackstone,Blackstone,3
@@ -111,8 +111,8 @@ blaze_rod,Blaze Rod,20
 ghast_tear,Ghast Tear,40
 wither_skeleton_skull,Wither Skeleton Skull,150
 ancient_debris,Ancient Debris,300
-netherite_scrap,Netherite Scrap,250
-shulker_shell,Shulker Shell,150
+netherite_scrap,Netherite Scrap,300
+shulker_shell,Shulker Shell,400
 enchanted_golden_apple,Enchanted Golden Apple,1500
 honeycomb,Honeycomb,5
 honey_bottle,Honey Bottle,8
@@ -242,3 +242,23 @@ netherite_helmet,Netherite Helmet,1750
 netherite_chestplate,Netherite Chestplate,2250
 netherite_leggings,Netherite Leggings,2000
 netherite_boots,Netherite Boots,1625
+netherite_ingot,Netherite Ingot,1500
+netherite_upgrade_smithing_template,Netherite Upgrade Template,750
+bolt_armor_trim_smithing_template,Bolt Armor Trim,1250
+coast_armor_trim_smithing_template,Coast Armor Trim,500
+dune_armor_trim_smithing_template,Dune Armor Trim,500
+eye_armor_trim_smithing_template,Eye Armor Trim,500
+flow_armor_trim_smithing_template,Flow Armor Trim,1250
+host_armor_trim_smithing_template,Host Armor Trim,500
+raiser_armor_trim_smithing_template,Raiser Armor Trim,500
+rib_armor_trim_smithing_template,Rib Armor Trim,500
+sentry_armor_trim_smithing_template,Sentry Armor Trim,500
+shaper_armor_trim_smithing_template,Shaper Armor Trim,500
+silence_armor_trim_smithing_template,Silence Armor Trim,1250
+snout_armor_trim_smithing_template,Snout Armor Trim,500
+spire_armor_trim_smithing_template,Spire Armor Trim,500
+tide_armor_trim_smithing_template,Tide Armor Trim,500
+vex_armor_trim_smithing_template,Vex Armor Trim,500
+ward_armor_trim_smithing_template,Ward Armor Trim,500
+wayfinder_armor_trim_smithing_template,Wayfinder Armor Trim,500
+wild_armor_trim_smithing_template,Wild Armor Trim,500

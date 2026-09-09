@@ -17,24 +17,18 @@ id,stufe,name,preis,max,item,kat,pos
 16,1,Lava Bucket,500,1,lava_bucket,UTIL,
 21,3,Oak Sapling,4000,64,oak_sapling,FOOD,
 22,3,Wheat Seeds,200,64,wheat_seeds,FOOD,
-29,1,Iron Ingot,50,64,iron_ingot,MINERALS,
 141,1,Bone,35,64,bone,MOB,
 30,1,Collector Lantern,300,1,LATERNE,SPECIAL,
 31,1,Bounty Contract,150,1,KONTRAKT,SPECIAL,
 62,1,Obsidian,500,64,obsidian,BLOCKS,
 50,1,End Portal Frame,2500,64,end_portal_frame,BLOCKS,
 49,1,Fraggle the Dwarf,10000,1,ZWERG,SPECIAL,
-28,1,Coal,15,64,coal,MINERALS,
-131,3,Diamond,500,64,diamond,MINERALS,
 40,1,Arrow,20,64,arrow,MOB,
-42,2,Redstone,10,64,redstone,UTIL,
 45,2,Steak,100,64,cooked_beef,FOOD,
 46,4,Leather,30,64,leather,MOB,
 47,2,String,10,64,string,MOB,
-61,3,Gold Ingot,100,64,gold_ingot,MINERALS,
 63,3,Enchanting Table,4000,1,enchanting_table,BREW,
 64,3,Bookshelf,150,64,bookshelf,BLOCKS,
-65,3,Lapis Lazuli,20,64,lapis_lazuli,MINERALS,
 67,3,Potion of Healing II,150,1,TRANK_HEILUNG,BREW,
 68,3,Potion of Strength,200,1,TRANK_STAERKE,BREW,
 69,3,Potion of Night Vision (long),100,1,TRANK_NACHTSICHT,BREW,
@@ -48,10 +42,6 @@ id,stufe,name,preis,max,item,kat,pos
 103,5,Totem of Undying,1500,1,totem_of_undying,SPECIAL,
 104,5,Elytra,5000,1,elytra,SPECIAL,
 105,5,Iron Golem Egg,2000,1,iron_golem_spawn_egg,SPECIAL,
-80,4,Copper Ingot,20,64,copper_ingot,MINERALS,
-81,4,Amethyst Shard,40,64,amethyst_shard,MINERALS,
-82,4,Quartz,25,64,quartz,MINERALS,
-83,4,Glowstone Dust,30,64,glowstone_dust,BLOCKS,
 84,4,Blaze Rod,120,64,blaze_rod,BREW,
 85,4,Nether Wart,60,64,nether_wart,BREW,
 86,4,Honeycomb,40,64,honeycomb,BLOCKS,
@@ -61,14 +51,11 @@ id,stufe,name,preis,max,item,kat,pos
 90,4,Saddle,300,1,saddle,UTIL,
 110,6,Ghast Tear,300,64,ghast_tear,BREW,
 111,6,Phantom Membrane,150,64,phantom_membrane,MOB,
-112,6,Shulker Shell,800,64,shulker_shell,MINERALS,
 113,6,Dragon's Breath,400,64,dragon_breath,BREW,
 114,6,Wither Skeleton Skull,1500,64,wither_skeleton_skull,SPECIAL,
 115,6,Sculk Sensor,300,64,sculk_sensor,UTIL,
 116,6,Heart of the Sea,2500,1,heart_of_the_sea,SPECIAL,
 117,6,Enchanted Golden Apple,3000,64,enchanted_golden_apple,FOOD,
-120,7,Netherite Scrap,600,64,netherite_scrap,MINERALS,
-121,7,Netherite Upgrade Template,1500,1,netherite_upgrade_smithing_template,MINERALS,
 124,7,Trident,2000,1,trident,SPECIAL,
 125,7,Beacon,8000,1,beacon,SPECIAL,
 150,1,Book: Sharpness IV,2200,1,BUCH_SHARPNESS_4,BOOKS,
@@ -151,3 +138,31 @@ id,stufe,name,preis,max,item,kat,pos
 237,6,Netherite Chestplate,4500,1,netherite_chestplate,TOOLS,42
 238,6,Netherite Leggings,4000,1,netherite_leggings,TOOLS,43
 239,6,Netherite Boots,3250,1,netherite_boots,TOOLS,44
+28,1,Coal,15,64,coal,MINERALS,0
+80,1,Copper Ingot,20,64,copper_ingot,MINERALS,1
+29,1,Iron Ingot,50,64,iron_ingot,MINERALS,2
+61,3,Gold Ingot,100,64,gold_ingot,MINERALS,3
+65,3,Lapis Lazuli,20,64,lapis_lazuli,MINERALS,4
+42,3,Redstone,10,64,redstone,MINERALS,5
+131,4,Diamond,500,64,diamond,MINERALS,6
+300,5,Emerald,250,64,emerald,MINERALS,7
+301,6,Netherite Ingot,3000,64,netherite_ingot,MINERALS,8
+121,6,Netherite Upgrade Template,1500,1,netherite_upgrade_smithing_template,MINERALS,27
+310,6,Bolt Armor Trim,2500,1,bolt_armor_trim_smithing_template,MINERALS,9
+311,6,Coast Armor Trim,1000,1,coast_armor_trim_smithing_template,MINERALS,10
+312,6,Dune Armor Trim,1000,1,dune_armor_trim_smithing_template,MINERALS,11
+313,6,Eye Armor Trim,1000,1,eye_armor_trim_smithing_template,MINERALS,12
+314,6,Flow Armor Trim,2500,1,flow_armor_trim_smithing_template,MINERALS,13
+315,6,Host Armor Trim,1000,1,host_armor_trim_smithing_template,MINERALS,14
+316,6,Raiser Armor Trim,1000,1,raiser_armor_trim_smithing_template,MINERALS,15
+317,6,Rib Armor Trim,1000,1,rib_armor_trim_smithing_template,MINERALS,16
+318,6,Sentry Armor Trim,1000,1,sentry_armor_trim_smithing_template,MINERALS,17
+319,6,Shaper Armor Trim,1000,1,shaper_armor_trim_smithing_template,MINERALS,18
+320,6,Silence Armor Trim,2500,1,silence_armor_trim_smithing_template,MINERALS,19
+321,6,Snout Armor Trim,1000,1,snout_armor_trim_smithing_template,MINERALS,20
+322,6,Spire Armor Trim,1000,1,spire_armor_trim_smithing_template,MINERALS,21
+323,6,Tide Armor Trim,1000,1,tide_armor_trim_smithing_template,MINERALS,22
+324,6,Vex Armor Trim,1000,1,vex_armor_trim_smithing_template,MINERALS,23
+325,6,Ward Armor Trim,1000,1,ward_armor_trim_smithing_template,MINERALS,24
+326,6,Wayfinder Armor Trim,1000,1,wayfinder_armor_trim_smithing_template,MINERALS,25
+327,6,Wild Armor Trim,1000,1,wild_armor_trim_smithing_template,MINERALS,26
