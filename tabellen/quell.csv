@@ -40,7 +40,7 @@ phasen,item,gewicht,min,max
 3-7,bamboo,2,1,1
 3-7,sweet_berries,2,1,2
 3,KISTE_2,1,1,1
-5-7,diamond_ore,3,1,1
+4-7,diamond_ore,3,1,1
 5-7,emerald_ore,2,1,1
 5-7,nether_wart,2,1,1
 5-7,soul_soil,3,1,1
@@ -63,10 +63,10 @@ phasen,item,gewicht,min,max
 7,diamond_ore,4,1,1
 7,ancient_debris,2,1,1
 7,emerald_ore,3,1,1
-7,netherite_scrap,1,1,1
+6-7,netherite_scrap,1,1,1
 7,KISTE_4,1,1,1
 7,enchanted_golden_apple,1,1,1
-4-7,raw_gold,2,1,1
+3-7,raw_gold,2,1,1
 4-7,amethyst_shard,3,1,2
 4-7,glass,3,1,2
 4-7,bookshelf,1,1,1

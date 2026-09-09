@@ -83,16 +83,16 @@ diamond_block,Diamond Block,4000
 emerald_ore,Emerald Ore,200
 emerald,Emerald,125
 emerald_block,Emerald Block,2500
-nether_quartz_ore,Nether Quartz Ore,30
-quartz,Quartz,13
+nether_quartz_ore,Nether Quartz Ore,40
+quartz,Quartz,20
 obsidian,Obsidian,120
-amethyst_shard,Amethyst Shard,20
+amethyst_shard,Amethyst Shard,25
 amethyst_block,Amethyst Block,20
 netherrack,Netherrack,2
 soul_sand,Soul Sand,4
 soul_soil,Soul Soil,4
 nether_wart,Nether Wart,6
-glowstone_dust,Glowstone Dust,15
+glowstone_dust,Glowstone Dust,20
 glowstone,Glowstone,15
 magma_block,Magma Block,8
 blackstone,Blackstone,3

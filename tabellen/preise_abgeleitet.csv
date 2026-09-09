@@ -23,7 +23,7 @@ activator_rail,Activator Rail,30,rezept
 allium,Allium,2,muster
 amethyst_block,Block of Amethyst,20,basis
 amethyst_cluster,Amethyst Cluster,20,basis
-amethyst_shard,Amethyst Shard,20,basis
+amethyst_shard,Amethyst Shard,25,basis
 ancient_debris,Ancient Debris,300,basis
 andesite,Andesite,1,basis
 andesite_slab,Andesite Slab,1,rest
@@ -175,7 +175,7 @@ bush,Bush,2,muster
 cactus,Cactus,3,basis
 cactus_flower,Cactus Flower,2,muster
 calcite,Calcite,3,basis
-calibrated_sculk_sensor,Calibrated Sculk Sensor,100,rezept
+calibrated_sculk_sensor,Calibrated Sculk Sensor,116,rezept
 campfire,Campfire,49,rezept
 candle,Candle,10,rezept
 carrot,Carrot,3,basis
@@ -215,7 +215,7 @@ chiseled_copper,Chiseled Copper,13,rezept
 chiseled_deepslate,Chiseled Deepslate,2,rezept
 chiseled_nether_bricks,Chiseled Nether Bricks,14,rezept
 chiseled_polished_blackstone,Chiseled Polished Blackstone,3,rezept
-chiseled_quartz_block,Chiseled Quartz Block,58,rezept
+chiseled_quartz_block,Chiseled Quartz Block,88,rezept
 chiseled_red_sandstone,Chiseled Red Sandstone,4,rezept
 chiseled_resin_bricks,Chiseled Resin Bricks,1,rest
 chiseled_sandstone,Chiseled Sandstone,4,rezept
@@ -245,7 +245,7 @@ cobweb,Cobweb,5,basis
 cocoa_beans,Cocoa Beans,3,basis
 cod,Raw Cod,8,basis
 cod_bucket,Bucket of Cod,80,basis
-comparator,Redstone Comparator,44,rezept
+comparator,Redstone Comparator,52,rezept
 compass,Compass,116,rezept
 composter,Composter,16,rezept
 conduit,Conduit,815,rezept
@@ -345,7 +345,7 @@ dark_oak_wood,Dark Oak Wood,22,rezept
 dark_prismarine,Dark Prismarine,49,rezept
 dark_prismarine_slab,Dark Prismarine Slab,25,rezept
 dark_prismarine_stairs,Dark Prismarine Stairs,49,rezept
-daylight_detector,Daylight Detector,60,rezept
+daylight_detector,Daylight Detector,83,rezept
 dead_brain_coral,Dead Brain Coral,4,muster
 dead_brain_coral_block,Dead Brain Coral Block,8,muster
 dead_brain_coral_fan,Dead Brain Coral Fan,4,muster
@@ -482,7 +482,7 @@ glow_ink_sac,Glow Ink Sac,8,basis
 glow_item_frame,Glow Item Frame,39,rezept
 glow_lichen,Glow Lichen,2,basis
 glowstone,Glowstone,15,basis
-glowstone_dust,Glowstone Dust,15,basis
+glowstone_dust,Glowstone Dust,20,basis
 goat_horn,Goat Horn,50,muster
 gold_block,Block of Gold,400,basis
 gold_ingot,Gold Ingot,50,basis
@@ -753,7 +753,7 @@ nether_brick_stairs,Nether Brick Stairs,14,rezept
 nether_brick_wall,Nether Brick Wall,14,rezept
 nether_bricks,Nether Bricks,14,rezept
 nether_gold_ore,Nether Gold Ore,20,muster
-nether_quartz_ore,Nether Quartz Ore,30,basis
+nether_quartz_ore,Nether Quartz Ore,40,basis
 nether_sprouts,Nether Sprouts,1,basis
 nether_star,Nether Star,3000,muster
 nether_wart,Nether Wart,6,basis
@@ -791,7 +791,7 @@ oak_slab,Oak Slab,3,rezept
 oak_stairs,Oak Stairs,7,rezept
 oak_trapdoor,Oak Trapdoor,14,rezept
 oak_wood,Oak Wood,22,rezept
-observer,Observer,32,rezept
+observer,Observer,40,rezept
 obsidian,Obsidian,120,basis
 ochre_froglight,Ochre Froglight,15,muster
 ominous_banner,Ominous Banner,1,rest
@@ -991,12 +991,12 @@ purpur_block,Purpur Block,6,basis
 purpur_pillar,Purpur Pillar,6,rezept
 purpur_slab,Purpur Slab,3,rezept
 purpur_stairs,Purpur Stairs,6,rezept
-quartz,Nether Quartz,13,basis
-quartz_block,Block of Quartz,58,rezept
-quartz_bricks,Quartz Bricks,58,rezept
-quartz_pillar,Quartz Pillar,58,rezept
-quartz_slab,Quartz Slab,29,rezept
-quartz_stairs,Quartz Stairs,58,rezept
+quartz,Nether Quartz,20,basis
+quartz_block,Block of Quartz,88,rezept
+quartz_bricks,Quartz Bricks,88,rezept
+quartz_pillar,Quartz Pillar,88,rezept
+quartz_slab,Quartz Slab,44,rezept
+quartz_stairs,Quartz Stairs,88,rezept
 rabbit,Raw Rabbit,12,basis
 rabbit_foot,Rabbit's Foot,20,basis
 rabbit_hide,Rabbit Hide,3,basis
@@ -1096,9 +1096,9 @@ smithing_table,Smithing Table,69,rezept
 smithing_template,Smithing Template,1,rest
 smoker,Smoker,54,rezept
 smooth_basalt,Smooth Basalt,3,rezept
-smooth_quartz,Smooth Quartz Block,73,rezept
-smooth_quartz_slab,Smooth Quartz Slab,37,rezept
-smooth_quartz_stairs,Smooth Quartz Stairs,73,rezept
+smooth_quartz,Smooth Quartz Block,110,rezept
+smooth_quartz_slab,Smooth Quartz Slab,55,rezept
+smooth_quartz_stairs,Smooth Quartz Stairs,110,rezept
 smooth_red_sandstone,Smooth Red Sandstone,5,rezept
 smooth_red_sandstone_slab,Smooth Red Sandstone Slab,3,rezept
 smooth_red_sandstone_stairs,Smooth Red Sandstone Stairs,5,rezept
@@ -1118,7 +1118,7 @@ soul_lantern,Soul Lantern,40,rezept
 soul_sand,Soul Sand,4,basis
 soul_soil,Soul Soil,4,basis
 soul_torch,Soul Torch,4,rezept
-spectral_arrow,Spectral Arrow,34,rezept
+spectral_arrow,Spectral Arrow,45,rezept
 spider_eye,Spider Eye,3,basis
 spire_armor_trim_smithing_template,Smithing Template,500,basis
 splash_potion,Splash Potion,20,muster
@@ -1196,7 +1196,7 @@ tall_grass,Tall Grass,1,rest
 target,Target,56,rezept
 terracotta,Terracotta,5,basis
 tide_armor_trim_smithing_template,Smithing Template,500,basis
-tinted_glass,Tinted Glass,46,rezept
+tinted_glass,Tinted Glass,57,rezept
 tipped_arrow,Tipped Arrow,20,muster
 tnt,TNT,58,rezept
 tnt_minecart,Minecart with TNT,216,rezept
