@@ -330,6 +330,15 @@ def reiter_platte(quelle, fuell, rand, hell):
             px[d, i] = rand + (255,); px[15 - d, i] = rand + (255,)
     for x, y in ((0, 0), (15, 0), (0, 15), (15, 15)):
         px[x, y] = (0, 0, 0, 0)
+    if quelle.startswith("zeichen:"):             # eigenes 5x5-Zeichen aus buecher.py, doppelt so gross
+        rows, P = buecher.ZEICHEN[quelle.split(":", 1)[1]]
+        for y, row in enumerate(rows):
+            for x, ch in enumerate(row):
+                if P.get(ch):
+                    for dy in range(2):
+                        for dx in range(2):
+                            px[3 + x * 2 + dx, 3 + y * 2 + dy] = P[ch] + (255,)
+        return im
     sym = Image.open(VORLAGEN / f"{quelle}.png").convert("RGBA").crop((0, 0, 16, 16))
     if not hell:                                  # inaktiv leicht abgedunkelt
         sp = sym.load()
@@ -339,6 +348,31 @@ def reiter_platte(quelle, fuell, rand, hell):
                 sp[x, y] = (int(r * 0.78), int(g * 0.78), int(b * 0.78), a)
     im.alpha_composite(sym.resize((12, 12), Image.NEAREST), (2, 2))
     return im
+
+# Knoepfe in den Minion-Rucksaecken (Fraggle, Bogi). Gleiche Optik wie die Ladenreiter:
+# Zeichen auf einer Farbplatte. Dunkelviolett = kaufbar oder Aktion, Gold = gekauft, aktiv oder
+# Maximum, Rot = gekauft, aber ausgeschaltet. Luis 09.09.2026.
+# Name -> (Vorlagendatei, Zustaende). Die Vorlage ist nur Bildmaterial, welches Item darunter
+# liegt, ist egal: item_model ersetzt das Modell vollstaendig.
+KNOPF_SYMBOLE = {
+    "auto":     ("hopper", ("aus", "off", "an")),      # Auto-Verkauf: kaufbar, OFF, ON
+    "sell":     ("emerald", ("aus",)),                 # Alles verkaufen, reine Aktion
+    "pack":     ("bundle", ("aus",)),                  # Rucksack erweitern
+    "packmax":  ("shulker_shell", ("an",)),            # Rucksack voll
+    "tempo":    ("iron_pickaxe", ("aus",)),            # Tempo kaufen
+    "tempomax": ("netherite_pickaxe", ("an",)),        # Tempo am Maximum
+    "b_sp":     ("feather", ("aus", "an")),            # Bogi: Draw speed
+    "b_st":     ("iron_sword", ("aus", "an")),         # Bogi: Power
+    "b_mu":     ("crossbow_arrow", ("aus", "an")),     # Bogi: Multishot
+    "b_fl":     ("blaze_powder", ("aus", "an")),       # Bogi: Flame
+    "b_inf":    ("end_crystal", ("aus", "an")),        # Bogi: Infinity
+    "b_kb":     ("zeichen:stoss", ("aus", "an")),      # Bogi: Knockback, Pfeil statt Kolbenflaeche
+    "b_rg":     ("spyglass", ("aus", "an")),           # Bogi: Range
+    "sperre":   ("gray_stained_glass", ("aus",)),      # gesperrtes Lagerfach
+}
+PLATTE_FARBEN = {"aus": ((74, 64, 92), (38, 32, 50)),
+                 "an":  ((206, 178, 86), (255, 244, 168)),
+                 "off": ((132, 62, 62), (198, 96, 96))}
 
 def pack_icon():
     im = Image.new("RGBA", (128, 128), (14, 10, 20, 255))
@@ -399,6 +433,15 @@ def build(out_dir=None):
         for zustand, fuell, rand in (("aus", (74, 64, 92), (38, 32, 50)), ("an", (206, 178, 86), (255, 244, 168))):
             name = f"reiter_{kat.lower()}_{zustand}"
             w(nw / "textures" / "item" / f"{name}.png", reiter_platte(quelle, fuell, rand, zustand == "an"))
+            w(nw / "models" / "item" / f"{name}.json", json.dumps({"parent": "minecraft:item/generated", "textures": {"layer0": f"nachtwache:item/{name}"}}))
+            w(nw / "items" / f"{name}.json", json.dumps({"model": {"type": "minecraft:model", "model": f"nachtwache:item/{name}"}}))
+
+    # Knoepfe der Minion-Rucksaecke, gleiche Optik wie die Ladenreiter
+    for kurz, (quelle, zustaende) in KNOPF_SYMBOLE.items():
+        for z in zustaende:
+            fuell, rand = PLATTE_FARBEN[z]
+            name = f"knopf_{kurz}_{z}"
+            w(nw / "textures" / "item" / f"{name}.png", reiter_platte(quelle, fuell, rand, z != "aus"))
             w(nw / "models" / "item" / f"{name}.json", json.dumps({"parent": "minecraft:item/generated", "textures": {"layer0": f"nachtwache:item/{name}"}}))
             w(nw / "items" / f"{name}.json", json.dumps({"model": {"type": "minecraft:model", "model": f"nachtwache:item/{name}"}}))
 

@@ -22,7 +22,21 @@ DATEIEN = {"assets/minecraft/textures/block/amethyst_block.png": "amethyst_block
            "assets/minecraft/textures/item/iron_pickaxe.png": "iron_pickaxe.png",
            "assets/minecraft/textures/item/redstone.png": "redstone.png",
            "assets/minecraft/textures/item/brewing_stand.png": "brewing_stand.png",
-           "assets/minecraft/textures/item/nether_star.png": "nether_star.png"}
+           "assets/minecraft/textures/item/nether_star.png": "nether_star.png",
+           # Knoepfe in den Minion-Rucksaecken, ebenfalls auf einer Farbplatte
+           "assets/minecraft/textures/item/hopper.png": "hopper.png",
+           "assets/minecraft/textures/item/emerald.png": "emerald.png",
+           "assets/minecraft/textures/item/bundle.png": "bundle.png",
+           "assets/minecraft/textures/item/shulker_shell.png": "shulker_shell.png",
+           "assets/minecraft/textures/item/netherite_pickaxe.png": "netherite_pickaxe.png",
+           "assets/minecraft/textures/item/feather.png": "feather.png",
+           "assets/minecraft/textures/item/iron_sword.png": "iron_sword.png",
+           "assets/minecraft/textures/item/crossbow_arrow.png": "crossbow_arrow.png",
+           "assets/minecraft/textures/item/blaze_powder.png": "blaze_powder.png",
+           "assets/minecraft/textures/item/end_crystal.png": "end_crystal.png",
+           "assets/minecraft/textures/item/spyglass.png": "spyglass.png",
+           "assets/minecraft/textures/block/piston_top.png": "piston_top.png",
+           "assets/minecraft/textures/block/gray_stained_glass.png": "gray_stained_glass.png"}
 ziel = Path(__file__).resolve().parent / "vorlagen"; ziel.mkdir(exist_ok=True)
 m = json.load(urllib.request.urlopen("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"))
 v = json.load(urllib.request.urlopen([x for x in m["versions"] if x["id"] == VERSION][0]["url"]))

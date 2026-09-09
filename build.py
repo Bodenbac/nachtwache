@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 65                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 66                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -34,19 +34,24 @@ ZWERG_UPGRADE_PREIS = 250               # mal (Stufe + 1)
 ZWERG_REIHEN_START = 1
 ZWERG_BP_PREIS = [500, 500]             # zwei Erweiterungen, dann sind die drei Reihen der Truhe voll
 ZWERG_BP_MAX = len(ZWERG_BP_PREIS)
+def knopf_modell(kurz, zustand="aus"):
+    """item_model fuer einen Rucksack-Knopf: Zeichen auf einer Farbplatte (rp_build.py).
+    aus = kaufbar oder Aktion, an = gekauft/aktiv/Maximum, off = gekauft aber ausgeschaltet."""
+    return f'item_model="nachtwache:knopf_{kurz}_{zustand}",' if RESSOURCENPAKET else ""
+
 ZWERG_KNOEPFE = lambda a: 4 if a == 0 else 3   # ohne Auto-Verkauf vier Knoepfe, mit ihm faellt "Alles verkaufen" weg
 zwerg_faecher = lambda b, a=0: (ZWERG_REIHEN_START + b) * 9 - ZWERG_KNOEPFE(a)   # nutzbare Lagerfaecher
 ZWERG_A_BED = {0: "unless score @s nw.zwerg_a matches 1..2", 1: "if score @s nw.zwerg_a matches 1..2"}
-ZWERG_SPERRE = ('minecraft:gray_stained_glass_pane[custom_data={nw_zwerg_lock:1b},'
+ZWERG_SPERRE = ('minecraft:gray_stained_glass_pane[' + ('item_model="nachtwache:knopf_sperre_aus",' if RESSOURCENPAKET else "") + 'custom_data={nw_zwerg_lock:1b},'
                 'custom_name={text:"Locked",color:"dark_gray",italic:false},'
                 'lore=[{text:"Buy a bigger pack to use this slot",color:"dark_gray",italic:false}]]')
-ZWERG_VERKAUF_KNOPF = ('minecraft:emerald[custom_data={nw_zwerg_sell:1b},custom_name={text:"Sell everything",color:"yellow",italic:false},'
+ZWERG_VERKAUF_KNOPF = ('minecraft:emerald[' + ('item_model="nachtwache:knopf_sell_aus",' if RESSOURCENPAKET else "") + 'custom_data={nw_zwerg_sell:1b},custom_name={text:"Sell everything",color:"yellow",italic:false},'
                        'lore=[{text:"Sells the whole pack at the Collector price",color:"gray",italic:false},'
                        '{text:"Take this to sell",color:"dark_gray",italic:false}]]')
 ZWERG_AUTO_PREIS = 2000                 # einmaliger Ausbau: Fraggle verkauft von allein
 def zwerg_auto_knopf(a):
     """0 = noch nicht gekauft, 1 = gekauft und aus, 2 = gekauft und an."""
-    kopf = ('minecraft:hopper[custom_data={nw_zwerg_auto:1b},'
+    kopf = ('minecraft:hopper[' + knopf_modell("auto", ("aus", "off", "an")[a]) + 'custom_data={nw_zwerg_auto:1b},'
             + ('enchantment_glint_override=true,' if a == 2 else ''))
     if a == 0:
         return (kopf + 'custom_name={text:"Auto sell",color:"yellow",italic:false},'
@@ -64,21 +69,21 @@ def zwerg_auto_knopf(a):
 def zwerg_bp_knopf(b, a=0):
     faecher = zwerg_faecher(b, a)
     if b < ZWERG_BP_MAX:
-        return (f'minecraft:bundle[custom_data={{nw_zwerg_bp:1b}},custom_name={{text:"Bigger pack",color:"yellow",italic:false}},'
+        return (f'minecraft:bundle[{knopf_modell("pack")}custom_data={{nw_zwerg_bp:1b}},custom_name={{text:"Bigger pack",color:"yellow",italic:false}},'
                 f'lore=[{{text:"Now: {faecher} slots ({ZWERG_REIHEN_START + b} rows)",color:"gray",italic:false}},'
                 f'[{{text:"Next: one more row for {ZWERG_BP_PREIS[b]} ",color:"gold",italic:false}},{{text:"{COIN}",color:"white",italic:false}}],'
                 f'{{text:"Take this to buy",color:"dark_gray",italic:false}}]]')
-    return (f'minecraft:shulker_shell[custom_data={{nw_zwerg_bp:1b}},custom_name={{text:"Full pack",color:"yellow",italic:false}},'
+    return (f'minecraft:shulker_shell[{knopf_modell("packmax", "an")}custom_data={{nw_zwerg_bp:1b}},custom_name={{text:"Full pack",color:"yellow",italic:false}},'
             f'lore=[{{text:"{faecher} slots ({ZWERG_REIHEN_START + b} rows)",color:"gray",italic:false}}]]')
 def zwerg_up_knopf(l):
     sek = (ZWERG_TAKT - l * ZWERG_STUFE_TICKS) // 20
     if l < ZWERG_MAX:
         preis = ZWERG_UPGRADE_PREIS * (l + 1)
-        return (f'minecraft:iron_pickaxe[custom_data={{nw_zwerg_up:1b}},custom_name={{text:"Upgrade speed",color:"yellow",italic:false}},'
+        return (f'minecraft:iron_pickaxe[{knopf_modell("tempo")}custom_data={{nw_zwerg_up:1b}},custom_name={{text:"Upgrade speed",color:"yellow",italic:false}},'
                 f'lore=[{{text:"Now: one block every {sek} s (level {l})",color:"gray",italic:false}},'
                 f'[{{text:"Next: {sek-1} s for {preis} ",color:"gold",italic:false}},{{text:"{COIN}",color:"white",italic:false}}],'
                 f'{{text:"Take this to buy",color:"dark_gray",italic:false}}]]')
-    return (f'minecraft:netherite_pickaxe[custom_data={{nw_zwerg_up:1b}},custom_name={{text:"Max speed",color:"yellow",italic:false}},'
+    return (f'minecraft:netherite_pickaxe[{knopf_modell("tempomax", "an")}custom_data={{nw_zwerg_up:1b}},custom_name={{text:"Max speed",color:"yellow",italic:false}},'
             f'lore=[{{text:"One block every {sek} s (level {l})",color:"gray",italic:false}}]]')
 
 def zwerg_item(lvl, bp=0, inv=None):
@@ -1379,18 +1384,18 @@ fn("bogi/spur", [
 ])
 
 # Knoepfe (rechts nach links), gesperrte Faecher und Kauf
-BOGI_SPERRE = ('minecraft:gray_stained_glass_pane[custom_data={nw_bogi_lock:1b},custom_name={text:"Locked",color:"dark_gray",italic:false},'
+BOGI_SPERRE = ('minecraft:gray_stained_glass_pane[' + ('item_model="nachtwache:knopf_sperre_aus",' if RESSOURCENPAKET else "") + 'custom_data={nw_bogi_lock:1b},custom_name={text:"Locked",color:"dark_gray",italic:false},'
                'lore=[{text:"Bogi only carries one row",color:"dark_gray",italic:false}]]')
 symbol_b = []
 for k, name, ikon, maxst, preis, text in BOGI_UPGRADES:
     for n in range(maxst + 1):
         if n < maxst:
-            it = (f'{ikon}[custom_data={{nw_bogi_{k}:1b}},custom_name={{text:"{name}",color:"yellow",italic:false}},'
+            it = (f'{ikon}[{knopf_modell("b_" + k)}custom_data={{nw_bogi_{k}:1b}},custom_name={{text:"{name}",color:"yellow",italic:false}},'
                   f'lore=[{{text:"Now: {text(n)}",color:"gray",italic:false}},'
                   f'[{{text:"Next: {text(n + 1)} for {preis * (n + 1)} ",color:"gold",italic:false}},{{text:"{COIN}",color:"white",italic:false}}],'
                   f'{{text:"Take this to buy",color:"dark_gray",italic:false}}]]')
         else:
-            it = (f'{ikon}[enchantment_glint_override=true,custom_data={{nw_bogi_{k}:1b}},custom_name={{text:"{name} (max)",color:"yellow",italic:false}},'
+            it = (f'{ikon}[{knopf_modell("b_" + k, "an")}enchantment_glint_override=true,custom_data={{nw_bogi_{k}:1b}},custom_name={{text:"{name} (max)",color:"yellow",italic:false}},'
                   f'lore=[{{text:"{text(n)}",color:"gray",italic:false}}]]')
         symbol_b.append(f"execute if score @s nw.b_{k} matches {n} run item replace block ~ ~ ~ container.{BOGI_SLOT[k]} with {it}")
 symbol_b += [f"execute if items block ~ ~ ~ container.{sl} *[custom_data~{{nw_bogi_lock:1b}}] run item replace block ~ ~ ~ container.{sl} with minecraft:air" for sl in BOGI_PFEIL_SLOTS]
