@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 66                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 67                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -500,7 +500,7 @@ fn("welt/stand", stand)
 
 # Gegnerinsel
 GZ, GR = GEGNER_Z, GEGNER_RADIUS
-geg = [f"fill -{GR+1} {BODEN_Y+1} {GZ-GR-1} {GR+1} {BODEN_Y+12} {GZ+GR+1} minecraft:air"]   # alles Gebaute darueber weg
+geg = []
 # Wall rundherum, damit niemand von der Gegnerinsel faellt (Luis 08.09.2026). Ring aus den Zellen,
 # die im Kreis mit Radius GR liegen, aber nicht mehr im Kreis mit Radius GR-1.
 def ring_fills(cx, cz, r_aussen, r_innen, y1, y2, block):
@@ -544,7 +544,15 @@ geg += [
     f"setblock -2 {BODEN_Y+1} {GZ-GR} minecraft:crying_obsidian", f"setblock 2 {BODEN_Y+1} {GZ-GR} minecraft:crying_obsidian",
     f"setblock -2 {BODEN_Y+4} {GZ-GR+1} minecraft:shroomlight", f"setblock 2 {BODEN_Y+4} {GZ-GR+1} minecraft:shroomlight",
 ]
-fn("welt/gegnerinsel", geg)
+# Zwei Fassungen. Die volle raeumt erst alles ueber dem Boden ab und baut dann neu, sie laeuft nur
+# beim Reset und bei der Migration. Die Pflege laesst den Bereich stehen, in dem die Insel selbst
+# steht (Wall, Baeume, Seelenfeuer, Lichter reichen bis BODEN_Y+5), und raeumt nur darueber ab.
+# Grund (Luis 09.09.2026, "die gegnerische Insel flackert"): schutz/tick ruft das alle zwei Ticks
+# auf. Mit dem Abraeumen wurde die halbe Insel zehnmal je Sekunde auf Luft und zurueck gesetzt, das
+# hat die Lichtberechnung dauernd neu angeworfen. Gleiche fills ohne echte Aenderung sind dagegen
+# gratis, Minecraft verwirft einen setBlock auf denselben Zustand.
+fn("welt/gegnerinsel", [f"fill -{GR+1} {BODEN_Y+1} {GZ-GR-1} {GR+1} {BODEN_Y+12} {GZ+GR+1} minecraft:air"] + geg)
+fn("welt/gegnerinsel_pflege", [f"fill -{GR+1} {BODEN_Y+6} {GZ-GR-1} {GR+1} {BODEN_Y+12} {GZ+GR+1} minecraft:air"] + geg)
 
 # Strasse
 # REGEL (Lehre vom 06.09.2026): Bloecke, die einen Traeger brauchen (Fackeln, Laternen, Schilder, Zaeune mit
@@ -2574,7 +2582,7 @@ fn("gegner/zum_spieler", [
 fn("schutz/tick", [
     # Gegnerinsel und Strasse: jeden Tick zuruecksetzen, nichts darf abgebaut oder gebaut werden
     "scoreboard players operation #m2 nw.tmp2 = #tick nw.tick", "scoreboard players operation #m2 nw.tmp2 %= #2 nw.const",
-    f"execute if score #m2 nw.tmp2 matches 0 run function {NS}:welt/gegnerinsel",
+    f"execute if score #m2 nw.tmp2 matches 0 run function {NS}:welt/gegnerinsel_pflege",
     f"function {NS}:welt/stand",
     f"execute if score #m2 nw.tmp2 matches 1 if score #status nw.status matches 1 run function {NS}:strasse/bauen",
     f"execute if score #m2 nw.tmp2 matches 1 if score #status nw.status matches 0 run function {NS}:strasse/entfernen",

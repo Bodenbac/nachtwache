@@ -15,7 +15,7 @@ DATEIEN = {"assets/minecraft/textures/block/amethyst_block.png": "amethyst_block
            "assets/minecraft/textures/item/enchanted_book.png": "enchanted_book.png",
            "assets/minecraft/textures/item/book.png": "book.png",
            # Symbole der Ladenreiter, kommen in rp_build.py auf eine Farbplatte
-           "assets/minecraft/textures/block/stone.png": "stone.png",
+           "assets/minecraft/textures/item/brick.png": "brick.png",
            "assets/minecraft/textures/item/rotten_flesh.png": "rotten_flesh.png",
            "assets/minecraft/textures/item/bread.png": "bread.png",
            "assets/minecraft/textures/item/iron_ingot.png": "iron_ingot.png",

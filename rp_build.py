@@ -316,28 +316,28 @@ def gui_daemmerung(src):
     return im
 
 # Reiter des Ladens: Kategorie -> Vorlagendatei mit dem Symbol (muss zu KATEGORIEN in build.py passen)
-REITER_SYMBOLE = {"BLOCKS": "stone", "MINERALS": "iron_ingot", "MOB": "rotten_flesh", "FOOD": "bread",
+REITER_SYMBOLE = {"BLOCKS": "brick", "MINERALS": "iron_ingot", "MOB": "rotten_flesh", "FOOD": "bread",
                   "TOOLS": "iron_pickaxe", "UTIL": "redstone", "BREW": "brewing_stand",
                   "BOOKS": "enchanted_book", "SPECIAL": "nether_star"}
 
 def reiter_platte(quelle, fuell, rand, hell):
     """STANDARD fuer jedes Fach, das kein normales Truhenfach ist (Luis 09.09.2026).
 
-    Reiter, Knoepfe, Upgrade-Slots und gesperrte Faecher bekommen eine eigene Textur: ein Zeichen
-    auf einer Farbplatte, die den ganzen Slot fuellt. Rahmen 2 px, Ecken frei, Zeichen 12 px mittig.
+    Reiter, Knoepfe, Upgrade-Slots und gesperrte Faecher bekommen eine eigene Textur: das Symbol in
+    Originalgroesse auf einer farbigen Flaeche, die den ganzen Slot fuellt. Nur die vier Eckpixel
+    bleiben frei, damit es abgerundet wirkt. KEIN Rahmen und keine Verkleinerung des Symbols, das
+    sah gedrungen aus (Luis 09.09.2026: "verzichten damit das icon seine originalgroesse hat").
     Farben stehen in PLATTE_FARBEN: dunkelviolett = kaufbar oder Aktion, goldgelb = gekauft, aktiv
     oder Maximum, rot = gekauft aber ausgeschaltet. Der aktive Zustand glaenzt zusaetzlich.
     Nie ueber generic_54.png loesen, die gilt fuer jede Truhe im Spiel.
 
     quelle ist entweder eine Vorlagendatei in vorlagen/ oder "zeichen:<name>" fuer ein eigenes
-    5x5-Zeichen aus buecher.py (wird auf 10 px verdoppelt).
+    5x5-Zeichen aus buecher.py (wird auf 10 px verdoppelt und mittig gesetzt).
+    WICHTIG: die Vorlage braucht durchsichtige Raender, sonst deckt sie die Farbe komplett ab.
+    Deshalb steht bei Building Blocks ein Ziegel und kein Steinblock.
     """
     im = Image.new("RGBA", (16, 16), fuell + (255,))
     px = im.load()
-    for d in range(2):
-        for i in range(16):
-            px[i, d] = rand + (255,); px[i, 15 - d] = rand + (255,)
-            px[d, i] = rand + (255,); px[15 - d, i] = rand + (255,)
     for x, y in ((0, 0), (15, 0), (0, 15), (15, 15)):
         px[x, y] = (0, 0, 0, 0)
     if quelle.startswith("zeichen:"):             # eigenes 5x5-Zeichen aus buecher.py, doppelt so gross
@@ -355,15 +355,13 @@ def reiter_platte(quelle, fuell, rand, hell):
         for y in range(16):
             for x in range(16):
                 r, g, b, a = sp[x, y]
-                sp[x, y] = (int(r * 0.78), int(g * 0.78), int(b * 0.78), a)
-    im.alpha_composite(sym.resize((12, 12), Image.NEAREST), (2, 2))
+                sp[x, y] = (int(r * 0.82), int(g * 0.82), int(b * 0.82), a)
+    im.alpha_composite(sym)
     return im
 
-# Knoepfe in den Minion-Rucksaecken (Fraggle, Bogi). Gleiche Optik wie die Ladenreiter:
-# Zeichen auf einer Farbplatte. Dunkelviolett = kaufbar oder Aktion, Gold = gekauft, aktiv oder
-# Maximum, Rot = gekauft, aber ausgeschaltet. Luis 09.09.2026.
-# Name -> (Vorlagendatei, Zustaende). Die Vorlage ist nur Bildmaterial, welches Item darunter
-# liegt, ist egal: item_model ersetzt das Modell vollstaendig.
+# Knoepfe in den Minion-Rucksaecken (Fraggle, Bogi), gleiche Optik wie die Ladenreiter.
+# Name -> (Vorlagendatei oder "zeichen:<name>", Zustaende). Welches Item darunter liegt, ist egal:
+# item_model ersetzt das Modell vollstaendig.
 KNOPF_SYMBOLE = {
     "auto":     ("hopper", ("aus", "off", "an")),      # Auto-Verkauf: kaufbar, OFF, ON
     "sell":     ("emerald", ("aus",)),                 # Alles verkaufen, reine Aktion
