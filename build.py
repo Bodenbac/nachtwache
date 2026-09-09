@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 68                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 70                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -500,6 +500,13 @@ stand = [
 stand += [f'kill @e[type=item,x={LX-2},y={BODEN_Y-1},z={LZ-2},dx=5,dy=6,dz=4,nbt={{Item:{{id:"{b}"}}}}]' for b in SCHUTT]
 fn("welt/stand", stand)
 
+# Der Gang ist seit v0.36 fuenf Bloecke hoch statt drei (Luis: "mach einfach 2 bloecke groesser dann
+# passt zu 100% alles durch"). Drei reichten rechnerisch fuer Endermen (2,9 hoch), an den Boegen
+# blieben aber nur zwei freie Bloecke uebrig, weil dort die Laternen haengen.
+WAND_OBEN = BODEN_Y + 5                 # oberste Wandreihe
+DACH_Y    = BODEN_Y + 6                 # Gitterdach
+FREI_OBEN = BODEN_Y + 9                 # bis hierhin wird ueber dem Dach freigeraeumt
+
 # Gegnerinsel
 GZ, GR = GEGNER_Z, GEGNER_RADIUS
 geg = []
@@ -540,11 +547,11 @@ geg += [
     f"fill -1 {BODEN_Y} {GZ-GR-1} 1 {BODEN_Y} {GZ-GR+1} minecraft:blackstone",   # Steg zur Strasse (z 60..62)
 ]
 # Wall am Rand, drei Bloecke hoch, damit niemand herunterfaellt oder gedraengt wird
-geg += ring_fills(0, GZ, GR, GR - 1, BODEN_Y + 1, BODEN_Y + 3, "minecraft:polished_blackstone_bricks")
+geg += ring_fills(0, GZ, GR, GR - 1, BODEN_Y + 1, WAND_OBEN, "minecraft:polished_blackstone_bricks")
 geg += [
-    f"fill -1 {BODEN_Y+1} {GZ-GR-1} 1 {BODEN_Y+3} {GZ-GR+2} minecraft:air",      # Tor zur Bruecke
+    f"fill -1 {BODEN_Y+1} {GZ-GR-1} 1 {WAND_OBEN} {GZ-GR+2} minecraft:air",      # Tor zur Bruecke, so hoch wie der Gang
     f"setblock -2 {BODEN_Y+1} {GZ-GR} minecraft:crying_obsidian", f"setblock 2 {BODEN_Y+1} {GZ-GR} minecraft:crying_obsidian",
-    f"setblock -2 {BODEN_Y+4} {GZ-GR+1} minecraft:shroomlight", f"setblock 2 {BODEN_Y+4} {GZ-GR+1} minecraft:shroomlight",
+    f"setblock -2 {WAND_OBEN} {GZ-GR+1} minecraft:shroomlight", f"setblock 2 {WAND_OBEN} {GZ-GR+1} minecraft:shroomlight",
 ]
 # Zwei Fassungen. Die volle raeumt erst alles ueber dem Boden ab und baut dann neu, sie laeuft nur
 # beim Reset und bei der Migration. Die Pflege laesst den Bereich stehen, in dem die Insel selbst
@@ -568,7 +575,13 @@ POSTEN = list(range(Z1 + 2, Z2, 6))          # z-Positionen der Pfosten (x = -2 
 # Die Bruecke ist ein geschlossener Gang: Boden, zwei Waende und ein Dach aus Eisengittern, alle sechs
 # Bloecke ein Bogen aus poliertem Blackstone mit haengenden Seelenlaternen und Ketten darunter.
 # Luis 08.09.2026: auf der Bruecke und der Gegnerinsel darf niemand herunterfallen, gedraengelt oder gesprungen.
-ZE = Z2 + 3                                   # bis an die Gegnerinsel heran, damit der Gang dort dicht anschliesst
+# Der Gang endet einen Block vor der Gegnerinsel. Er reichte bis Z2+3 und hat sich dort mit dem Wall
+# der Insel um dieselben Bloecke gestritten: die Strasse raeumte x -3 und 3 frei und setzte bei x -2
+# und 2 ihre eigene Wand, der Insel-Wall wollte dort polierte Blackstone-Ziegel. Beide laufen im
+# Wechsel jeden zweiten Tick, das Ergebnis war ein Flackern am Brueckenkopf und zeitweise ein Loch
+# im Wall (Luis 09.09.2026: "irgendwelche Bloecke scheinen zu overlappen"). Ab z Z2+2 gehoert alles
+# der Insel, ihr Wall mit dem Tor schliesst den Gang ab.
+ZE = Z2 + 1
 BR_BODEN = "minecraft:polished_blackstone_bricks"
 BR_WAND = "minecraft:deepslate_bricks"
 BR_BOGEN = "minecraft:polished_blackstone_bricks"
@@ -580,46 +593,46 @@ def strasse_bauen():
         f"fill -2 {BODEN_Y} {Z1} -2 {BODEN_Y} {ZE} minecraft:polished_deepslate",       # Randstreifen unter den Waenden
         f"fill 2 {BODEN_Y} {Z1} 2 {BODEN_Y} {ZE} minecraft:polished_deepslate",
         f"fill -1 {BODEN_Y-3} {Z1} 1 {BODEN_Y-1} {Z2} minecraft:air",                   # unter der Bruecke frei
-        f"fill -3 {BODEN_Y-3} {Z1} -3 {BODEN_Y+7} {ZE} minecraft:air",                  # Aussenkanten frei
-        f"fill 3 {BODEN_Y-3} {Z1} 3 {BODEN_Y+7} {ZE} minecraft:air",
-        f"fill -2 {BODEN_Y+5} {Z1} 2 {BODEN_Y+7} {ZE} minecraft:air",                   # ueber dem Dach frei
+        f"fill -3 {BODEN_Y-3} {Z1} -3 {FREI_OBEN} {ZE} minecraft:air",                  # Aussenkanten frei
+        f"fill 3 {BODEN_Y-3} {Z1} 3 {FREI_OBEN} {ZE} minecraft:air",
+        f"fill -2 {DACH_Y+1} {Z1} 2 {FREI_OBEN} {ZE} minecraft:air",                    # ueber dem Dach frei
     ]
     grenzen = [Z1 - 1] + POSTEN + [ZE + 1]
     for a, b in zip(grenzen, grenzen[1:]):
         if b - a > 1:
             out += [
-                f"fill -2 {BODEN_Y+1} {a+1} -2 {BODEN_Y+3} {b-1} {BR_WAND}",            # Wand links
-                f"fill 2 {BODEN_Y+1} {a+1} 2 {BODEN_Y+3} {b-1} {BR_WAND}",              # Wand rechts
-                f"fill -1 {BODEN_Y+4} {a+1} 1 {BODEN_Y+4} {b-1} {BR_GITTER}",           # Dach aus Gittern
-                f"fill -2 {BODEN_Y+4} {a+1} -2 {BODEN_Y+4} {b-1} {BR_WAND}",
-                f"fill 2 {BODEN_Y+4} {a+1} 2 {BODEN_Y+4} {b-1} {BR_WAND}",
-                f"fill -1 {BODEN_Y+1} {a+1} 1 {BODEN_Y+3} {b-1} minecraft:air",         # Gang frei
+                f"fill -2 {BODEN_Y+1} {a+1} -2 {WAND_OBEN} {b-1} {BR_WAND}",            # Wand links
+                f"fill 2 {BODEN_Y+1} {a+1} 2 {WAND_OBEN} {b-1} {BR_WAND}",              # Wand rechts
+                f"fill -1 {DACH_Y} {a+1} 1 {DACH_Y} {b-1} {BR_GITTER}",                 # Dach aus Gittern
+                f"fill -2 {DACH_Y} {a+1} -2 {DACH_Y} {b-1} {BR_WAND}",
+                f"fill 2 {DACH_Y} {a+1} 2 {DACH_Y} {b-1} {BR_WAND}",
+                f"fill -1 {BODEN_Y+1} {a+1} 1 {WAND_OBEN} {b-1} minecraft:air",         # Gang frei
             ]
     # Boegen: Pfeiler, massives Dachstueck, zwei haengende Laternen, Ketten unter der Bruecke
     for z in POSTEN:
         out += [
-            f"fill -2 {BODEN_Y+1} {z} -2 {BODEN_Y+4} {z} {BR_BOGEN}",
-            f"fill 2 {BODEN_Y+1} {z} 2 {BODEN_Y+4} {z} {BR_BOGEN}",
-            f"fill -1 {BODEN_Y+4} {z} 1 {BODEN_Y+4} {z} {BR_BOGEN}",
-            f"fill -1 {BODEN_Y+1} {z} 1 {BODEN_Y+2} {z} minecraft:air",                 # Kopfhoehe frei
-            f"setblock 0 {BODEN_Y+3} {z} minecraft:air",
-            f"execute unless block -1 {BODEN_Y+3} {z} minecraft:soul_lantern run setblock -1 {BODEN_Y+3} {z} minecraft:soul_lantern[hanging=true]",
-            f"execute unless block 1 {BODEN_Y+3} {z} minecraft:soul_lantern run setblock 1 {BODEN_Y+3} {z} minecraft:soul_lantern[hanging=true]",
+            f"fill -2 {BODEN_Y+1} {z} -2 {DACH_Y} {z} {BR_BOGEN}",
+            f"fill 2 {BODEN_Y+1} {z} 2 {DACH_Y} {z} {BR_BOGEN}",
+            f"fill -1 {DACH_Y} {z} 1 {DACH_Y} {z} {BR_BOGEN}",
+            f"fill -1 {BODEN_Y+1} {z} 1 {WAND_OBEN-1} {z} minecraft:air",               # Kopfhoehe frei
+            f"setblock 0 {WAND_OBEN} {z} minecraft:air",
+            f"execute unless block -1 {WAND_OBEN} {z} minecraft:soul_lantern run setblock -1 {WAND_OBEN} {z} minecraft:soul_lantern[hanging=true]",
+            f"execute unless block 1 {WAND_OBEN} {z} minecraft:soul_lantern run setblock 1 {WAND_OBEN} {z} minecraft:soul_lantern[hanging=true]",
             f"execute unless block -2 {BODEN_Y-1} {z} minecraft:iron_chain run setblock -2 {BODEN_Y-1} {z} minecraft:iron_chain",
             f"execute unless block -2 {BODEN_Y-2} {z} minecraft:iron_chain run setblock -2 {BODEN_Y-2} {z} minecraft:iron_chain",
             f"execute unless block 2 {BODEN_Y-1} {z} minecraft:iron_chain run setblock 2 {BODEN_Y-1} {z} minecraft:iron_chain",
             f"execute unless block 2 {BODEN_Y-2} {z} minecraft:iron_chain run setblock 2 {BODEN_Y-2} {z} minecraft:iron_chain",
         ]
-    out.append(f"execute as @e[type=marker,tag=nw.laterne,x=-3,y={BODEN_Y},z={Z1},dx=6,dy=3,dz={Z2-Z1}] at @s run function {NS}:laterne/halten")
+    out.append(f"execute as @e[type=marker,tag=nw.laterne,x=-3,y={BODEN_Y},z={Z1},dx=6,dy={WAND_OBEN-BODEN_Y},dz={Z2-Z1}] at @s run function {NS}:laterne/halten")
     return out
 
 fn("strasse/bauen", strasse_bauen())
 # Entfernen: erst die haengenden Teile (Laternen, Ketten), dann der Rest, sonst fallen sie als Item ab
 fn("strasse/entfernen",
-   [f"setblock -1 {BODEN_Y+3} {z} minecraft:air" for z in POSTEN] +
-   [f"setblock 1 {BODEN_Y+3} {z} minecraft:air" for z in POSTEN] +
+   [f"setblock -1 {WAND_OBEN} {z} minecraft:air" for z in POSTEN] +
+   [f"setblock 1 {WAND_OBEN} {z} minecraft:air" for z in POSTEN] +
    [f"fill -2 {BODEN_Y-2} {Z1} 2 {BODEN_Y-1} {ZE} minecraft:air",
-    f"fill -3 {BODEN_Y-3} {Z1} 3 {BODEN_Y+7} {ZE} minecraft:air",
+    f"fill -3 {BODEN_Y-3} {Z1} 3 {FREI_OBEN} {ZE} minecraft:air",
     f"execute as @e[type=marker,tag=nw.laterne,x=-3,y={BODEN_Y},z={Z1},dx=6,dy=3,dz={Z2-Z1}] at @s run function {NS}:laterne/halten"])
 
 
