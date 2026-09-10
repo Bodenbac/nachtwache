@@ -19,7 +19,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 80                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 81                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -2137,11 +2137,17 @@ ENCH_TYP_NR = {t: i + 1 for i, (t, _) in enumerate(rp_build.ENCH_TYPEN)}
 
 def ench_lesen(ziel, name):
     """Stufe einer Verzauberung des eingelegten Teils in einen Score lesen. Zwei Pfade, weil die
-    Komponente je nach Version flach (1.21.5+) oder unter levels liegt; der falsche Pfad schlaegt
-    einfach fehl und laesst den Score stehen, deshalb vorher auf 0 setzen."""
+    Komponente je nach Version flach (1.21.5+) oder unter levels liegt.
+
+    WICHTIG: jeder Pfad braucht ein vorgeschaltetes 'if data'. Ein 'execute store result ... run
+    data get <fehlender Pfad>' schreibt naemlich eine 0 in den Score, es laesst ihn NICHT stehen.
+    Ohne die Pruefung hat die zweite Zeile die gerade gelesene Stufe jedes Mal wieder genullt, und
+    die Station sah immer Stufe 0 (am Testserver gefunden, v0.45)."""
+    flach = f'{ENCH_ITEMS}.components."minecraft:enchantments"."minecraft:{name}"'
+    alt = f'{ENCH_ITEMS}.components."minecraft:enchantments".levels."minecraft:{name}"'
     return [f"scoreboard players set {ziel} nw.tmp2 0",
-            f'execute store result score {ziel} nw.tmp2 run data get block {ENCH_BLOCK} {ENCH_ITEMS}.components."minecraft:enchantments"."minecraft:{name}"',
-            f'execute store result score {ziel} nw.tmp2 run data get block {ENCH_BLOCK} {ENCH_ITEMS}.components."minecraft:enchantments".levels."minecraft:{name}"']
+            f"execute if data block {ENCH_BLOCK} {flach} store result score {ziel} nw.tmp2 run data get block {ENCH_BLOCK} {flach}",
+            f"execute if data block {ENCH_BLOCK} {alt} store result score {ziel} nw.tmp2 run data get block {ENCH_BLOCK} {alt}"]
 
 def ench_knopf_item(kurz, lvl, zustand):
     """Ein Knopf der Station. Welches Item darunter liegt, ist egal, item_model ersetzt das Modell."""
@@ -2310,6 +2316,9 @@ for _typ, _liste in rp_build.ENCH_TYPEN:
                          f"run function {NS}:sammler/ench/kauf_{_kurz}")
 ench_tick.append(f"function {NS}:sammler/ench/typ")     # Kauf kann die Art nicht aendern, die Stufe schon
 ench_tick.append(f"function {NS}:sammler/ench/anzeige")
+# Wer sein Teil in den Slot legt, nimmt dabei den gruenen Platzhalter auf (Tausch im Fenster).
+# Ohne das hier sammelt er sich Glasscheiben an. Der clear erfasst auch den Cursor.
+ench_tick.append(f"clear {ENCH_NAH} *[custom_data~{{nw_ench_slot:1b}}]")
 fn("sammler/ench/tick", ench_tick)
 
 for p in range(1, ANZ_STUFEN + 1):
