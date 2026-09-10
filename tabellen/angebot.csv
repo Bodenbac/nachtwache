@@ -2,7 +2,9 @@
 # max = wie viel ein Shift-Klick kauft (Standard 64, bei Werkzeug und Sets 1).
 # item: normale Item-ID, Kurzname aus SONDERITEMS (Tranke, Buecher) oder SET:<a:n;b:n> fuer eine gefuellte Truhe.
 # id muss eindeutig und stabil bleiben.
-# kat = Reiter im Laden: BLOCKS, MINERALS, MOB, FOOD, TOOLS, UTIL, BREW, BOOKS, SPECIAL
+# kat = Reiter im Laden: BLOCKS, MINERALS, MOB, FOOD, TOOLS, UTIL, BREW, SPECIAL
+# ENCH (Reiter Enchanting) steht bewusst nicht hier: die Upgrade-Station baut ihre Knoepfe selbst
+# aus rp_build.ENCH. Die 28 Verzauberungsbuecher sind mit v0.45 entfallen (Luis, 10.09.2026).
 id,stufe,name,preis,max,item,kat,pos
 1,1,Dirt,2,64,dirt,BLOCKS,
 2,1,Cobblestone,2,64,cobblestone,BLOCKS,
@@ -55,34 +57,6 @@ id,stufe,name,preis,max,item,kat,pos
 117,6,Enchanted Golden Apple,3000,64,enchanted_golden_apple,FOOD,
 124,7,Trident,2000,1,trident,SPECIAL,
 125,7,Beacon,8000,1,beacon,SPECIAL,
-150,1,Book: Sharpness IV,2200,1,BUCH_SHARPNESS_4,BOOKS,
-151,1,Book: Sharpness V,3800,1,BUCH_SHARPNESS_5,BOOKS,
-152,1,Book: Protection III,1500,1,BUCH_PROTECTION_3,BOOKS,
-153,1,Book: Protection IV,3500,1,BUCH_PROTECTION_4,BOOKS,
-154,1,Book: Efficiency IV,2000,1,BUCH_EFFICIENCY_4,BOOKS,
-155,1,Book: Efficiency V,3000,1,BUCH_EFFICIENCY_5,BOOKS,
-156,1,Book: Fortune II,1500,1,BUCH_FORTUNE_2,BOOKS,
-157,1,Book: Fortune III,3000,1,BUCH_FORTUNE_3,BOOKS,
-158,1,Book: Looting II,1000,1,BUCH_LOOTING_2,BOOKS,
-159,1,Book: Looting III,2000,1,BUCH_LOOTING_3,BOOKS,
-160,1,Book: Unbreaking II,800,1,BUCH_UNBREAKING_2,BOOKS,
-161,1,Book: Unbreaking III,1200,1,BUCH_UNBREAKING_3,BOOKS,
-162,1,Book: Power IV (bow),2000,1,BUCH_POWER_4,BOOKS,
-163,1,Book: Power V (bow),3000,1,BUCH_POWER_5,BOOKS,
-164,1,Book: Punch I (bow),500,1,BUCH_PUNCH_1,BOOKS,
-165,1,Book: Punch II (bow),1000,1,BUCH_PUNCH_2,BOOKS,
-166,1,Book: Fire Aspect I,800,1,BUCH_FIRE_ASPECT_1,BOOKS,
-167,1,Book: Fire Aspect II,1500,1,BUCH_FIRE_ASPECT_2,BOOKS,
-168,1,Book: Knockback I,400,1,BUCH_KNOCKBACK_1,BOOKS,
-169,1,Book: Knockback II,800,1,BUCH_KNOCKBACK_2,BOOKS,
-170,1,Book: Sweeping Edge II,500,1,BUCH_SWEEPING_EDGE_2,BOOKS,
-171,1,Book: Sweeping Edge III,1000,1,BUCH_SWEEPING_EDGE_3,BOOKS,
-172,1,Book: Feather Falling III,800,1,BUCH_FEATHER_FALLING_3,BOOKS,
-173,1,Book: Feather Falling IV,1500,1,BUCH_FEATHER_FALLING_4,BOOKS,
-174,1,Book: Silk Touch,2000,1,BUCH_SILK_TOUCH_1,BOOKS,
-175,1,Book: Mending,2500,1,BUCH_MENDING_1,BOOKS,
-176,1,Book: Infinity (bow),2000,1,BUCH_INFINITY_1,BOOKS,
-177,1,Book: Flame (bow),1200,1,BUCH_FLAME_1,BOOKS,
 32,2,Source Focus,800,16,FOCUS,SPECIAL,
 33,2,Decoy Totem,600,16,DECOY,SPECIAL,
 48,1,Bogi the Archer,7500,1,BOGI,SPECIAL,

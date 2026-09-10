@@ -7,6 +7,7 @@ oder hier oben im Abschnitt EINSTELLUNGEN.
 """
 import csv, json, math, os, shutil, zipfile
 from pathlib import Path
+import rp_build          # Tabellen der Upgrade-Station (ENCH, ENCH_TYPEN, ENCH_STREIT), v0.45
 
 HERE = Path(__file__).resolve().parent
 COIN = "\u25cf"                         # Muenz-Symbol im UI (● wird vom Ressourcenpaket durch eine Muenze ersetzt)
@@ -18,7 +19,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 79                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 80                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -1170,6 +1171,10 @@ fn("tick", [
     "scoreboard players operation #m5 nw.tmp = #tick nw.tick", "scoreboard players operation #m5 nw.tmp %= #5 nw.const",
     f"execute if score #m5 nw.tmp matches 0 run function {NS}:sammler/minions",
     f"execute if score #m5 nw.tmp matches 0 run function {NS}:sammler/verkauf",
+    # Niemand mehr am Laden: eingelegtes Teil zurueckgeben. Es gibt kein Ereignis "Truhe geschlossen",
+    # deshalb ueber Abwesenheit (v0.45).
+    f"execute if score #m5 nw.tmp matches 0 unless entity @a[x={KAUF_A[0]},y={KAUF_A[1]},z={KAUF_A[2]},distance=..8] "
+    f"run function {NS}:sammler/ench/zurueck",
     f"execute as @a[scores={{nw.hilfe=1..}}] run function {NS}:hilfe",
     f"execute as @a[scores={{nw.endlos=1..}}] run function {NS}:nacht/endlos_an",
     f"execute as @a[scores={{nw.tode=1..}}] run function {NS}:spieler/tod",
@@ -2062,9 +2067,11 @@ KATEGORIEN = [
     ("TOOLS",    "Tools",            "minecraft:iron_pickaxe"),
     ("UTIL",     "Utility",          "minecraft:redstone"),
     ("BREW",     "Brewing & Magic",  "minecraft:brewing_stand"),
-    ("BOOKS",    "Enchanted Books",  "minecraft:enchanted_book"),
+    ("ENCH",     "Enchanting",       "minecraft:enchanted_book"),
     ("SPECIAL",  "Special",          "minecraft:nether_star"),
 ]
+ENCH_KAT = "ENCH"                                   # Reiter der Upgrade-Station (v0.45)
+ENCH_IDX = [k for k, _, _ in KATEGORIEN].index(ENCH_KAT) + 1
 def reiter_liste(phase):
     """Reiter der Kaufen-Truhe fuer eine Quellstufe: [(idx, slot, name, tab-item, zeilen)].
     Ein Reiter je Kategorie, sichtbar sobald er in dieser Stufe mindestens ein Angebot hat."""
@@ -2074,6 +2081,11 @@ def reiter_liste(phase):
         # in den anderen Reitern bleibt es bei Stufe und Reihenfolge aus der Tabelle
         schluessel = ((lambda r: (int(r["preis"]), int(r["id"]))) if key in ("MOB", "FOOD")
                       else (lambda r: (int(r["stufe"]), int(r["id"]))))
+        if key == ENCH_KAT:
+            # Die Upgrade-Station hat keine Angebote in angebot.csv, sie baut ihre Knoepfe selbst.
+            # Der Reiter ist deshalb immer da, auch auf Stufe 1 (v0.45).
+            out.append((i, len(out), name, icon, [None] * PLATZ_PRO_REITER))
+            continue
         rows = sorted((r for r in angebot if r["kat"] == key and int(r["stufe"]) <= phase), key=schluessel)
         if not rows: continue
         # Spalte pos: fester Platz im Reiter (0..44), sonst wird von oben links durchgefuellt
@@ -2098,6 +2110,208 @@ def reiter_item(idx, name, iid, aktiv):
     modell = f'item_model="nachtwache:reiter_{kat}_{"an" if aktiv else "aus"}",' if RESSOURCENPAKET else ""
     return f'{iid}[{modell}{glanz}custom_data={{nw_menu:{9000 + idx}}},custom_name={{text:"{name}",color:"yellow",italic:false}},lore=[{{text:"{hint}",color:"gray",italic:false}}]]'
 
+# ----------------------------------------------------------------------------
+# Upgrade-Station im Reiter Enchanting (v0.45, Luis' Entwurf vom 10.09.2026)
+#
+# Der gruene Slot ist das EINZIGE Fach der Kauftruhe, das ein echtes Item annimmt. Wer dort ein
+# Schwert, Werkzeug, einen Bogen oder ein Ruestungsteil hineinlegt, bekommt darueber eine Reihe
+# Knoepfe: je Verzauberung einen, mit Zeichen und Stufenpunkten. Ein Klick kauft genau eine Stufe,
+# das Teil bleibt liegen (Luis: Efficiency I bis V ohne Neueinlegen). Der Amboss und seine
+# XP-Kosten entfallen damit vollstaendig. Tabellen stehen in rp_build.py, damit Textur und
+# Datapack nicht auseinanderlaufen koennen.
+# ----------------------------------------------------------------------------
+ENCH_SLOT = REITER_SLOTS + 40                       # gruener Einlegeslot: unterste Reihe, Mitte
+ENCH_KNOPF = [REITER_SLOTS + 18 + k for k in range(9)]   # Knopfreihe: dritte Warenreihe, links beginnend
+_EB, _ELS = kauf_block(ENCH_SLOT)                   # Truhenhaelfte und lokales Fach des gruenen Slots
+ENCH_BLOCK = f"{_EB[0]} {_EB[1]} {_EB[2]}"
+ENCH_ITEMS = f"Items[{{Slot:{_ELS}b}}]"
+ENCH_NAH_ARG = f"x={KAUF_A[0]},y={KAUF_A[1]},z={KAUF_A[2]},distance=..8"
+ENCH_NAH = f"@a[{ENCH_NAH_ARG}]"   # nie zwei Klammergruppen anhaengen, das ist ein Syntaxfehler
+ENCH_PLATZ = ('minecraft:lime_stained_glass_pane[%scustom_data={nw_ench_slot:1b},'
+              'custom_name={text:"Put gear here",color:"green",italic:false},'
+              'lore=[{text:"Sword, pickaxe, axe, shovel, bow or armor.",color:"gray",italic:false},'
+              '{text:"It stays here until you take it out.",color:"gray",italic:false}]]'
+              % ('item_model="nachtwache:ench_slot",' if RESSOURCENPAKET else ""))
+ENCH_KURZ = list(rp_build.ENCH)                     # feste Reihenfolge fuer die custom_data-Nummern
+ENCH_TYP_NR = {t: i + 1 for i, (t, _) in enumerate(rp_build.ENCH_TYPEN)}
+
+def ench_lesen(ziel, name):
+    """Stufe einer Verzauberung des eingelegten Teils in einen Score lesen. Zwei Pfade, weil die
+    Komponente je nach Version flach (1.21.5+) oder unter levels liegt; der falsche Pfad schlaegt
+    einfach fehl und laesst den Score stehen, deshalb vorher auf 0 setzen."""
+    return [f"scoreboard players set {ziel} nw.tmp2 0",
+            f'execute store result score {ziel} nw.tmp2 run data get block {ENCH_BLOCK} {ENCH_ITEMS}.components."minecraft:enchantments"."minecraft:{name}"',
+            f'execute store result score {ziel} nw.tmp2 run data get block {ENCH_BLOCK} {ENCH_ITEMS}.components."minecraft:enchantments".levels."minecraft:{name}"']
+
+def ench_knopf_item(kurz, lvl, zustand):
+    """Ein Knopf der Station. Welches Item darunter liegt, ist egal, item_model ersetzt das Modell."""
+    anz, _, maxs, grund, minst = rp_build.ENCH[kurz]
+    modell = f'item_model="nachtwache:ench_{kurz}_{lvl}_{zustand}",' if RESSOURCENPAKET else ""
+    stufe = ROEMISCH.get(lvl, str(lvl)) if lvl else "-"
+    farbe = {"aus": "yellow", "an": "gold", "off": "red"}[zustand]
+    zeilen = [{"text": f"Level {stufe}" if lvl else "Not on this item yet", "color": "gray", "italic": False}]
+    if zustand == "aus":
+        zeilen.append({"text": f"Next: {ROEMISCH[lvl + 1]} for {grund * (lvl + 1)} ", "color": "gray", "italic": False})
+        zeilen.append(coin() | {"italic": False})
+    elif zustand == "an":
+        zeilen.append({"text": "Maximum reached", "color": "gray", "italic": False})
+    else:
+        zeilen.append({"text": f"Needs Source tier {max(lvl + 1, minst)}", "color": "gray", "italic": False})
+        if kurz in rp_build.ENCH_STREIT:
+            zeilen.append({"text": f"... or {rp_build.ENCH[rp_build.ENCH_STREIT[kurz]][0]} is in the way", "color": "gray", "italic": False})
+    lore = ",".join(J(z) for z in zeilen)
+    return (f'minecraft:enchanted_book[{modell}custom_data={{nw_knopf:1b,nw_ench:{ENCH_KURZ.index(kurz) + 1}}},'
+            f'custom_name={{text:"{anz}",color:"{farbe}",italic:false}},lore=[{lore}]]')
+
+# Eigene Item-Tags statt der Vanilla-Tags: die Liste steht damit im Projekt und ueberlebt Umbenennungen
+_MATS = ["wooden", "stone", "iron", "golden", "diamond", "netherite"]
+_RMATS = ["leather", "chainmail", "iron", "golden", "diamond", "netherite"]
+ENCH_TAG_ITEMS = {
+    "sword":   [f"minecraft:{m}_sword" for m in _MATS],
+    "pickaxe": [f"minecraft:{m}_pickaxe" for m in _MATS],
+    "axe":     [f"minecraft:{m}_axe" for m in _MATS],
+    "shovel":  [f"minecraft:{m}_shovel" for m in _MATS],
+    "bow":     ["minecraft:bow"],
+    "helmet":  [f"minecraft:{m}_helmet" for m in _RMATS] + ["minecraft:turtle_helmet"],
+    "chest":   [f"minecraft:{m}_chestplate" for m in _RMATS],
+    "legs":    [f"minecraft:{m}_leggings" for m in _RMATS],
+    "boots":   [f"minecraft:{m}_boots" for m in _RMATS],
+}
+for _t, _items in ENCH_TAG_ITEMS.items():
+    w(f"{NS}/tags/item/ench_{_t}.json", {"values": _items})
+for _kurz, (_, _, _maxs, _, _) in rp_build.ENCH.items():
+    for _l in range(1, _maxs + 1):
+        w(f"{NS}/item_modifier/ench_{_kurz}_{_l}.json",
+          {"function": "minecraft:set_enchantments", "enchantments": {f"minecraft:{_kurz}": _l}})
+
+# Art des eingelegten Teils bestimmen: -1 leer oder Platzhalter, 0 nichts Verzauberbares, sonst Typnummer
+fn("sammler/ench/typ", [
+    "scoreboard players set #et nw.tmp2 0",
+    f"execute unless items block {ENCH_BLOCK} container.{_ELS} * run scoreboard players set #et nw.tmp2 -1",
+    f"execute if items block {ENCH_BLOCK} container.{_ELS} *[custom_data~{{nw_ench_slot:1b}}] run scoreboard players set #et nw.tmp2 -1",
+    *[f"execute if items block {ENCH_BLOCK} container.{_ELS} #{NS}:ench_{t} run scoreboard players set #et nw.tmp2 {n}"
+      for t, n in ENCH_TYP_NR.items()],
+])
+fn("sammler/ench/leeren", [
+    f"execute unless items block {ENCH_BLOCK} container.{_ELS} * run item replace block {ENCH_BLOCK} container.{_ELS} with {ENCH_PLATZ}",
+    *[f"item replace block {kauf_block(s)[0][0]} {kauf_block(s)[0][1]} {kauf_block(s)[0][2]} container.{kauf_block(s)[1]} with minecraft:air"
+      for s in ENCH_KNOPF],
+])
+# Etwas Unverzauberbares im Slot: sofort zurueck, sonst raetselt man, warum nichts passiert
+fn("sammler/ench/fremd", [
+    f"tellraw {ENCH_NAH} " + J([txt("[The Collector] ", "dark_red"), txt("I only work on swords, tools, bows and armor.", "gray")]),
+    f"playsound minecraft:entity.villager.no neutral {ENCH_NAH} ~ ~ ~ 1 1",
+    f"function {NS}:sammler/ench/zurueck",
+])
+# Teil zurueck an den naechsten Spieler: erstes freies Inventarfach, sonst faellt es ihm vor die Fuesse.
+# Immer vom Laden aus gerechnet, sonst waere @p der Spieler, der zufaellig dem Weltursprung am
+# naechsten steht, und zu zweit bekaeme der Falsche das Teil.
+fn("sammler/ench/zurueck", [f"execute positioned {KAUF_A[0]} {KAUF_A[1]} {KAUF_A[2]} run function {NS}:sammler/ench/zurueck_tun"])
+zurueck = [f"execute unless items block {ENCH_BLOCK} container.{_ELS} * run return 0",
+           f"execute if items block {ENCH_BLOCK} container.{_ELS} *[custom_data~{{nw_ench_slot:1b}}] run return 0",
+           "execute unless entity @p run return 0"]
+for _sl in range(36):
+    zurueck.append(f"execute as @p unless items entity @s container.{_sl} * run return run function {NS}:sammler/ench/zurueck_in {{slot:{_sl}}}")
+zurueck += [   # Inventar voll: als Item auswerfen, damit nichts verschwindet
+    f"data modify storage nachtwache:tmp it set from block {ENCH_BLOCK} {ENCH_ITEMS}",
+    "data remove storage nachtwache:tmp it.Slot",
+    f"execute at @p run function {NS}:sammler/ench/auswerfen with storage nachtwache:tmp",
+    f"item replace block {ENCH_BLOCK} container.{_ELS} with {ENCH_PLATZ}",
+]
+fn("sammler/ench/zurueck_tun", zurueck)
+fn("sammler/ench/zurueck_in", [
+    f"$item replace entity @s container.$(slot) from block {ENCH_BLOCK} container.{_ELS}",
+    f"item replace block {ENCH_BLOCK} container.{_ELS} with {ENCH_PLATZ}",
+    "playsound minecraft:entity.item.pickup player @s ~ ~ ~ 0.6 1.2",
+])
+fn("sammler/ench/auswerfen", ["$summon minecraft:item ~ ~0.5 ~ {Item:$(it)}"])
+
+# Anzeige je Art: fuer jede Verzauberung Stufe lesen und den passenden Knopf setzen
+for _typ, _liste in rp_build.ENCH_TYPEN:
+    zeigen = []
+    for _k, _kurz in enumerate(_liste):
+        _anz, _, _maxs, _grund, _minst = rp_build.ENCH[_kurz]
+        _blk, _ls = kauf_block(ENCH_KNOPF[_k])
+        _ziel = f"{_blk[0]} {_blk[1]} {_blk[2]} container.{_ls}"
+        zeigen += [f"# {_anz}"] if False else []
+        zeigen += ench_lesen("#lv", _kurz)
+        streit = rp_build.ENCH_STREIT.get(_kurz)
+        if streit:
+            zeigen += ench_lesen("#gg", streit)
+        for _l in range(_maxs):
+            noetig = max(_l + 1, _minst)
+            zeigen.append(f"execute if score #lv nw.tmp2 matches {_l} run item replace block {_ziel} with {ench_knopf_item(_kurz, _l, 'aus')}")
+            zeigen.append(f"execute if score #lv nw.tmp2 matches {_l} unless score #phase nw.phase matches {noetig}.. "
+                          f"run item replace block {_ziel} with {ench_knopf_item(_kurz, _l, 'off')}")
+            if streit:
+                zeigen.append(f"execute if score #lv nw.tmp2 matches {_l} if score #gg nw.tmp2 matches 1.. "
+                              f"run item replace block {_ziel} with {ench_knopf_item(_kurz, _l, 'off')}")
+        zeigen.append(f"execute if score #lv nw.tmp2 matches {_maxs}.. run item replace block {_ziel} with {ench_knopf_item(_kurz, _maxs, 'an')}")
+    for _k in range(len(_liste), len(ENCH_KNOPF)):   # ungenutzte Knopffaecher bleiben leer
+        _blk, _ls = kauf_block(ENCH_KNOPF[_k])
+        zeigen.append(f"item replace block {_blk[0]} {_blk[1]} {_blk[2]} container.{_ls} with minecraft:air")
+    fn(f"sammler/ench/zeige_{_typ}", zeigen)
+
+fn("sammler/ench/anzeige", [
+    f"execute if score #et nw.tmp2 matches -1 run return run function {NS}:sammler/ench/leeren",
+    f"execute if score #et nw.tmp2 matches 0 run return run function {NS}:sammler/ench/fremd",
+    *[f"execute if score #et nw.tmp2 matches {n} run function {NS}:sammler/ench/zeige_{t}" for t, n in ENCH_TYP_NR.items()],
+])
+
+# Kauf einer Stufe. Der Knopf gilt als gedrueckt, wenn sein Fach leer ist (Standard seit v0.30).
+for _kurz, (_anz, _, _maxs, _grund, _minst) in rp_build.ENCH.items():
+    _nr = ENCH_KURZ.index(_kurz) + 1
+    fn(f"sammler/ench/kauf_{_kurz}", [
+        f"execute as {ENCH_NAH} store result score @s nw.tmp run clear @s *[custom_data~{{nw_ench:{_nr}}}] 0",
+        f"execute as @a[{ENCH_NAH_ARG},scores={{nw.tmp=1..}}] run function {NS}:sammler/ench/abwickeln_{_kurz}",
+        f"clear {ENCH_NAH} *[custom_data~{{nw_ench:{_nr}}}]",
+    ])
+    streit = rp_build.ENCH_STREIT.get(_kurz)
+    ab = ench_lesen("#lv", _kurz)
+    if streit:
+        ab += ench_lesen("#gg", streit)
+        ab.append(f"execute if score #gg nw.tmp2 matches 1.. run return run tellraw @s "
+                  + J([txt("[The Collector] ", "dark_red"), txt(f"{rp_build.ENCH[streit][0]} and {_anz} do not sit on the same piece.", "gray")]))
+    ab.append(f"execute if score #lv nw.tmp2 matches {_maxs}.. run return run tellraw @s "
+              + J([txt("[The Collector] ", "dark_red"), txt(f"{_anz} is already at its maximum.", "gray")]))
+    for _l in range(_maxs):
+        noetig = max(_l + 1, _minst)
+        ab.append(f"execute if score #lv nw.tmp2 matches {_l} unless score #phase nw.phase matches {noetig}.. run return run tellraw @s "
+                  + J([txt("[The Collector] ", "dark_red"), txt(f"The Source must reach tier {noetig} first.", "gray")]))
+    ab += [
+        "scoreboard players operation #n nw.tmp2 = #lv nw.tmp2", "scoreboard players add #n nw.tmp2 1",
+        f"scoreboard players set #preis nw.tmp {_grund}", "scoreboard players operation #preis nw.tmp *= #n nw.tmp2",
+        "execute if score #konto nw.konto < #preis nw.tmp run return run function " + f"{NS}:sammler/ench/zu_arm",
+        "scoreboard players operation #konto nw.konto -= #preis nw.tmp",
+    ]
+    for _l in range(_maxs):
+        ab.append(f"execute if score #lv nw.tmp2 matches {_l} run item modify block {ENCH_BLOCK} container.{_ELS} {NS}:ench_{_kurz}_{_l + 1}")
+    ab += [
+        "playsound minecraft:block.enchantment_table.use master @a[distance=..12] ~ ~ ~ 1 1.2",
+        "playsound minecraft:block.anvil.use block @a[distance=..12] ~ ~ ~ 0.5 1.6",
+        f"tellraw @s " + J([txt("[The Collector] ", "dark_red"), txt(f"{_anz} ", "gold"),
+                            {"score": {"name": "#n", "objective": "nw.tmp2"}, "color": "gold"},
+                            txt(". That will hold.", "gray")]),
+    ]
+    fn(f"sammler/ench/abwickeln_{_kurz}", ab)
+fn("sammler/ench/zu_arm", [
+    "tellraw @s " + J([txt("[The Collector] ", "dark_red"), txt("Not enough coins. ", "gray"),
+                       {"score": {"name": "#preis", "objective": "nw.tmp"}, "color": "gold"}, txt(" needed.", "gray")]),
+    "playsound minecraft:entity.villager.no neutral @s ~ ~ ~ 1 1",
+])
+
+# Jeden Tick, solange der Reiter offen ist: Art bestimmen, Klicks erkennen, Anzeige nachziehen
+ench_tick = [f"function {NS}:sammler/ench/typ"]
+for _typ, _liste in rp_build.ENCH_TYPEN:
+    for _k, _kurz in enumerate(_liste):
+        _blk, _ls = kauf_block(ENCH_KNOPF[_k])
+        ench_tick.append(f"execute if score #et nw.tmp2 matches {ENCH_TYP_NR[_typ]} "
+                         f"unless items block {_blk[0]} {_blk[1]} {_blk[2]} container.{_ls} * "
+                         f"run function {NS}:sammler/ench/kauf_{_kurz}")
+ench_tick.append(f"function {NS}:sammler/ench/typ")     # Kauf kann die Art nicht aendern, die Stufe schon
+ench_tick.append(f"function {NS}:sammler/ench/anzeige")
+fn("sammler/ench/tick", ench_tick)
+
 for p in range(1, ANZ_STUFEN + 1):
     reiter = reiter_liste(p)
     for idx, _, _, _, rows in reiter:
@@ -2108,9 +2322,17 @@ for p in range(1, ANZ_STUFEN + 1):
         for i, r in enumerate(rows[:PLATZ_PRO_REITER]):
             if r is not None:
                 belegt[REITER_SLOTS + i] = menue_item(r)
+        # Im Reiter der Station bleiben Einlegeslot und Knopfreihe unangetastet, sonst wuerde der
+        # Neuaufbau nach jedem Kauf das eingelegte Teil loeschen (v0.45).
+        tabu = {ENCH_SLOT, *ENCH_KNOPF} if idx == ENCH_IDX else set()
         for slot in range(54):
+            if slot in tabu:
+                continue
             blk, ls = kauf_block(slot)
             lines.append(f"item replace block {blk[0]} {blk[1]} {blk[2]} container.{ls} with {belegt.get(slot, 'minecraft:air')}")
+        if idx == ENCH_IDX:
+            lines.append(f"function {NS}:sammler/ench/typ")
+            lines.append(f"function {NS}:sammler/ench/anzeige")
         fn(f"sammler/kaufmenue_{p}_{idx}", lines)
 
 # #seite nw.status = aktiver Reiter (1..7 = Kategorie); leerer Reiter -> erster Reiter
@@ -2169,10 +2391,14 @@ for p in range(1, ANZ_STUFEN + 1):
         for ridx, slot, _, _, _ in reiter:
             blk, ls = kauf_block(slot)
             kauf_tick.append(f"execute if score #phase nw.phase matches {p} if score #seite nw.status matches {idx} unless items block {blk[0]} {blk[1]} {blk[2]} container.{ls} *[custom_data~{{nw_menu:{9000 + ridx}}}] run function {NS}:sammler/reiter/{ridx}")
+kauf_tick.append(f"execute if score #seite nw.status matches {ENCH_IDX} run function {NS}:sammler/ench/tick")
 fn("sammler/kauf_tick", kauf_tick)
 for idx in range(1, len(KATEGORIEN) + 1):
     fn(f"sammler/reiter/{idx}", [
         f"clear @a[x={KAUF_A[0]},y={KAUF_A[1]},z={KAUF_A[2]},distance=..8] *[custom_data~{{nw_menu:{9000 + idx}}}]",
+        # Wer den Reiter verlaesst, bekommt sein eingelegtes Teil zurueck. Sonst wuerde der Neuaufbau
+        # des anderen Reiters es ueberschreiben (v0.45).
+        None if idx == ENCH_IDX else f"function {NS}:sammler/ench/zurueck",
         f"scoreboard players set #seite nw.status {idx}",
         f"playsound minecraft:ui.button.click master @a[x={KAUF_A[0]},y={KAUF_A[1]},z={KAUF_A[2]},distance=..8] ~ ~ ~ 0.5 1.4",
         f"function {NS}:sammler/kaufmenue",
@@ -3083,7 +3309,7 @@ for path, content in files.items():
     else:
         target = OUT / "data" / path
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(content, encoding="utf-8")
+    target.write_text(content, encoding="utf-8", newline="\n")   # nie CRLF, siehe rp_build.w()
 zpath = OUT.parent / "nachtwache.zip"
 with zipfile.ZipFile(zpath, "w", zipfile.ZIP_DEFLATED) as z:
     for root, _, fs in os.walk(OUT):

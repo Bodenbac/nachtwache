@@ -39,6 +39,9 @@ ZEICHEN = {
     "feder":    (["...ff", "..fFf", ".fFFf", "fFFf.", "ff..."], {"f": (185, 198, 222), "F": (255, 255, 255)}),
     "stern":    (["y.y.y", ".yYy.", "yYYYy", ".yYy.", "y.y.y"], {"y": (230, 150, 40), "Y": (255, 228, 130)}),
     "unendlich":([".....", "II.II", "I.I.I", "II.II", "....."], {"I": (218, 185, 255)}),
+    # ab v0.45 fuer die Upgrade-Station: Dornen (Spitzen oben) und der Pfeil des Einlegeslots
+    "dornen":   (["t.t.t", ".ttt.", "TTTTT", ".TTT.", "..T.."], {"t": (235, 140, 130), "T": (185, 75, 65)}),
+    "pfeil_ab": (["..a..", "..a..", "aaaaa", ".aaa.", "..a.."], {"a": (200, 245, 190)}),
 }
 PLATTE = (24, 21, 30, 235)   # dunkle Platte hinter dem Zeichen
 

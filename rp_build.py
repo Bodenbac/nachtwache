@@ -318,7 +318,7 @@ def gui_daemmerung(src):
 # Reiter des Ladens: Kategorie -> Vorlagendatei mit dem Symbol (muss zu KATEGORIEN in build.py passen)
 REITER_SYMBOLE = {"BLOCKS": "brick", "MINERALS": "iron_ingot", "MOB": "rotten_flesh", "FOOD": "bread",
                   "TOOLS": "iron_pickaxe", "UTIL": "redstone", "BREW": "brewing_stand",
-                  "BOOKS": "enchanted_book", "SPECIAL": "nether_star"}
+                  "ENCH": "enchanted_book", "SPECIAL": "nether_star"}
 
 def reiter_platte(quelle, fuell, rand, hell):
     """STANDARD fuer jedes Fach, das kein normales Truhenfach ist (Luis 09.09.2026).
@@ -381,7 +381,75 @@ KNOPF_SYMBOLE = {
 }
 PLATTE_FARBEN = {"aus": ((74, 64, 92), (38, 32, 50)),
                  "an":  ((206, 178, 86), (255, 244, 168)),
-                 "off": ((132, 62, 62), (198, 96, 96))}
+                 "off": ((132, 62, 62), (198, 96, 96)),
+                 "gruen": ((62, 104, 58), (150, 200, 130))}   # v0.45: Einlegeslot der Upgrade-Station
+
+# ----------------------------------------------------------------------------
+# Upgrade-Station (Reiter Enchanting, v0.45). Quelle der Wahrheit fuer beide Seiten:
+# build.py importiert diese Tabellen, damit Textur und Datapack nie auseinanderlaufen.
+# kurz -> (Anzeigename, Zeichen aus buecher.ZEICHEN, Hoechststufe, Grundpreis, Mindest-Quellstufe)
+# Preis der Stufe n = Grundpreis * n (Luis 10.09.2026).
+# ----------------------------------------------------------------------------
+ENCH = {
+    "sharpness":       ("Sharpness",       "funke",       5, 800,  1),
+    "protection":      ("Protection",      "schild",      4, 800,  1),
+    "efficiency":      ("Efficiency",      "tempo",       5, 500,  1),
+    "power":           ("Power",           "stern",       5, 500,  1),
+    "feather_falling": ("Feather Falling", "feder",       4, 600,  1),
+    "fortune":         ("Fortune",         "edelstein",   3, 1200, 1),
+    "looting":         ("Looting",         "muenze",      3, 800,  1),
+    "unbreaking":      ("Unbreaking",      "amboss",      3, 500,  1),
+    "thorns":          ("Thorns",          "dornen",      3, 700,  1),
+    "sweeping_edge":   ("Sweeping Edge",   "bogenhieb",   3, 500,  1),
+    "fire_aspect":     ("Fire Aspect",     "flamme",      2, 1000, 1),
+    "knockback":       ("Knockback",       "stoss",       2, 400,  1),
+    "punch":           ("Punch",           "doppelstoss", 2, 400,  1),
+    "silk_touch":      ("Silk Touch",      "seide",       1, 1500, 3),
+    "flame":           ("Flame",           "flamme",      1, 1500, 3),
+    "infinity":        ("Infinity",        "unendlich",   1, 1500, 4),
+    "mending":         ("Mending",         "plus",        1, 1500, 5),
+}
+# Was auf welches Teil passt, in Anzeigereihenfolge: wichtigstes links, Mending immer rechts (Luis 10.09.2026)
+ENCH_TYPEN = [
+    ("sword",   ["sharpness", "fire_aspect", "looting", "sweeping_edge", "knockback", "unbreaking", "mending"]),
+    ("pickaxe", ["efficiency", "fortune", "silk_touch", "unbreaking", "mending"]),
+    ("axe",     ["sharpness", "efficiency", "unbreaking", "mending"]),
+    ("shovel",  ["efficiency", "silk_touch", "unbreaking", "mending"]),
+    ("bow",     ["power", "punch", "flame", "infinity", "unbreaking", "mending"]),
+    ("helmet",  ["protection", "thorns", "unbreaking", "mending"]),
+    ("chest",   ["protection", "thorns", "unbreaking", "mending"]),
+    ("legs",    ["protection", "thorns", "unbreaking", "mending"]),
+    ("boots",   ["protection", "thorns", "unbreaking", "feather_falling", "mending"]),
+]
+# Vanilla laesst diese Paare nicht zusammen auf ein Teil
+ENCH_STREIT = {"fortune": "silk_touch", "silk_touch": "fortune", "infinity": "mending", "mending": "infinity"}
+
+def ench_platte(zeichen, stufe, maxstufe, zustand):
+    """Knopf der Upgrade-Station: Platte im Zustandston, Zeichen darauf, unten ein Punkt je moegliche
+    Stufe. Weiss heisst erreicht, dunkel heisst offen. Dadurch sieht man Faehigkeit und Stand auf einen
+    Blick, ohne die Beschreibung lesen zu muessen (Luis 10.09.2026: nur Icons, keine Buchgrafik)."""
+    fuell = PLATTE_FARBEN[zustand][0]
+    im = Image.new("RGBA", (16, 16), fuell + (255,))
+    px = im.load()
+    for x, y in ((0, 0), (15, 0), (0, 15), (15, 15)):
+        px[x, y] = (0, 0, 0, 0)
+    rows, P = buecher.ZEICHEN[zeichen]
+    for y, row in enumerate(rows):          # Zeichen doppelt so gross, etwas hoeher als sonst
+        for x, ch in enumerate(row):        # damit unten Platz fuer die Stufenpunkte bleibt
+            if P.get(ch):
+                for dy in range(2):
+                    for dx in range(2):
+                        px[3 + x * 2 + dx, 1 + y * 2 + dy] = P[ch] + (255,)
+    if maxstufe:
+        breite = maxstufe * 3 - 1
+        x0 = (16 - breite) // 2
+        offen = (120, 100, 40) if zustand == "an" else (38, 32, 50)
+        for n in range(maxstufe):
+            farbe = (255, 255, 255) if n < stufe else offen
+            for dx in range(2):
+                for dy in range(2):
+                    px[x0 + n * 3 + dx, 13 + dy] = farbe + (255,)
+    return im
 
 def pack_icon():
     im = Image.new("RGBA", (128, 128), (14, 10, 20, 255))
@@ -405,7 +473,9 @@ def build(out_dir=None):
         if isinstance(content, Image.Image):
             content.save(path)
         else:
-            path.write_text(content, encoding="utf-8")
+            # newline="\n" erzwingen: sonst schreibt Windows CRLF, das Paket bekommt eine andere SHA1
+            # als dasselbe Paket unter Linux und der Server verlangt einen Neustart ohne echte Aenderung.
+            path.write_text(content, encoding="utf-8", newline="\n")
 
     w(rp / "pack.mcmeta", json.dumps({"pack": {
         "pack_format": RP_MIN, "min_format": RP_MIN, "max_format": RP_MAX,
@@ -454,6 +524,21 @@ def build(out_dir=None):
             w(nw / "models" / "item" / f"{name}.json", json.dumps({"parent": "minecraft:item/generated", "textures": {"layer0": f"nachtwache:item/{name}"}}))
             w(nw / "items" / f"{name}.json", json.dumps({"model": {"type": "minecraft:model", "model": f"nachtwache:item/{name}"}}))
 
+    # Upgrade-Station: je Verzauberung ein Knopf in jeder Stufe. aus = kaufbar, an = Maximum,
+    # off = gesperrt (Quellstufe fehlt oder die Gegenverzauberung liegt schon drauf). Dazu der gruene
+    # Einlegeslot, das einzige Fach der Kauftruhe, das ein echtes Item annimmt (v0.45).
+    ench_bilder = {}
+    for kurz, (_, zeichen, maxs, _, _) in ENCH.items():
+        for lvl in range(maxs):
+            ench_bilder[f"ench_{kurz}_{lvl}_aus"] = ench_platte(zeichen, lvl, maxs, "aus")
+            ench_bilder[f"ench_{kurz}_{lvl}_off"] = ench_platte(zeichen, lvl, maxs, "off")
+        ench_bilder[f"ench_{kurz}_{maxs}_an"] = ench_platte(zeichen, maxs, maxs, "an")
+    ench_bilder["ench_slot"] = ench_platte("pfeil_ab", 0, 0, "gruen")
+    for name, img in ench_bilder.items():
+        w(nw / "textures" / "item" / f"{name}.png", img)
+        w(nw / "models" / "item" / f"{name}.json", json.dumps({"parent": "minecraft:item/generated", "textures": {"layer0": f"nachtwache:item/{name}"}}))
+        w(nw / "items" / f"{name}.json", json.dumps({"model": {"type": "minecraft:model", "model": f"nachtwache:item/{name}"}}))
+
     # Verzauberungsbuecher: Buch im Farbton der Ausruestung, Zeichen der Faehigkeit, Punkte je Stufe (buecher.py)
     for kurz, img in buecher.alle().items():
         name = "buch_" + kurz.lower()
@@ -501,6 +586,10 @@ def build(out_dir=None):
                 full = Path(root) / f
                 zi = zipfile.ZipInfo(str(full.relative_to(rp)).replace(os.sep, "/"), date_time=(2026, 1, 1, 0, 0, 0))
                 zi.compress_type = zipfile.ZIP_DEFLATED
+                # create_system und external_attr haengen sonst am Betriebssystem: dasselbe Paket
+                # bekaeme unter Windows eine andere SHA1 als unter Linux (v0.45)
+                zi.create_system = 3
+                zi.external_attr = 0o600 << 16
                 z.writestr(zi, full.read_bytes())
     sha1 = hashlib.sha1(zpath.read_bytes()).hexdigest()
     (out_dir / "nachtwache-rp.sha1").write_text(sha1 + "\n")
