@@ -299,7 +299,7 @@ crimson_slab,Crimson Slab,2,rezept
 crimson_stairs,Crimson Stairs,5,rezept
 crimson_stem,Crimson Stem,10,basis
 crimson_trapdoor,Crimson Trapdoor,10,rezept
-crying_obsidian,Crying Obsidian,150,basis
+crying_obsidian,Crying Obsidian,20,basis
 cut_copper,Cut Copper,13,rezept
 cut_copper_slab,Cut Copper Slab,7,rezept
 cut_copper_stairs,Cut Copper Stairs,13,rezept
@@ -417,7 +417,7 @@ emerald_block,Block of Emerald,2500,basis
 emerald_ore,Emerald Ore,200,basis
 enchanted_book,Enchanted Book,200,muster
 enchanted_golden_apple,Enchanted Golden Apple,1500,basis
-enchanting_table,Enchanting Table,2000,basis
+enchanting_table,Enchanting Table,60,basis
 end_crystal,End Crystal,290,rezept
 end_portal_frame,End Portal Frame,1250,basis
 end_rod,End Rod,20,rezept
@@ -426,7 +426,7 @@ end_stone_brick_slab,End Stone Brick Slab,3,rezept
 end_stone_brick_stairs,End Stone Brick Stairs,5,rezept
 end_stone_brick_wall,End Stone Brick Wall,5,rezept
 end_stone_bricks,End Stone Bricks,5,rezept
-ender_chest,Ender Chest,2302,rezept
+ender_chest,Ender Chest,278,rezept
 ender_eye,Eye of Ender,92,rezept
 ender_pearl,Ender Pearl,50,basis
 experience_bottle,Bottle o' Enchanting,25,basis
@@ -436,7 +436,7 @@ exposed_copper,Exposed Copper,51,muster
 exposed_copper_bars,Exposed Copper Bars,6,muster
 exposed_copper_bulb,Exposed Copper Bulb,60,rezept
 exposed_copper_chain,Exposed Copper Chain,17,muster
-exposed_copper_chest,Exposed Copper Chest,119,muster
+exposed_copper_chest,Exposed Copper Chest,138,muster
 exposed_copper_door,Exposed Copper Door,23,muster
 exposed_copper_golem_statue,Exposed Copper Golem Statue,1,rest
 exposed_copper_grate,Exposed Copper Grate,13,rezept
@@ -794,7 +794,7 @@ oak_stairs,Oak Stairs,14,rezept
 oak_trapdoor,Oak Trapdoor,27,rezept
 oak_wood,Oak Wood,37,rezept
 observer,Observer,30,basis
-obsidian,Obsidian,250,basis
+obsidian,Obsidian,20,basis
 ochre_froglight,Ochre Froglight,15,muster
 ominous_banner,Ominous Banner,1,rest
 ominous_bottle,Ominous Bottle,20,muster
@@ -821,7 +821,7 @@ oxidized_copper,Oxidized Copper,51,muster
 oxidized_copper_bars,Oxidized Copper Bars,6,muster
 oxidized_copper_bulb,Oxidized Copper Bulb,60,rezept
 oxidized_copper_chain,Oxidized Copper Chain,17,muster
-oxidized_copper_chest,Oxidized Copper Chest,119,muster
+oxidized_copper_chest,Oxidized Copper Chest,138,muster
 oxidized_copper_door,Oxidized Copper Door,23,muster
 oxidized_copper_golem_statue,Oxidized Copper Golem Statue,1,rest
 oxidized_copper_grate,Oxidized Copper Grate,13,rezept
@@ -1051,7 +1051,7 @@ resin_brick_stairs,Resin Brick Stairs,1,rest
 resin_brick_wall,Resin Brick Wall,1,rest
 resin_bricks,Resin Bricks,1,rest
 resin_clump,Resin Clump,5,rezept
-respawn_anchor,Respawn Anchor,1040,rezept
+respawn_anchor,Respawn Anchor,182,rezept
 rib_armor_trim_smithing_template,Smithing Template,500,basis
 rooted_dirt,Rooted Dirt,1,basis
 rose_bush,Rose Bush,2,muster
@@ -1269,7 +1269,7 @@ waxed_exposed_copper,Waxed Exposed Copper,79,rezept
 waxed_exposed_copper_bars,Waxed Exposed Copper Bars,29,rezept
 waxed_exposed_copper_bulb,Waxed Exposed Copper Bulb,84,rezept
 waxed_exposed_copper_chain,Waxed Exposed Copper Chain,41,rezept
-waxed_exposed_copper_chest,Waxed Exposed Copper Chest,153,rezept
+waxed_exposed_copper_chest,Waxed Exposed Copper Chest,174,rezept
 waxed_exposed_copper_door,Waxed Exposed Copper Door,48,rezept
 waxed_exposed_copper_golem_statue,Waxed Exposed Copper Golem Statue,2,rezept
 waxed_exposed_copper_grate,Waxed Exposed Copper Grate,20,rezept
@@ -1285,7 +1285,7 @@ waxed_oxidized_copper,Waxed Oxidized Copper,79,rezept
 waxed_oxidized_copper_bars,Waxed Oxidized Copper Bars,29,rezept
 waxed_oxidized_copper_bulb,Waxed Oxidized Copper Bulb,84,rezept
 waxed_oxidized_copper_chain,Waxed Oxidized Copper Chain,41,rezept
-waxed_oxidized_copper_chest,Waxed Oxidized Copper Chest,153,rezept
+waxed_oxidized_copper_chest,Waxed Oxidized Copper Chest,174,rezept
 waxed_oxidized_copper_door,Waxed Oxidized Copper Door,48,rezept
 waxed_oxidized_copper_golem_statue,Waxed Oxidized Copper Golem Statue,2,rezept
 waxed_oxidized_copper_grate,Waxed Oxidized Copper Grate,20,rezept
@@ -1300,7 +1300,7 @@ waxed_weathered_copper,Waxed Weathered Copper,79,rezept
 waxed_weathered_copper_bars,Waxed Weathered Copper Bars,29,rezept
 waxed_weathered_copper_bulb,Waxed Weathered Copper Bulb,84,rezept
 waxed_weathered_copper_chain,Waxed Weathered Copper Chain,41,rezept
-waxed_weathered_copper_chest,Waxed Weathered Copper Chest,153,rezept
+waxed_weathered_copper_chest,Waxed Weathered Copper Chest,174,rezept
 waxed_weathered_copper_door,Waxed Weathered Copper Door,48,rezept
 waxed_weathered_copper_golem_statue,Waxed Weathered Copper Golem Statue,1,muster
 waxed_weathered_copper_grate,Waxed Weathered Copper Grate,20,rezept
@@ -1316,7 +1316,7 @@ weathered_copper,Weathered Copper,51,muster
 weathered_copper_bars,Weathered Copper Bars,6,muster
 weathered_copper_bulb,Weathered Copper Bulb,60,rezept
 weathered_copper_chain,Weathered Copper Chain,17,muster
-weathered_copper_chest,Weathered Copper Chest,119,muster
+weathered_copper_chest,Weathered Copper Chest,138,muster
 weathered_copper_door,Weathered Copper Door,23,muster
 weathered_copper_golem_statue,Weathered Copper Golem Statue,1,rest
 weathered_copper_grate,Weathered Copper Grate,13,rezept

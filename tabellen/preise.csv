@@ -2,6 +2,9 @@
 # Massstab: Kaufpreise im Laden (Eisen 50, Gold 100, Diamant 1000, Obsidian 500) und Seltenheit am Quell.
 # Verarbeitung lohnt sich: Erz < Rohstoff < Barren < Block (Kupfererz 4, Kupferbarren 5, Kupferblock 50).
 # REGEL (Luis 10.09.2026): Alles, was der Laden verkauft, kauft der Sammler zur HAELFTE des Kaufpreises zurueck
+# AUSNAHME (Luis 10.09.2026): nachwachsende Ware nicht. Obsidian ist mit Lava aus dem Nether umsonst
+# herstellbar, deshalb Ankauf 20 statt 250. Kaufpreis bleibt 500, es ist der einzige Block, den die
+# Gegner nicht durchgraben. Crying Obsidian und Zaubertisch mit, sonst wandert die Schleife nur weiter.
 # (aufgerundet), ohne Ausnahme. Diese Zeilen pflegt build-seitig niemand von Hand: bei Preisaenderung im Laden
 # hier den Wert nachziehen (python3 preise_ableiten.py danach). Was der Laden nicht verkauft, hat hier einen festen Wert.
 item,name,wert
@@ -86,7 +89,7 @@ emerald,Emerald,125
 emerald_block,Emerald Block,2500
 nether_quartz_ore,Nether Quartz Ore,40
 quartz,Quartz,20
-obsidian,Obsidian,250
+obsidian,Obsidian,20
 amethyst_shard,Amethyst Shard,25
 amethyst_block,Amethyst Block,20
 netherrack,Netherrack,2
@@ -117,7 +120,7 @@ shulker_shell,Shulker Shell,400
 enchanted_golden_apple,Enchanted Golden Apple,1500
 honeycomb,Honeycomb,20
 honey_bottle,Honey Bottle,8
-crying_obsidian,Crying Obsidian,150
+crying_obsidian,Crying Obsidian,20
 prismarine_shard,Prismarine Shard,5
 prismarine_crystals,Prismarine Crystals,8
 nautilus_shell,Nautilus Shell,30
@@ -266,7 +269,7 @@ wild_armor_trim_smithing_template,Wild Armor Trim,500
 oak_sapling,Oak Sapling,20
 wheat_seeds,Wheat Seeds,3
 end_portal_frame,End Portal Frame,1250
-enchanting_table,Enchanting Table,2000
+enchanting_table,Enchanting Table,60
 observer,Observer,30
 tnt,TNT,100
 experience_bottle,Bottle o' Enchanting,25

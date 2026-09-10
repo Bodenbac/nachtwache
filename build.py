@@ -19,7 +19,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 85                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 86                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -1929,6 +1929,35 @@ for _st, (_gew, _name, _farbe) in enumerate(GLUECK_KISTEN, 1):
          "functions": ([{"function": "minecraft:set_count", "count": {"min": mn, "max": mx}}] if mx > 1 else [])}
         for it, mn, mx, g in _inhalt]}]})
 
+# ----------------------------------------------------------------------------
+# Nether und End: erst ab einer Quellstufe, und der Nether nie nachts (Luis 10.09.2026)
+#
+# Gesperrt wird am Uebergang, nicht am Material. Das ist wasserdicht, egal woher der Obsidian kommt:
+# gekauft, aus einer Truhe oder vom Kollegen. Erkannt ueber changed_dimension, zurueck geht es an den
+# Inselspawn. Die Uhr laeuft ohnehin nur weiter, solange jemand in der Oberwelt steht (siehe uhr/tick),
+# der Nether ist also kein Weg, die Nacht auszusitzen.
+# ----------------------------------------------------------------------------
+NETHER_AB, END_AB = 4, 6                # Quellstufe, ab der die Dimension aufgeht
+for _dim, _kurz, _ab in (("the_nether", "nether", NETHER_AB), ("the_end", "end", END_AB)):
+    w(f"{NS}/advancement/{_kurz}_betreten.json", {"criteria": {"drin": {
+        "trigger": "minecraft:changed_dimension", "conditions": {"to": f"minecraft:{_dim}"}}},
+        "rewards": {"function": f"{NS}:welt/{_kurz}_betreten"}})
+    zurueck = [
+        f"advancement revoke @s only {NS}:{_kurz}_betreten",
+        f"execute if score #phase nw.phase matches {_ab}.. " +
+        ("unless score #status nw.status matches 1 " if _kurz == "nether" else "") + "run return 0",
+        f"execute in minecraft:overworld run tp @s {SPAWN[0]}.5 {SPAWN[1]} {SPAWN[2]}.5",
+        "playsound minecraft:block.beacon.deactivate master @s ~ ~ ~ 1 0.6",
+        "effect give @s minecraft:blindness 2 0 true",
+    ]
+    # Fehlt die Stufe, ist das der eigentliche Grund, auch wenn zusaetzlich Nacht ist
+    zurueck.append(f"execute unless score #phase nw.phase matches {_ab}.. run return run tellraw @s " +
+                   J([txt("[The Collector] ", "dark_red"), txt(f"Not yet. The Source must reach tier {_ab} first.", "gray")]))
+    if _kurz == "nether":
+        zurueck.append("tellraw @s " + J([txt("[The Collector] ", "dark_red"),
+                                          txt("Not at night. Whatever is down there hunts too.", "gray")]))
+    fn(f"welt/{_kurz}_betreten", zurueck)
+
 w(f"{NS}/advancement/key_benutzt.json", {"criteria": {"benutzt": {"trigger": "minecraft:consume_item", "conditions": {
     "item": {"predicates": {"minecraft:custom_data": "{nw_key:1b}"}}}}},
     "rewards": {"function": f"{NS}:glueck/start"}})
@@ -2693,7 +2722,11 @@ fn("sammler/minion_slot", [
 # ----------------------------------------------------------------------------
 fn("uhr/tick", [
     "execute if score #ende nw.status matches 1 run return 0",     # nach dem Verlust steht die Zeit
-    "execute unless entity @a run return 0",          # Zeit laeuft nur, wenn jemand auf dem Server ist
+    # Zeit laeuft nur, wenn jemand in der Oberwelt ist. Wer im Nether steckt, haelt den Tag an
+    # (Luis 10.09.2026), sonst waere der Nether ein Weg, die Nacht auszusitzen.
+    "scoreboard players set #ow nw.tmp2 0",
+    "execute as @a at @s if dimension minecraft:overworld run scoreboard players set #ow nw.tmp2 1",
+    "execute if score #ow nw.tmp2 matches 0 run return 0",
     "scoreboard players set #tagphase nw.tmp 1",
     f"execute if score #zeit nw.zeit matches {NACHT_START}..{TAG_START - 1} run scoreboard players set #tagphase nw.tmp 0",
     # Akkumulator: je Tick ZAEHLER dazu, je volle NENNER eine Zeiteinheit

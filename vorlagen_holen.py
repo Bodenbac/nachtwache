@@ -40,7 +40,15 @@ DATEIEN = {"assets/minecraft/textures/block/amethyst_block.png": "amethyst_block
            "assets/minecraft/textures/item/ender_eye.png": "ender_eye.png",
            # Blockstate des Fasses: rp_build haengt facing=down auf das Generatormodell um. Fehlte bis v0.44
            # in dieser Liste, dadurch liess sich das Ressourcenpaket aus einer frischen Arbeitskopie nie bauen.
-           "assets/minecraft/blockstates/barrel.json": "barrel.json"}
+           "assets/minecraft/blockstates/barrel.json": "barrel.json",
+           # Namen aller Items fuer preise_ableiten.py
+           "assets/minecraft/lang/en_us.json": "en_us.json"}
+# Ganze Ordner, die preise_ableiten.py braucht. Der Client bringt die Serverdaten mit, weil er
+# Einzelspielerwelten selbst hostet. Fehlte bis v0.51, dadurch lief preise_ableiten.py nur auf
+# einem Rechner, auf dem die Dateien zufaellig noch lagen.
+ORDNER = {"data/minecraft/recipe/": "rezepte",
+          "data/minecraft/tags/item/": "tags_item"}
+
 ziel = Path(__file__).resolve().parent / "vorlagen"; ziel.mkdir(exist_ok=True)
 m = json.load(urllib.request.urlopen("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"))
 v = json.load(urllib.request.urlopen([x for x in m["versions"] if x["id"] == VERSION][0]["url"]))
@@ -48,3 +56,10 @@ print("lade client.jar (30 MB) ...")
 jar = zipfile.ZipFile(io.BytesIO(urllib.request.urlopen(v["downloads"]["client"]["url"]).read()))
 for quelle, name in DATEIEN.items():
     (ziel / name).write_bytes(jar.read(quelle)); print("ok", name)
+for praefix, ordner in ORDNER.items():
+    (ziel / ordner).mkdir(exist_ok=True)
+    n = 0
+    for eintrag in jar.namelist():
+        if eintrag.startswith(praefix) and eintrag.endswith(".json") and "/" not in eintrag[len(praefix):]:
+            (ziel / ordner / Path(eintrag).name).write_bytes(jar.read(eintrag)); n += 1
+    print(f"ok {ordner}: {n} Dateien")
