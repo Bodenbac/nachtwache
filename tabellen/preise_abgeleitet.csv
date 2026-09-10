@@ -31,12 +31,12 @@ andesite_stairs,Andesite Stairs,1,rest
 andesite_wall,Andesite Wall,1,rest
 angler_pottery_sherd,Angler Pottery Sherd,20,muster
 anvil,Anvil,771,rezept
-apple,Apple,8,basis
+apple,Apple,15,basis
 archer_pottery_sherd,Archer Pottery Sherd,20,muster
 armadillo_scute,Armadillo Scute,20,basis
-armor_stand,Armor Stand,15,rezept
+armor_stand,Armor Stand,16,rezept
 arms_up_pottery_sherd,Arms Up Pottery Sherd,20,muster
-arrow,Arrow,1,basis
+arrow,Arrow,10,basis
 axolotl_bucket,Bucket of Axolotl,80,basis
 azalea,Azalea,5,basis
 azalea_leaves,Azalea Leaves,1,muster
@@ -63,10 +63,10 @@ bamboo_stairs,Bamboo Stairs,15,rezept
 bamboo_trapdoor,Bamboo Trapdoor,30,rezept
 barrel,Barrel,25,rezept
 basalt,Basalt,2,basis
-beacon,Beacon,3713,rezept
+beacon,Beacon,4000,basis
 bee_nest,Bee Nest,30,basis
 beef,Raw Beef,25,basis
-beehive,Beehive,37,rezept
+beehive,Beehive,86,rezept
 beetroot,Beetroot,2,basis
 beetroot_seeds,Beetroot Seeds,2,muster
 beetroot_soup,Beetroot Soup,17,rezept
@@ -92,13 +92,13 @@ birch_trapdoor,Birch Trapdoor,17,rezept
 birch_wood,Birch Wood,22,rezept
 black_banner,Black Banner,62,rezept
 black_bed,Black Bed,31,rezept
-black_candle,Black Candle,16,rezept
+black_candle,Black Candle,36,rezept
 black_carpet,Black Carpet,7,rezept
-black_concrete,Black Concrete,5,muster
-black_concrete_powder,Black Concrete Powder,4,rezept
+black_concrete,Black Concrete,8,muster
+black_concrete_powder,Black Concrete Powder,7,rezept
 black_dye,Black Dye,4,rezept
 black_glazed_terracotta,Black Glazed Terracotta,9,rezept
-black_harness,Black Harness,43,rezept
+black_harness,Black Harness,66,rezept
 black_shulker_box,Black Shulker Box,1006,rezept
 black_stained_glass,Black Stained Glass,4,rezept
 black_stained_glass_pane,Black Stained Glass Pane,2,rezept
@@ -109,19 +109,19 @@ blackstone_slab,Blackstone Slab,2,rezept
 blackstone_stairs,Blackstone Stairs,3,rezept
 blackstone_wall,Blackstone Wall,3,rezept
 blade_pottery_sherd,Blade Pottery Sherd,20,muster
-blast_furnace,Blast Furnace,154,rezept
-blaze_powder,Blaze Powder,11,rezept
-blaze_rod,Blaze Rod,20,basis
+blast_furnace,Blast Furnace,158,rezept
+blaze_powder,Blaze Powder,33,rezept
+blaze_rod,Blaze Rod,60,basis
 blue_banner,Blue Banner,56,rezept
 blue_bed,Blue Bed,30,rezept
-blue_candle,Blue Candle,15,rezept
+blue_candle,Blue Candle,35,rezept
 blue_carpet,Blue Carpet,6,rezept
-blue_concrete,Blue Concrete,5,muster
-blue_concrete_powder,Blue Concrete Powder,4,rezept
+blue_concrete,Blue Concrete,7,muster
+blue_concrete_powder,Blue Concrete Powder,6,rezept
 blue_dye,Blue Dye,3,rezept
 blue_egg,Blue Egg,2,muster
 blue_glazed_terracotta,Blue Glazed Terracotta,8,rezept
-blue_harness,Blue Harness,42,rezept
+blue_harness,Blue Harness,65,rezept
 blue_ice,Blue Ice,297,rezept
 blue_orchid,Blue Orchid,2,muster
 blue_shulker_box,Blue Shulker Box,1005,rezept
@@ -130,20 +130,20 @@ blue_stained_glass_pane,Blue Stained Glass Pane,2,rezept
 blue_terracotta,Blue Terracotta,6,rezept
 blue_wool,Blue Wool,8,rezept
 bolt_armor_trim_smithing_template,Smithing Template,1250,basis
-bone,Bone,3,basis
+bone,Bone,18,basis
 bone_block,Bone Block,10,basis
 bone_meal,Bone Meal,2,rezept
-book,Book,22,rezept
-bookshelf,Bookshelf,40,basis
+book,Book,30,rezept
+bookshelf,Bookshelf,75,basis
 bordure_indented_banner_pattern,Bordure Indented Banner Pattern,6,rezept
 bowl,Bowl,3,rezept
 brain_coral,Brain Coral,4,muster
 brain_coral_block,Brain Coral Block,8,muster
 brain_coral_fan,Brain Coral Fan,4,muster
-bread,Bread,12,basis
+bread,Bread,25,basis
 breeze_rod,Breeze Rod,20,muster
 brewer_pottery_sherd,Brewer Pottery Sherd,20,muster
-brewing_stand,Brewing Stand,26,rezept
+brewing_stand,Brewing Stand,70,rezept
 brick,Brick,2,basis
 brick_slab,Brick Slab,5,rezept
 brick_stairs,Brick Stairs,9,rezept
@@ -151,14 +151,14 @@ brick_wall,Brick Wall,9,rezept
 bricks,Bricks,9,rezept
 brown_banner,Brown Banner,62,rezept
 brown_bed,Brown Bed,31,rezept
-brown_candle,Brown Candle,16,rezept
+brown_candle,Brown Candle,36,rezept
 brown_carpet,Brown Carpet,7,rezept
-brown_concrete,Brown Concrete,5,muster
-brown_concrete_powder,Brown Concrete Powder,4,rezept
+brown_concrete,Brown Concrete,8,muster
+brown_concrete_powder,Brown Concrete Powder,7,rezept
 brown_dye,Brown Dye,4,rezept
 brown_egg,Brown Egg,2,muster
 brown_glazed_terracotta,Brown Glazed Terracotta,9,rezept
-brown_harness,Brown Harness,43,rezept
+brown_harness,Brown Harness,66,rezept
 brown_mushroom,Brown Mushroom,2,basis
 brown_mushroom_block,Brown Mushroom Block,5,muster
 brown_shulker_box,Brown Shulker Box,1006,rezept
@@ -175,9 +175,9 @@ bush,Bush,2,muster
 cactus,Cactus,3,basis
 cactus_flower,Cactus Flower,2,muster
 calcite,Calcite,3,basis
-calibrated_sculk_sensor,Calibrated Sculk Sensor,116,rezept
+calibrated_sculk_sensor,Calibrated Sculk Sensor,248,rezept
 campfire,Campfire,49,rezept
-candle,Candle,10,rezept
+candle,Candle,28,rezept
 carrot,Carrot,3,basis
 cartography_table,Cartography Table,22,rezept
 carved_pumpkin,Carved Pumpkin,10,muster
@@ -219,7 +219,7 @@ chiseled_quartz_block,Chiseled Quartz Block,88,rezept
 chiseled_red_sandstone,Chiseled Red Sandstone,4,rezept
 chiseled_resin_bricks,Chiseled Resin Bricks,1,rest
 chiseled_sandstone,Chiseled Sandstone,4,rezept
-chiseled_stone_bricks,Chiseled Stone Bricks,1,rest
+chiseled_stone_bricks,Chiseled Stone Bricks,2,rezept
 chiseled_tuff,Chiseled Tuff,1,rest
 chiseled_tuff_bricks,Chiseled Tuff Bricks,1,rest
 chorus_flower,Chorus Flower,10,basis
@@ -241,15 +241,15 @@ cobblestone,Cobblestone,1,basis
 cobblestone_slab,Cobblestone Slab,1,rest
 cobblestone_stairs,Cobblestone Stairs,1,rest
 cobblestone_wall,Cobblestone Wall,1,rest
-cobweb,Cobweb,5,basis
+cobweb,Cobweb,10,basis
 cocoa_beans,Cocoa Beans,3,basis
 cod,Raw Cod,8,basis
 cod_bucket,Bucket of Cod,80,basis
-comparator,Redstone Comparator,52,rezept
+comparator,Redstone Comparator,56,rezept
 compass,Compass,116,rezept
 composter,Composter,16,rezept
-conduit,Conduit,815,rezept
-cooked_beef,Steak,40,basis
+conduit,Conduit,1640,rezept
+cooked_beef,Steak,50,basis
 cooked_chicken,Cooked Chicken,25,basis
 cooked_cod,Cooked Cod,15,basis
 cooked_mutton,Cooked Mutton,25,basis
@@ -259,7 +259,7 @@ cooked_salmon,Cooked Salmon,15,basis
 cookie,Cookie,2,rezept
 copper_bars,Copper Bars,5,rezept
 copper_block,Block of Copper,50,basis
-copper_bulb,Copper Bulb,49,rezept
+copper_bulb,Copper Bulb,60,rezept
 copper_chain,Copper Chain,16,rezept
 copper_chest,Copper Chest,118,rezept
 copper_door,Copper Door,22,rezept
@@ -276,7 +276,7 @@ cracked_deepslate_bricks,Cracked Deepslate Bricks,3,rezept
 cracked_deepslate_tiles,Cracked Deepslate Tiles,3,rezept
 cracked_nether_bricks,Cracked Nether Bricks,18,rezept
 cracked_polished_blackstone_bricks,Cracked Polished Blackstone Bricks,4,rezept
-cracked_stone_bricks,Cracked Stone Bricks,2,rezept
+cracked_stone_bricks,Cracked Stone Bricks,3,rezept
 crafter,Crafter,180,rezept
 crafting_table,Crafting Table,14,rezept
 creaking_heart,Creaking Heart,100,rezept
@@ -309,13 +309,13 @@ cut_sandstone,Cut Sandstone,4,rezept
 cut_sandstone_slab,Cut Sandstone Slab,2,rezept
 cyan_banner,Cyan Banner,49,rezept
 cyan_bed,Cyan Bed,29,rezept
-cyan_candle,Cyan Candle,14,rezept
+cyan_candle,Cyan Candle,33,rezept
 cyan_carpet,Cyan Carpet,6,rezept
-cyan_concrete,Cyan Concrete,5,muster
-cyan_concrete_powder,Cyan Concrete Powder,4,rezept
+cyan_concrete,Cyan Concrete,7,muster
+cyan_concrete_powder,Cyan Concrete Powder,6,rezept
 cyan_dye,Cyan Dye,2,rezept
 cyan_glazed_terracotta,Cyan Glazed Terracotta,8,rezept
-cyan_harness,Cyan Harness,41,rezept
+cyan_harness,Cyan Harness,64,rezept
 cyan_shulker_box,Cyan Shulker Box,1004,rezept
 cyan_stained_glass,Cyan Stained Glass,4,rezept
 cyan_stained_glass_pane,Cyan Stained Glass Pane,2,rezept
@@ -380,7 +380,7 @@ deepslate_tile_slab,Deepslate Tile Slab,1,rest
 deepslate_tile_stairs,Deepslate Tile Stairs,2,rezept
 deepslate_tile_wall,Deepslate Tile Wall,2,rezept
 deepslate_tiles,Deepslate Tiles,2,rezept
-detector_rail,Detector Rail,29,rezept
+detector_rail,Detector Rail,30,rezept
 diamond,Diamond,250,basis
 diamond_axe,Diamond Axe,825,basis
 diamond_block,Block of Diamond,4000,basis
@@ -399,11 +399,11 @@ diorite_stairs,Diorite Stairs,1,rest
 diorite_wall,Diorite Wall,1,rest
 dirt,Dirt,1,basis
 disc_fragment_5,Disc Fragment,50,muster
-dispenser,Dispenser,36,rezept
-dragon_breath,Dragon's Breath,40,basis
+dispenser,Dispenser,40,rezept
+dragon_breath,Dragon's Breath,200,basis
 dragon_egg,Dragon Egg,5000,muster
 dragon_head,Dragon Head,100,muster
-dried_ghast,Dried Ghast,357,rezept
+dried_ghast,Dried Ghast,1325,rezept
 dried_kelp,Dried Kelp,2,rezept
 dried_kelp_block,Dried Kelp Block,20,rezept
 dripstone_block,Dripstone Block,5,basis
@@ -411,29 +411,30 @@ dropper,Dropper,14,rezept
 dune_armor_trim_smithing_template,Smithing Template,500,basis
 echo_shard,Echo Shard,100,muster
 egg,Egg,2,basis
+elytra,Elytra,2500,basis
 emerald,Emerald,125,basis
 emerald_block,Block of Emerald,2500,basis
 emerald_ore,Emerald Ore,200,basis
 enchanted_book,Enchanted Book,200,muster
 enchanted_golden_apple,Enchanted Golden Apple,1500,basis
-enchanting_table,Enchanting Table,1103,rezept
-end_crystal,End Crystal,130,rezept
-end_portal_frame,End Portal Frame,600,muster
-end_rod,End Rod,9,rezept
+enchanting_table,Enchanting Table,2000,basis
+end_crystal,End Crystal,290,rezept
+end_portal_frame,End Portal Frame,1250,basis
+end_rod,End Rod,20,rezept
 end_stone,End Stone,5,basis
 end_stone_brick_slab,End Stone Brick Slab,3,rezept
 end_stone_brick_stairs,End Stone Brick Stairs,5,rezept
 end_stone_brick_wall,End Stone Brick Wall,5,rezept
 end_stone_bricks,End Stone Bricks,5,rezept
-ender_chest,Ender Chest,1119,rezept
-ender_eye,Eye of Ender,57,rezept
-ender_pearl,Ender Pearl,40,basis
-experience_bottle,Bottle o' Enchanting,30,muster
+ender_chest,Ender Chest,2302,rezept
+ender_eye,Eye of Ender,92,rezept
+ender_pearl,Ender Pearl,50,basis
+experience_bottle,Bottle o' Enchanting,25,basis
 explorer_pottery_sherd,Explorer Pottery Sherd,20,muster
 exposed_chiseled_copper,Exposed Chiseled Copper,13,rezept
 exposed_copper,Exposed Copper,51,muster
 exposed_copper_bars,Exposed Copper Bars,6,muster
-exposed_copper_bulb,Exposed Copper Bulb,49,rezept
+exposed_copper_bulb,Exposed Copper Bulb,60,rezept
 exposed_copper_chain,Exposed Copper Chain,17,muster
 exposed_copper_chest,Exposed Copper Chest,119,muster
 exposed_copper_door,Exposed Copper Door,23,muster
@@ -447,16 +448,16 @@ exposed_cut_copper_stairs,Exposed Cut Copper Stairs,13,rezept
 exposed_lightning_rod,Exposed Lightning Rod,34,muster
 eye_armor_trim_smithing_template,Smithing Template,500,basis
 feather,Feather,2,basis
-fermented_spider_eye,Fermented Spider Eye,9,rezept
+fermented_spider_eye,Fermented Spider Eye,20,rezept
 fern,Fern,1,rest
 field_masoned_banner_pattern,Field Masoned Banner Pattern,15,rezept
 filled_map,Map,10,muster
-fire_charge,Fire Charge,10,rezept
+fire_charge,Fire Charge,23,rezept
 fire_coral,Fire Coral,4,muster
 fire_coral_block,Fire Coral Block,8,muster
 fire_coral_fan,Fire Coral Fan,4,muster
 firefly_bush,Firefly Bush,2,muster
-firework_rocket,Firework Rocket,5,rezept
+firework_rocket,Firework Rocket,9,rezept
 firework_star,Firework Star,10,muster
 fletching_table,Fletching Table,18,rezept
 flint,Flint,2,basis
@@ -470,7 +471,7 @@ flowering_azalea_leaves,Flowering Azalea Leaves,1,muster
 friend_pottery_sherd,Friend Pottery Sherd,20,muster
 furnace,Furnace,9,rezept
 furnace_minecart,Minecart with Furnace,162,rezept
-ghast_tear,Ghast Tear,40,basis
+ghast_tear,Ghast Tear,150,basis
 gilded_blackstone,Gilded Blackstone,40,basis
 glass,Glass,3,basis
 glass_bottle,Glass Bottle,4,rezept
@@ -479,7 +480,7 @@ glistering_melon_slice,Glistering Melon Slice,63,rezept
 globe_banner_pattern,Banner Pattern,20,muster
 glow_berries,Glow Berries,2,basis
 glow_ink_sac,Glow Ink Sac,8,basis
-glow_item_frame,Glow Item Frame,39,rezept
+glow_item_frame,Glow Item Frame,48,rezept
 glow_lichen,Glow Lichen,2,basis
 glowstone,Glowstone,15,basis
 glowstone_dust,Glowstone Dust,20,basis
@@ -488,7 +489,7 @@ gold_block,Block of Gold,400,basis
 gold_ingot,Gold Ingot,50,basis
 gold_nugget,Gold Nugget,7,rezept
 gold_ore,Gold Ore,30,basis
-golden_apple,Golden Apple,449,rezept
+golden_apple,Golden Apple,457,rezept
 golden_carrot,Golden Carrot,65,rezept
 golden_spear,Golden Spear,60,rezept
 granite,Granite,1,basis
@@ -497,16 +498,16 @@ granite_stairs,Granite Stairs,1,rest
 granite_wall,Granite Wall,1,rest
 grass,Grass,1,rest
 grass_block,Grass Block,2,basis
-gravel,Gravel,3,basis
+gravel,Gravel,5,basis
 gray_banner,Gray Banner,56,rezept
 gray_bed,Gray Bed,30,rezept
-gray_candle,Gray Candle,15,rezept
+gray_candle,Gray Candle,35,rezept
 gray_carpet,Gray Carpet,6,rezept
-gray_concrete,Gray Concrete,5,muster
-gray_concrete_powder,Gray Concrete Powder,4,rezept
+gray_concrete,Gray Concrete,7,muster
+gray_concrete_powder,Gray Concrete Powder,6,rezept
 gray_dye,Gray Dye,3,rezept
 gray_glazed_terracotta,Gray Glazed Terracotta,8,rezept
-gray_harness,Gray Harness,42,rezept
+gray_harness,Gray Harness,65,rezept
 gray_shulker_box,Gray Shulker Box,1005,rezept
 gray_stained_glass,Gray Stained Glass,4,rezept
 gray_stained_glass_pane,Gray Stained Glass Pane,2,rezept
@@ -514,34 +515,34 @@ gray_terracotta,Gray Terracotta,6,rezept
 gray_wool,Gray Wool,8,rezept
 green_banner,Green Banner,62,rezept
 green_bed,Green Bed,31,rezept
-green_candle,Green Candle,16,rezept
+green_candle,Green Candle,36,rezept
 green_carpet,Green Carpet,7,rezept
-green_concrete,Green Concrete,5,muster
-green_concrete_powder,Green Concrete Powder,4,rezept
+green_concrete,Green Concrete,8,muster
+green_concrete_powder,Green Concrete Powder,7,rezept
 green_dye,Green Dye,4,rezept
 green_glazed_terracotta,Green Glazed Terracotta,9,rezept
-green_harness,Green Harness,43,rezept
+green_harness,Green Harness,66,rezept
 green_shulker_box,Green Shulker Box,1006,rezept
 green_stained_glass,Green Stained Glass,4,rezept
 green_stained_glass_pane,Green Stained Glass Pane,2,rezept
 green_terracotta,Green Terracotta,7,rezept
 green_wool,Green Wool,9,rezept
 grindstone,Grindstone,13,rezept
-gunpowder,Gunpowder,8,basis
+gunpowder,Gunpowder,20,basis
 guster_banner_pattern,Banner Pattern,20,muster
 guster_pottery_sherd,Guster Pottery Sherd,20,muster
 hanging_roots,Hanging Roots,1,basis
 harness,Harness,10,muster
 hay_block,Hay Bale,30,rezept
-heart_of_the_sea,Heart of the Sea,500,muster
+heart_of_the_sea,Heart of the Sea,1250,basis
 heart_pottery_sherd,Heart Pottery Sherd,20,muster
 heartbreak_pottery_sherd,Heartbreak Pottery Sherd,20,muster
 heavy_core,Heavy Core,500,muster
 heavy_weighted_pressure_plate,Heavy Weighted Pressure Plate,56,rezept
 honey_block,Honey Block,36,rezept
 honey_bottle,Honey Bottle,8,basis
-honeycomb,Honeycomb,5,basis
-honeycomb_block,Honeycomb Block,22,rezept
+honeycomb,Honeycomb,20,basis
+honeycomb_block,Honeycomb Block,88,rezept
 hopper,Hopper,168,rezept
 hopper_minecart,Minecart with Hopper,337,rezept
 horn_coral,Horn Coral,4,muster
@@ -558,6 +559,7 @@ iron_boots,Iron Boots,110,basis
 iron_chain,Iron Chain,37,rezept
 iron_chestplate,Iron Chestplate,220,basis
 iron_door,Iron Door,55,rezept
+iron_golem_spawn_egg,Iron Golem Spawn Egg,1000,basis
 iron_helmet,Iron Helmet,138,basis
 iron_ingot,Iron Ingot,25,basis
 iron_leggings,Iron Leggings,193,basis
@@ -568,7 +570,7 @@ iron_shovel,Iron Shovel,28,basis
 iron_spear,Iron Spear,32,rezept
 iron_sword,Iron Sword,55,basis
 iron_trapdoor,Iron Trapdoor,111,rezept
-item_frame,Item Frame,27,rezept
+item_frame,Item Frame,35,rezept
 jack_o_lantern,Jack o'Lantern,15,rezept
 jukebox,Jukebox,302,rezept
 jungle_boat,Jungle Boat,28,rezept
@@ -597,25 +599,25 @@ lapis_lazuli,Lapis Lazuli,10,basis
 lapis_ore,Lapis Lazuli Ore,20,basis
 large_amethyst_bud,Large Amethyst Bud,5,muster
 large_fern,Large Fern,1,rest
-lava_bucket,Lava Bucket,400,basis
-lead,Lead,11,rezept
+lava_bucket,Lava Bucket,250,basis
+lead,Lead,14,rezept
 leaf_litter,Leaf Litter,2,rezept
-leather,Leather,8,basis
+leather,Leather,15,basis
 leather_boots,Leather Boots,26,basis
 leather_chestplate,Leather Tunic,53,basis
 leather_helmet,Leather Cap,33,basis
 leather_leggings,Leather Pants,46,basis
-lectern,Lectern,53,rezept
+lectern,Lectern,92,rezept
 lever,Lever,4,rezept
 light_blue_banner,Light Blue Banner,56,rezept
 light_blue_bed,Light Blue Bed,30,rezept
-light_blue_candle,Light Blue Candle,15,rezept
+light_blue_candle,Light Blue Candle,35,rezept
 light_blue_carpet,Light Blue Carpet,6,rezept
-light_blue_concrete,Light Blue Concrete,5,muster
-light_blue_concrete_powder,Light Blue Concrete Powder,4,rezept
+light_blue_concrete,Light Blue Concrete,7,muster
+light_blue_concrete_powder,Light Blue Concrete Powder,6,rezept
 light_blue_dye,Light Blue Dye,3,rezept
 light_blue_glazed_terracotta,Light Blue Glazed Terracotta,8,rezept
-light_blue_harness,Light Blue Harness,42,rezept
+light_blue_harness,Light Blue Harness,65,rezept
 light_blue_shulker_box,Light Blue Shulker Box,1005,rezept
 light_blue_stained_glass,Light Blue Stained Glass,4,rezept
 light_blue_stained_glass_pane,Light Blue Stained Glass Pane,2,rezept
@@ -623,13 +625,13 @@ light_blue_terracotta,Light Blue Terracotta,6,rezept
 light_blue_wool,Light Blue Wool,8,rezept
 light_gray_banner,Light Gray Banner,56,rezept
 light_gray_bed,Light Gray Bed,30,rezept
-light_gray_candle,Light Gray Candle,15,rezept
+light_gray_candle,Light Gray Candle,35,rezept
 light_gray_carpet,Light Gray Carpet,6,rezept
-light_gray_concrete,Light Gray Concrete,5,muster
-light_gray_concrete_powder,Light Gray Concrete Powder,4,rezept
+light_gray_concrete,Light Gray Concrete,7,muster
+light_gray_concrete_powder,Light Gray Concrete Powder,6,rezept
 light_gray_dye,Light Gray Dye,3,rezept
 light_gray_glazed_terracotta,Light Gray Glazed Terracotta,8,rezept
-light_gray_harness,Light Gray Harness,42,rezept
+light_gray_harness,Light Gray Harness,65,rezept
 light_gray_shulker_box,Light Gray Shulker Box,1005,rezept
 light_gray_stained_glass,Light Gray Stained Glass,4,rezept
 light_gray_stained_glass_pane,Light Gray Stained Glass Pane,2,rezept
@@ -642,38 +644,38 @@ lily_of_the_valley,Lily of the Valley,1,rest
 lily_pad,Lily Pad,2,basis
 lime_banner,Lime Banner,62,rezept
 lime_bed,Lime Bed,31,rezept
-lime_candle,Lime Candle,16,rezept
+lime_candle,Lime Candle,36,rezept
 lime_carpet,Lime Carpet,7,rezept
-lime_concrete,Lime Concrete,5,muster
-lime_concrete_powder,Lime Concrete Powder,4,rezept
+lime_concrete,Lime Concrete,8,muster
+lime_concrete_powder,Lime Concrete Powder,7,rezept
 lime_dye,Lime Dye,4,rezept
 lime_glazed_terracotta,Lime Glazed Terracotta,9,rezept
-lime_harness,Lime Harness,43,rezept
+lime_harness,Lime Harness,66,rezept
 lime_shulker_box,Lime Shulker Box,1006,rezept
 lime_stained_glass,Lime Stained Glass,4,rezept
 lime_stained_glass_pane,Lime Stained Glass Pane,2,rezept
 lime_terracotta,Lime Terracotta,7,rezept
 lime_wool,Lime Wool,9,rezept
 lingering_potion,Lingering Potion,20,muster
-lodestone,Lodestone,37,rezept
+lodestone,Lodestone,46,rezept
 lodestone_compass,Lodestone Compass,200,muster
-loom,Loom,16,rezept
+loom,Loom,18,rezept
 magenta_banner,Magenta Banner,49,rezept
 magenta_bed,Magenta Bed,29,rezept
-magenta_candle,Magenta Candle,14,rezept
+magenta_candle,Magenta Candle,33,rezept
 magenta_carpet,Magenta Carpet,6,rezept
-magenta_concrete,Magenta Concrete,5,muster
-magenta_concrete_powder,Magenta Concrete Powder,4,rezept
+magenta_concrete,Magenta Concrete,7,muster
+magenta_concrete_powder,Magenta Concrete Powder,6,rezept
 magenta_dye,Magenta Dye,2,rezept
 magenta_glazed_terracotta,Magenta Glazed Terracotta,8,rezept
-magenta_harness,Magenta Harness,41,rezept
+magenta_harness,Magenta Harness,64,rezept
 magenta_shulker_box,Magenta Shulker Box,1004,rezept
 magenta_stained_glass,Magenta Stained Glass,4,rezept
 magenta_stained_glass_pane,Magenta Stained Glass Pane,2,rezept
 magenta_terracotta,Magenta Terracotta,6,rezept
 magenta_wool,Magenta Wool,7,rezept
-magma_block,Magma Block,8,basis
-magma_cream,Magma Cream,21,rezept
+magma_block,Magma Block,10,basis
+magma_cream,Magma Cream,45,basis
 mangrove_boat,Mangrove Boat,28,rezept
 mangrove_button,Mangrove Button,6,rezept
 mangrove_chest_boat,Mangrove Boat with Chest,61,rezept
@@ -709,9 +711,9 @@ mossy_cobblestone_slab,Mossy Cobblestone Slab,1,rest
 mossy_cobblestone_stairs,Mossy Cobblestone Stairs,2,rezept
 mossy_cobblestone_wall,Mossy Cobblestone Wall,2,rezept
 mossy_stone_brick_slab,Mossy Stone Brick Slab,2,rezept
-mossy_stone_brick_stairs,Mossy Stone Brick Stairs,3,rezept
-mossy_stone_brick_wall,Mossy Stone Brick Wall,3,rezept
-mossy_stone_bricks,Mossy Stone Bricks,3,rezept
+mossy_stone_brick_stairs,Mossy Stone Brick Stairs,4,rezept
+mossy_stone_brick_wall,Mossy Stone Brick Wall,4,rezept
+mossy_stone_bricks,Mossy Stone Bricks,4,rezept
 mourner_pottery_sherd,Mourner Pottery Sherd,20,muster
 mud,Mud,1,basis
 mud_brick_slab,Mud Brick Slab,2,rezept
@@ -744,7 +746,7 @@ music_disc_wait,Music Disc,30,muster
 music_disc_ward,Music Disc,30,muster
 mutton,Raw Mutton,15,basis
 mycelium,Mycelium,3,basis
-name_tag,Name Tag,50,muster
+name_tag,Name Tag,100,basis
 nautilus_shell,Nautilus Shell,30,basis
 nether_brick,Nether Brick,3,rezept
 nether_brick_fence,Nether Brick Fence,12,rezept
@@ -755,8 +757,8 @@ nether_bricks,Nether Bricks,14,rezept
 nether_gold_ore,Nether Gold Ore,20,muster
 nether_quartz_ore,Nether Quartz Ore,40,basis
 nether_sprouts,Nether Sprouts,1,basis
-nether_star,Nether Star,3000,muster
-nether_wart,Nether Wart,6,basis
+nether_star,Nether Star,3000,basis
+nether_wart,Nether Wart,30,basis
 nether_wart_block,Nether Wart Block,3,basis
 netherite_axe,Netherite Axe,1500,basis
 netherite_block,Block of Netherite,14851,rezept
@@ -773,26 +775,26 @@ netherite_sword,Netherite Sword,1375,basis
 netherite_upgrade_smithing_template,Smithing Template,750,basis
 netherrack,Netherrack,2,basis
 note_block,Note Block,32,rezept
-oak_boat,Oak Boat,22,rezept
-oak_button,Oak Button,5,rezept
-oak_chest_boat,Oak Boat with Chest,54,rezept
-oak_door,Oak Door,9,rezept
-oak_fence,Oak Fence,8,rezept
-oak_fence_gate,Oak Fence Gate,18,rezept
+oak_boat,Oak Boat,44,rezept
+oak_button,Oak Button,9,rezept
+oak_chest_boat,Oak Boat with Chest,79,rezept
+oak_door,Oak Door,18,rezept
+oak_fence,Oak Fence,14,rezept
+oak_fence_gate,Oak Fence Gate,27,rezept
 oak_hanging_sign,Oak Hanging Sign,31,rezept
 oak_leaves,Oak Leaves,1,muster
-oak_log,Oak Log,15,basis
-oak_planks,Oak Planks,4,basis
-oak_pressure_plate,Oak Pressure Plate,9,rezept
-oak_sapling,Oak Sapling,20,muster
+oak_log,Oak Log,25,basis
+oak_planks,Oak Planks,8,basis
+oak_pressure_plate,Oak Pressure Plate,18,rezept
+oak_sapling,Oak Sapling,20,basis
 oak_shelf,Oak Shelf,17,rezept
-oak_sign,Oak Sign,10,rezept
-oak_slab,Oak Slab,3,rezept
-oak_stairs,Oak Stairs,7,rezept
-oak_trapdoor,Oak Trapdoor,14,rezept
-oak_wood,Oak Wood,22,rezept
-observer,Observer,40,rezept
-obsidian,Obsidian,120,basis
+oak_sign,Oak Sign,19,rezept
+oak_slab,Oak Slab,5,rezept
+oak_stairs,Oak Stairs,14,rezept
+oak_trapdoor,Oak Trapdoor,27,rezept
+oak_wood,Oak Wood,37,rezept
+observer,Observer,30,basis
+obsidian,Obsidian,250,basis
 ochre_froglight,Ochre Froglight,15,muster
 ominous_banner,Ominous Banner,1,rest
 ominous_bottle,Ominous Bottle,20,muster
@@ -800,13 +802,13 @@ ominous_trial_key,Ominous Trial Key,200,muster
 open_eyeblossom,Open Eyeblossom,2,muster
 orange_banner,Orange Banner,56,rezept
 orange_bed,Orange Bed,30,rezept
-orange_candle,Orange Candle,15,rezept
+orange_candle,Orange Candle,35,rezept
 orange_carpet,Orange Carpet,6,rezept
-orange_concrete,Orange Concrete,5,muster
-orange_concrete_powder,Orange Concrete Powder,4,rezept
+orange_concrete,Orange Concrete,7,muster
+orange_concrete_powder,Orange Concrete Powder,6,rezept
 orange_dye,Orange Dye,3,rezept
 orange_glazed_terracotta,Orange Glazed Terracotta,8,rezept
-orange_harness,Orange Harness,42,rezept
+orange_harness,Orange Harness,65,rezept
 orange_shulker_box,Orange Shulker Box,1005,rezept
 orange_stained_glass,Orange Stained Glass,4,rezept
 orange_stained_glass_pane,Orange Stained Glass Pane,2,rezept
@@ -817,7 +819,7 @@ oxeye_daisy,Oxeye Daisy,2,muster
 oxidized_chiseled_copper,Oxidized Chiseled Copper,13,rezept
 oxidized_copper,Oxidized Copper,51,muster
 oxidized_copper_bars,Oxidized Copper Bars,6,muster
-oxidized_copper_bulb,Oxidized Copper Bulb,49,rezept
+oxidized_copper_bulb,Oxidized Copper Bulb,60,rezept
 oxidized_copper_chain,Oxidized Copper Chain,17,muster
 oxidized_copper_chest,Oxidized Copper Chest,119,muster
 oxidized_copper_door,Oxidized Copper Door,23,muster
@@ -856,18 +858,18 @@ pale_oak_wood,Pale Oak Wood,22,rezept
 paper,Paper,4,rezept
 pearlescent_froglight,Pearlescent Froglight,15,muster
 peony,Peony,2,muster
-phantom_membrane,Phantom Membrane,10,basis
+phantom_membrane,Phantom Membrane,75,basis
 piglin_banner_pattern,Banner Pattern,20,muster
 piglin_head,Piglin Head,100,muster
 pink_banner,Pink Banner,49,rezept
 pink_bed,Pink Bed,29,rezept
-pink_candle,Pink Candle,14,rezept
+pink_candle,Pink Candle,33,rezept
 pink_carpet,Pink Carpet,6,rezept
-pink_concrete,Pink Concrete,5,muster
-pink_concrete_powder,Pink Concrete Powder,4,rezept
+pink_concrete,Pink Concrete,7,muster
+pink_concrete_powder,Pink Concrete Powder,6,rezept
 pink_dye,Pink Dye,2,rezept
 pink_glazed_terracotta,Pink Glazed Terracotta,8,rezept
-pink_harness,Pink Harness,41,rezept
+pink_harness,Pink Harness,64,rezept
 pink_petals,Pink Petals,2,muster
 pink_shulker_box,Pink Shulker Box,1004,rezept
 pink_stained_glass,Pink Stained Glass,4,rezept
@@ -975,13 +977,13 @@ pumpkin_pie,Pumpkin Pie,17,rezept
 pumpkin_seeds,Pumpkin Seeds,3,rezept
 purple_banner,Purple Banner,56,rezept
 purple_bed,Purple Bed,30,rezept
-purple_candle,Purple Candle,15,rezept
+purple_candle,Purple Candle,35,rezept
 purple_carpet,Purple Carpet,6,rezept
-purple_concrete,Purple Concrete,5,muster
-purple_concrete_powder,Purple Concrete Powder,4,rezept
+purple_concrete,Purple Concrete,7,muster
+purple_concrete_powder,Purple Concrete Powder,6,rezept
 purple_dye,Purple Dye,3,rezept
 purple_glazed_terracotta,Purple Glazed Terracotta,8,rezept
-purple_harness,Purple Harness,42,rezept
+purple_harness,Purple Harness,65,rezept
 purple_shulker_box,Purple Shulker Box,1005,rezept
 purple_stained_glass,Purple Stained Glass,4,rezept
 purple_stained_glass_pane,Purple Stained Glass Pane,2,rezept
@@ -1012,19 +1014,19 @@ raw_iron_block,Block of Raw Iron,119,rezept
 recovery_compass,Recovery Compass,1008,rezept
 red_banner,Red Banner,49,rezept
 red_bed,Red Bed,29,rezept
-red_candle,Red Candle,14,rezept
+red_candle,Red Candle,33,rezept
 red_carpet,Red Carpet,6,rezept
-red_concrete,Red Concrete,5,muster
-red_concrete_powder,Red Concrete Powder,4,rezept
+red_concrete,Red Concrete,7,muster
+red_concrete_powder,Red Concrete Powder,6,rezept
 red_dye,Red Dye,2,rezept
 red_glazed_terracotta,Red Glazed Terracotta,8,rezept
-red_harness,Red Harness,41,rezept
+red_harness,Red Harness,64,rezept
 red_mushroom,Red Mushroom,2,basis
 red_mushroom_block,Red Mushroom Block,5,muster
-red_nether_brick_slab,Red Nether Brick Slab,10,rezept
-red_nether_brick_stairs,Red Nether Brick Stairs,20,rezept
-red_nether_brick_wall,Red Nether Brick Wall,20,rezept
-red_nether_bricks,Red Nether Bricks,20,rezept
+red_nether_brick_slab,Red Nether Brick Slab,37,rezept
+red_nether_brick_stairs,Red Nether Brick Stairs,73,rezept
+red_nether_brick_wall,Red Nether Brick Wall,73,rezept
+red_nether_bricks,Red Nether Bricks,73,rezept
 red_sand,Red Sand,3,basis
 red_sandstone,Red Sandstone,4,basis
 red_sandstone_slab,Red Sandstone Slab,2,rezept
@@ -1041,7 +1043,7 @@ redstone_block,Block of Redstone,30,basis
 redstone_lamp,Redstone Lamp,39,rezept
 redstone_ore,Redstone Ore,8,basis
 redstone_torch,Redstone Torch,8,rezept
-repeater,Redstone Repeater,27,rezept
+repeater,Redstone Repeater,30,rezept
 resin_block,Block of Resin,1,rest
 resin_brick,Resin Brick,1,rest
 resin_brick_slab,Resin Brick Slab,1,rest
@@ -1053,24 +1055,24 @@ respawn_anchor,Respawn Anchor,1040,rezept
 rib_armor_trim_smithing_template,Smithing Template,500,basis
 rooted_dirt,Rooted Dirt,1,basis
 rose_bush,Rose Bush,2,muster
-rotten_flesh,Rotten Flesh,1,basis
-saddle,Saddle,54,rezept
+rotten_flesh,Rotten Flesh,5,basis
+saddle,Saddle,150,basis
 salmon,Raw Salmon,8,basis
 salmon_bucket,Bucket of Salmon,80,basis
-sand,Sand,3,basis
+sand,Sand,5,basis
 sandstone,Sandstone,4,basis
 sandstone_slab,Sandstone Slab,2,rezept
 sandstone_stairs,Sandstone Stairs,4,rezept
 sandstone_wall,Sandstone Wall,4,rezept
-scaffolding,Scaffolding,3,rezept
+scaffolding,Scaffolding,4,rezept
 scrape_pottery_sherd,Scrape Pottery Sherd,20,muster
 sculk,Sculk,8,basis
 sculk_catalyst,Sculk Catalyst,50,basis
-sculk_sensor,Sculk Sensor,30,basis
+sculk_sensor,Sculk Sensor,150,basis
 sculk_shrieker,Sculk Shrieker,40,basis
 sculk_vein,Sculk Vein,3,basis
 scute,Scute,1,rest
-sea_lantern,Sea Lantern,66,rezept
+sea_lantern,Sea Lantern,60,basis
 sea_pickle,Sea Pickle,3,basis
 seagrass,Seagrass,1,basis
 sentry_armor_trim_smithing_template,Smithing Template,500,basis
@@ -1086,10 +1088,10 @@ shulker_shell,Shulker Shell,400,basis
 sign,Sign,1,rest
 silence_armor_trim_smithing_template,Smithing Template,1250,basis
 skeleton_skull,Skeleton Skull,100,muster
-skull_banner_pattern,Banner Pattern,170,rezept
+skull_banner_pattern,Banner Pattern,665,rezept
 skull_pottery_sherd,Skull Pottery Sherd,20,muster
-slime_ball,Slimeball,8,basis
-slime_block,Slime Block,80,rezept
+slime_ball,Slimeball,15,basis
+slime_block,Slime Block,149,rezept
 small_amethyst_bud,Small Amethyst Bud,5,muster
 small_dripleaf,Small Dripleaf,2,basis
 smithing_table,Smithing Table,69,rezept
@@ -1105,8 +1107,8 @@ smooth_red_sandstone_stairs,Smooth Red Sandstone Stairs,5,rezept
 smooth_sandstone,Smooth Sandstone,5,rezept
 smooth_sandstone_slab,Smooth Sandstone Slab,3,rezept
 smooth_sandstone_stairs,Smooth Sandstone Stairs,5,rezept
-smooth_stone,Smooth Stone,2,rezept
-smooth_stone_slab,Smooth Stone Slab,1,rest
+smooth_stone,Smooth Stone,3,rezept
+smooth_stone_slab,Smooth Stone Slab,2,rezept
 sniffer_egg,Sniffer Egg,500,muster
 snort_pottery_sherd,Snort Pottery Sherd,20,muster
 snout_armor_trim_smithing_template,Smithing Template,500,basis
@@ -1118,11 +1120,11 @@ soul_lantern,Soul Lantern,40,rezept
 soul_sand,Soul Sand,4,basis
 soul_soil,Soul Soil,4,basis
 soul_torch,Soul Torch,4,rezept
-spectral_arrow,Spectral Arrow,45,rezept
-spider_eye,Spider Eye,3,basis
+spectral_arrow,Spectral Arrow,50,rezept
+spider_eye,Spider Eye,13,basis
 spire_armor_trim_smithing_template,Smithing Template,500,basis
 splash_potion,Splash Potion,20,muster
-sponge,Sponge,63,rezept
+sponge,Sponge,150,basis
 spore_blossom,Spore Blossom,5,basis
 spruce_boat,Spruce Boat,28,rezept
 spruce_button,Spruce Button,6,rezept
@@ -1143,23 +1145,23 @@ spruce_stairs,Spruce Stairs,9,rezept
 spruce_trapdoor,Spruce Trapdoor,17,rezept
 spruce_wood,Spruce Wood,22,rezept
 stick,Stick,2,rezept
-sticky_piston,Sticky Piston,62,rezept
-stone,Stone,1,basis
+sticky_piston,Sticky Piston,70,rezept
+stone,Stone,2,basis
 stone_axe,Stone Axe,15,basis
 stone_brick_slab,Stone Brick Slab,1,rest
-stone_brick_stairs,Stone Brick Stairs,1,rest
-stone_brick_wall,Stone Brick Wall,1,rest
-stone_bricks,Stone Bricks,1,rest
-stone_button,Stone Button,2,rezept
+stone_brick_stairs,Stone Brick Stairs,2,rezept
+stone_brick_wall,Stone Brick Wall,2,rezept
+stone_bricks,Stone Bricks,2,rezept
+stone_button,Stone Button,3,rezept
 stone_pickaxe,Stone Pickaxe,15,basis
-stone_pressure_plate,Stone Pressure Plate,3,rezept
+stone_pressure_plate,Stone Pressure Plate,5,rezept
 stone_shovel,Stone Shovel,10,basis
 stone_slab,Stone Slab,1,rest
 stone_spear,Stone Spear,6,rezept
-stone_stairs,Stone Stairs,1,rest
+stone_stairs,Stone Stairs,2,rezept
 stone_sword,Stone Sword,15,basis
-stonecutter,Stonecutter,31,rezept
-string,String,4,basis
+stonecutter,Stonecutter,35,rezept
+string,String,5,basis
 stripped_acacia_log,Stripped Acacia Log,15,muster
 stripped_acacia_wood,Stripped Acacia Wood,22,rezept
 stripped_bamboo_block,Block of Stripped Bamboo,16,muster
@@ -1198,13 +1200,15 @@ terracotta,Terracotta,5,basis
 tide_armor_trim_smithing_template,Smithing Template,500,basis
 tinted_glass,Tinted Glass,57,rezept
 tipped_arrow,Tipped Arrow,20,muster
-tnt,TNT,58,rezept
-tnt_minecart,Minecart with TNT,216,rezept
+tnt,TNT,100,basis
+tnt_minecart,Minecart with TNT,262,rezept
 torch,Torch,3,rezept
 torchflower,Torchflower,2,muster
 torchflower_seeds,Torchflower Seeds,2,muster
+totem_of_undying,Totem of Undying,750,basis
 trapped_chest,Trapped Chest,49,rezept
 trial_key,Trial Key,100,muster
+trident,Trident,1000,basis
 tripwire_hook,Tripwire Hook,17,rezept
 tropical_fish,Tropical Fish,6,basis
 tropical_fish_bucket,Bucket of Tropical Fish,80,basis
@@ -1245,72 +1249,72 @@ warped_stairs,Warped Stairs,5,rezept
 warped_stem,Warped Stem,10,basis
 warped_trapdoor,Warped Trapdoor,10,rezept
 warped_wart_block,Warped Wart Block,3,basis
-water_bucket,Water Bucket,100,basis
-waxed_chiseled_copper,Waxed Chiseled Copper,16,rezept
-waxed_copper_bars,Waxed Copper Bars,11,rezept
-waxed_copper_block,Waxed Block of Copper,61,rezept
-waxed_copper_bulb,Waxed Copper Bulb,58,rezept
-waxed_copper_chain,Waxed Copper Chain,24,rezept
-waxed_copper_chest,Waxed Copper Chest,136,rezept
-waxed_copper_door,Waxed Copper Door,30,rezept
+water_bucket,Water Bucket,250,basis
+waxed_chiseled_copper,Waxed Chiseled Copper,20,rezept
+waxed_copper_bars,Waxed Copper Bars,28,rezept
+waxed_copper_block,Waxed Block of Copper,77,rezept
+waxed_copper_bulb,Waxed Copper Bulb,82,rezept
+waxed_copper_chain,Waxed Copper Chain,40,rezept
+waxed_copper_chest,Waxed Copper Chest,152,rezept
+waxed_copper_door,Waxed Copper Door,47,rezept
 waxed_copper_golem_statue,Waxed Copper Golem Statue,1,rest
-waxed_copper_grate,Waxed Copper Grate,16,rezept
-waxed_copper_lantern,Waxed Copper Lantern,30,rezept
-waxed_copper_trapdoor,Waxed Copper Trapdoor,54,rezept
-waxed_cut_copper,Waxed Cut Copper,16,rezept
-waxed_cut_copper_slab,Waxed Cut Copper Slab,8,rezept
-waxed_cut_copper_stairs,Waxed Cut Copper Stairs,16,rezept
-waxed_exposed_chiseled_copper,Waxed Exposed Chiseled Copper,16,rezept
-waxed_exposed_copper,Waxed Exposed Copper,62,rezept
-waxed_exposed_copper_bars,Waxed Exposed Copper Bars,13,rezept
-waxed_exposed_copper_bulb,Waxed Exposed Copper Bulb,59,rezept
-waxed_exposed_copper_chain,Waxed Exposed Copper Chain,25,rezept
-waxed_exposed_copper_chest,Waxed Exposed Copper Chest,137,rezept
-waxed_exposed_copper_door,Waxed Exposed Copper Door,31,rezept
+waxed_copper_grate,Waxed Copper Grate,20,rezept
+waxed_copper_lantern,Waxed Copper Lantern,47,rezept
+waxed_copper_trapdoor,Waxed Copper Trapdoor,71,rezept
+waxed_cut_copper,Waxed Cut Copper,20,rezept
+waxed_cut_copper_slab,Waxed Cut Copper Slab,10,rezept
+waxed_cut_copper_stairs,Waxed Cut Copper Stairs,20,rezept
+waxed_exposed_chiseled_copper,Waxed Exposed Chiseled Copper,20,rezept
+waxed_exposed_copper,Waxed Exposed Copper,79,rezept
+waxed_exposed_copper_bars,Waxed Exposed Copper Bars,29,rezept
+waxed_exposed_copper_bulb,Waxed Exposed Copper Bulb,84,rezept
+waxed_exposed_copper_chain,Waxed Exposed Copper Chain,41,rezept
+waxed_exposed_copper_chest,Waxed Exposed Copper Chest,153,rezept
+waxed_exposed_copper_door,Waxed Exposed Copper Door,48,rezept
 waxed_exposed_copper_golem_statue,Waxed Exposed Copper Golem Statue,2,rezept
-waxed_exposed_copper_grate,Waxed Exposed Copper Grate,16,rezept
-waxed_exposed_copper_lantern,Waxed Exposed Copper Lantern,31,rezept
-waxed_exposed_copper_trapdoor,Waxed Exposed Copper Trapdoor,56,rezept
-waxed_exposed_cut_copper,Waxed Exposed Cut Copper,16,rezept
-waxed_exposed_cut_copper_slab,Waxed Exposed Cut Copper Slab,8,rezept
-waxed_exposed_cut_copper_stairs,Waxed Exposed Cut Copper Stairs,16,rezept
-waxed_exposed_lightning_rod,Waxed Exposed Lightning Rod,43,rezept
-waxed_lightning_rod,Waxed Lightning Rod,42,rezept
-waxed_oxidized_chiseled_copper,Waxed Oxidized Chiseled Copper,16,rezept
-waxed_oxidized_copper,Waxed Oxidized Copper,62,rezept
-waxed_oxidized_copper_bars,Waxed Oxidized Copper Bars,13,rezept
-waxed_oxidized_copper_bulb,Waxed Oxidized Copper Bulb,59,rezept
-waxed_oxidized_copper_chain,Waxed Oxidized Copper Chain,25,rezept
-waxed_oxidized_copper_chest,Waxed Oxidized Copper Chest,137,rezept
-waxed_oxidized_copper_door,Waxed Oxidized Copper Door,31,rezept
+waxed_exposed_copper_grate,Waxed Exposed Copper Grate,20,rezept
+waxed_exposed_copper_lantern,Waxed Exposed Copper Lantern,48,rezept
+waxed_exposed_copper_trapdoor,Waxed Exposed Copper Trapdoor,72,rezept
+waxed_exposed_cut_copper,Waxed Exposed Cut Copper,20,rezept
+waxed_exposed_cut_copper_slab,Waxed Exposed Cut Copper Slab,10,rezept
+waxed_exposed_cut_copper_stairs,Waxed Exposed Cut Copper Stairs,20,rezept
+waxed_exposed_lightning_rod,Waxed Exposed Lightning Rod,60,rezept
+waxed_lightning_rod,Waxed Lightning Rod,59,rezept
+waxed_oxidized_chiseled_copper,Waxed Oxidized Chiseled Copper,20,rezept
+waxed_oxidized_copper,Waxed Oxidized Copper,79,rezept
+waxed_oxidized_copper_bars,Waxed Oxidized Copper Bars,29,rezept
+waxed_oxidized_copper_bulb,Waxed Oxidized Copper Bulb,84,rezept
+waxed_oxidized_copper_chain,Waxed Oxidized Copper Chain,41,rezept
+waxed_oxidized_copper_chest,Waxed Oxidized Copper Chest,153,rezept
+waxed_oxidized_copper_door,Waxed Oxidized Copper Door,48,rezept
 waxed_oxidized_copper_golem_statue,Waxed Oxidized Copper Golem Statue,2,rezept
-waxed_oxidized_copper_grate,Waxed Oxidized Copper Grate,16,rezept
-waxed_oxidized_copper_lantern,Waxed Oxidized Copper Lantern,31,rezept
-waxed_oxidized_copper_trapdoor,Waxed Oxidized Copper Trapdoor,56,rezept
-waxed_oxidized_cut_copper,Waxed Oxidized Cut Copper,16,rezept
-waxed_oxidized_cut_copper_slab,Waxed Oxidized Cut Copper Slab,8,rezept
-waxed_oxidized_cut_copper_stairs,Waxed Oxidized Cut Copper Stairs,16,rezept
-waxed_oxidized_lightning_rod,Waxed Oxidized Lightning Rod,43,rezept
-waxed_weathered_chiseled_copper,Waxed Weathered Chiseled Copper,16,rezept
-waxed_weathered_copper,Waxed Weathered Copper,62,rezept
-waxed_weathered_copper_bars,Waxed Weathered Copper Bars,13,rezept
-waxed_weathered_copper_bulb,Waxed Weathered Copper Bulb,59,rezept
-waxed_weathered_copper_chain,Waxed Weathered Copper Chain,25,rezept
-waxed_weathered_copper_chest,Waxed Weathered Copper Chest,137,rezept
-waxed_weathered_copper_door,Waxed Weathered Copper Door,31,rezept
+waxed_oxidized_copper_grate,Waxed Oxidized Copper Grate,20,rezept
+waxed_oxidized_copper_lantern,Waxed Oxidized Copper Lantern,48,rezept
+waxed_oxidized_copper_trapdoor,Waxed Oxidized Copper Trapdoor,72,rezept
+waxed_oxidized_cut_copper,Waxed Oxidized Cut Copper,20,rezept
+waxed_oxidized_cut_copper_slab,Waxed Oxidized Cut Copper Slab,10,rezept
+waxed_oxidized_cut_copper_stairs,Waxed Oxidized Cut Copper Stairs,20,rezept
+waxed_oxidized_lightning_rod,Waxed Oxidized Lightning Rod,60,rezept
+waxed_weathered_chiseled_copper,Waxed Weathered Chiseled Copper,20,rezept
+waxed_weathered_copper,Waxed Weathered Copper,79,rezept
+waxed_weathered_copper_bars,Waxed Weathered Copper Bars,29,rezept
+waxed_weathered_copper_bulb,Waxed Weathered Copper Bulb,84,rezept
+waxed_weathered_copper_chain,Waxed Weathered Copper Chain,41,rezept
+waxed_weathered_copper_chest,Waxed Weathered Copper Chest,153,rezept
+waxed_weathered_copper_door,Waxed Weathered Copper Door,48,rezept
 waxed_weathered_copper_golem_statue,Waxed Weathered Copper Golem Statue,1,muster
-waxed_weathered_copper_grate,Waxed Weathered Copper Grate,16,rezept
-waxed_weathered_copper_lantern,Waxed Weathered Copper Lantern,31,rezept
-waxed_weathered_copper_trapdoor,Waxed Weathered Copper Trapdoor,56,rezept
-waxed_weathered_cut_copper,Waxed Weathered Cut Copper,16,rezept
-waxed_weathered_cut_copper_slab,Waxed Weathered Cut Copper Slab,8,rezept
-waxed_weathered_cut_copper_stairs,Waxed Weathered Cut Copper Stairs,16,rezept
-waxed_weathered_lightning_rod,Waxed Weathered Lightning Rod,43,rezept
+waxed_weathered_copper_grate,Waxed Weathered Copper Grate,20,rezept
+waxed_weathered_copper_lantern,Waxed Weathered Copper Lantern,48,rezept
+waxed_weathered_copper_trapdoor,Waxed Weathered Copper Trapdoor,72,rezept
+waxed_weathered_cut_copper,Waxed Weathered Cut Copper,20,rezept
+waxed_weathered_cut_copper_slab,Waxed Weathered Cut Copper Slab,10,rezept
+waxed_weathered_cut_copper_stairs,Waxed Weathered Cut Copper Stairs,20,rezept
+waxed_weathered_lightning_rod,Waxed Weathered Lightning Rod,60,rezept
 wayfinder_armor_trim_smithing_template,Smithing Template,500,basis
 weathered_chiseled_copper,Weathered Chiseled Copper,13,rezept
 weathered_copper,Weathered Copper,51,muster
 weathered_copper_bars,Weathered Copper Bars,6,muster
-weathered_copper_bulb,Weathered Copper Bulb,49,rezept
+weathered_copper_bulb,Weathered Copper Bulb,60,rezept
 weathered_copper_chain,Weathered Copper Chain,17,muster
 weathered_copper_chest,Weathered Copper Chest,119,muster
 weathered_copper_door,Weathered Copper Door,23,muster
@@ -1325,16 +1329,16 @@ weathered_lightning_rod,Weathered Lightning Rod,34,muster
 weeping_vines,Weeping Vines,2,basis
 wet_sponge,Wet Sponge,50,muster
 wheat,Wheat Crops,3,basis
-wheat_seeds,Wheat Seeds,2,muster
+wheat_seeds,Wheat Seeds,3,basis
 white_banner,White Banner,29,rezept
 white_bed,White Bed,24,rezept
-white_candle,White Candle,15,rezept
+white_candle,White Candle,35,rezept
 white_carpet,White Carpet,3,rezept
-white_concrete,White Concrete,5,muster
-white_concrete_powder,White Concrete Powder,4,rezept
+white_concrete,White Concrete,7,muster
+white_concrete_powder,White Concrete Powder,6,rezept
 white_dye,White Dye,3,rezept
 white_glazed_terracotta,White Glazed Terracotta,8,rezept
-white_harness,White Harness,38,rezept
+white_harness,White Harness,61,rezept
 white_shulker_box,White Shulker Box,1005,rezept
 white_stained_glass,White Stained Glass,4,rezept
 white_stained_glass_pane,White Stained Glass Pane,2,rezept
@@ -1345,22 +1349,22 @@ wild_armor_trim_smithing_template,Smithing Template,500,basis
 wildflowers,Wildflowers,2,muster
 wind_charge,Wind Charge,6,rezept
 wither_rose,Wither Rose,15,basis
-wither_skeleton_skull,Wither Skeleton Skull,150,basis
+wither_skeleton_skull,Wither Skeleton Skull,600,basis
 wooden_axe,Wooden Axe,13,basis
 wooden_pickaxe,Wooden Pickaxe,13,basis
 wooden_shovel,Wooden Shovel,8,basis
 wooden_spear,Wooden Spear,8,rezept
 wooden_sword,Wooden Sword,10,basis
-writable_book,Book and Quill,30,rezept
+writable_book,Book and Quill,39,rezept
 yellow_banner,Yellow Banner,49,rezept
 yellow_bed,Yellow Bed,29,rezept
-yellow_candle,Yellow Candle,14,rezept
+yellow_candle,Yellow Candle,33,rezept
 yellow_carpet,Yellow Carpet,6,rezept
-yellow_concrete,Yellow Concrete,5,muster
-yellow_concrete_powder,Yellow Concrete Powder,4,rezept
+yellow_concrete,Yellow Concrete,7,muster
+yellow_concrete_powder,Yellow Concrete Powder,6,rezept
 yellow_dye,Yellow Dye,2,rezept
 yellow_glazed_terracotta,Yellow Glazed Terracotta,8,rezept
-yellow_harness,Yellow Harness,41,rezept
+yellow_harness,Yellow Harness,64,rezept
 yellow_shulker_box,Yellow Shulker Box,1004,rezept
 yellow_stained_glass,Yellow Stained Glass,4,rezept
 yellow_stained_glass_pane,Yellow Stained Glass Pane,2,rezept

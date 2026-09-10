@@ -15,8 +15,6 @@ id,stufe,name,preis,max,item,kat,pos
 13,1,Apple,30,64,apple,FOOD,
 15,1,Water Bucket,500,1,water_bucket,UTIL,
 16,1,Lava Bucket,500,1,lava_bucket,UTIL,
-21,3,Oak Sapling,4000,64,oak_sapling,FOOD,
-22,3,Wheat Seeds,200,64,wheat_seeds,FOOD,
 141,1,Bone,35,64,bone,MOB,
 30,1,Collector Lantern,300,1,LATERNE,SPECIAL,
 31,1,Bounty Contract,150,1,KONTRAKT,SPECIAL,

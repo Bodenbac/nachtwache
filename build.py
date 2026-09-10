@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 75                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 76                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -39,15 +39,17 @@ def knopf_modell(kurz, zustand="aus"):
     aus = kaufbar oder Aktion, an = gekauft/aktiv/Maximum, off = gekauft aber ausgeschaltet."""
     return f'item_model="nachtwache:knopf_{kurz}_{zustand}",' if RESSOURCENPAKET else ""
 
-SLOT_TAKE = 26                                # unten rechts, in jedem Minion-Rucksack der Mitnehmen-Knopf
+SLOT_TAKE = 26
+# "Fach ist frei fuer einen Knopf": leer oder ein Knopf (alle Knoepfe tragen nw_knopf). Ein Item ohne nw_knopf ist Lagerware.
+FREI = lambda ziel: f"unless items block {ziel} *[!custom_data~{{nw_knopf:1b}}]"                                # unten rechts, in jedem Minion-Rucksack der Mitnehmen-Knopf
 ZWERG_KNOEPFE = lambda a: 4 if a == 0 else 3   # ohne Auto-Verkauf vier Knoepfe, mit ihm faellt "Alles verkaufen" weg
 # In der letzten Reihe (drei Reihen offen) geht zusaetzlich Fach 26 an den Mitnehmen-Knopf.
 zwerg_faecher = lambda b, a=0: (ZWERG_REIHEN_START + b) * 9 - ZWERG_KNOEPFE(a) - (1 if ZWERG_REIHEN_START + b == 3 else 0)
 ZWERG_A_BED = {0: "unless score @s nw.zwerg_a matches 1..2", 1: "if score @s nw.zwerg_a matches 1..2"}
-ZWERG_SPERRE = ('minecraft:gray_stained_glass_pane[' + ('item_model="nachtwache:knopf_sperre_aus",' if RESSOURCENPAKET else "") + 'custom_data={nw_zwerg_lock:1b},'
+ZWERG_SPERRE = ('minecraft:gray_stained_glass_pane[' + ('item_model="nachtwache:knopf_sperre_aus",' if RESSOURCENPAKET else "") + 'custom_data={nw_knopf:1b,nw_zwerg_lock:1b},'
                 'custom_name={text:"Locked",color:"dark_gray",italic:false},'
                 'lore=[{text:"Buy a bigger pack to use this slot",color:"dark_gray",italic:false}]]')
-ZWERG_VERKAUF_KNOPF = ('minecraft:emerald[' + ('item_model="nachtwache:knopf_sell_aus",' if RESSOURCENPAKET else "") + 'custom_data={nw_zwerg_sell:1b},custom_name={text:"Sell everything",color:"yellow",italic:false},'
+ZWERG_VERKAUF_KNOPF = ('minecraft:emerald[' + ('item_model="nachtwache:knopf_sell_aus",' if RESSOURCENPAKET else "") + 'custom_data={nw_knopf:1b,nw_zwerg_sell:1b},custom_name={text:"Sell everything",color:"yellow",italic:false},'
                        'lore=[{text:"Sells the whole pack at the Collector price",color:"gray",italic:false},'
                        '{text:"Take this to sell",color:"dark_gray",italic:false}]]')
 ZWERG_AUTO_PREIS = 2000                 # einmaliger Ausbau: Fraggle verkauft von allein
@@ -55,14 +57,14 @@ def take_knopf(pred, name):
     """Mitnehmen-Knopf unten rechts, gleiche Optik wie beim Generator (Luis 09.09.2026).
     Minions lassen sich seit v0.40 nicht mehr abbauen, das hier ist der einzige Weg zurueck."""
     modell = 'item_model="nachtwache:knopf_gen_take_aus",' if RESSOURCENPAKET else ""
-    return (f'minecraft:ender_eye[{modell}custom_data={{{pred}:1b}},custom_name={{text:"Take {name}",color:"yellow",italic:false}},'
+    return (f'minecraft:ender_eye[{modell}custom_data={{nw_knopf:1b,{pred}:1b}},custom_name={{text:"Take {name}",color:"yellow",italic:false}},'
             f'lore=[{{text:"Take this and he goes back into your inventory",color:"gray",italic:false}},'
             f'{{text:"Level, upgrades and pack contents come along",color:"dark_gray",italic:false}}]]')
 ZWERG_TAKE_KNOPF = take_knopf("nw_zwerg_take", "Fraggle")
 ZWERG_TAKE_PRED = '*[custom_data~{nw_zwerg_take:1b}]'
 def zwerg_auto_knopf(a):
     """0 = noch nicht gekauft, 1 = gekauft und aus, 2 = gekauft und an."""
-    kopf = ('minecraft:hopper[' + knopf_modell("auto", ("aus", "off", "an")[a]) + 'custom_data={nw_zwerg_auto:1b},'
+    kopf = ('minecraft:hopper[' + knopf_modell("auto", ("aus", "off", "an")[a]) + 'custom_data={nw_knopf:1b,nw_zwerg_auto:1b},'
             + ('enchantment_glint_override=true,' if a == 2 else ''))
     if a == 0:
         return (kopf + 'custom_name={text:"Auto sell",color:"yellow",italic:false},'
@@ -80,21 +82,21 @@ def zwerg_auto_knopf(a):
 def zwerg_bp_knopf(b, a=0):
     faecher = zwerg_faecher(b, a)
     if b < ZWERG_BP_MAX:
-        return (f'minecraft:bundle[{knopf_modell("pack")}custom_data={{nw_zwerg_bp:1b}},custom_name={{text:"Bigger pack",color:"yellow",italic:false}},'
+        return (f'minecraft:bundle[{knopf_modell("pack")}custom_data={{nw_knopf:1b,nw_zwerg_bp:1b}},custom_name={{text:"Bigger pack",color:"yellow",italic:false}},'
                 f'lore=[{{text:"Now: {faecher} slots ({ZWERG_REIHEN_START + b} rows)",color:"gray",italic:false}},'
                 f'[{{text:"Next: one more row for {ZWERG_BP_PREIS[b]} ",color:"gold",italic:false}},{{text:"{COIN}",color:"white",italic:false}}],'
                 f'{{text:"Take this to buy",color:"dark_gray",italic:false}}]]')
-    return (f'minecraft:shulker_shell[{knopf_modell("packmax", "an")}custom_data={{nw_zwerg_bp:1b}},custom_name={{text:"Full pack",color:"yellow",italic:false}},'
+    return (f'minecraft:shulker_shell[{knopf_modell("packmax", "an")}custom_data={{nw_knopf:1b,nw_zwerg_bp:1b}},custom_name={{text:"Full pack",color:"yellow",italic:false}},'
             f'lore=[{{text:"{faecher} slots ({ZWERG_REIHEN_START + b} rows)",color:"gray",italic:false}}]]')
 def zwerg_up_knopf(l):
     sek = (ZWERG_TAKT - l * ZWERG_STUFE_TICKS) // 20
     if l < ZWERG_MAX:
         preis = ZWERG_UPGRADE_PREIS * (l + 1)
-        return (f'minecraft:iron_pickaxe[{knopf_modell("tempo")}custom_data={{nw_zwerg_up:1b}},custom_name={{text:"Upgrade speed",color:"yellow",italic:false}},'
+        return (f'minecraft:iron_pickaxe[{knopf_modell("tempo")}custom_data={{nw_knopf:1b,nw_zwerg_up:1b}},custom_name={{text:"Upgrade speed",color:"yellow",italic:false}},'
                 f'lore=[{{text:"Now: one block every {sek} s (level {l})",color:"gray",italic:false}},'
                 f'[{{text:"Next: {sek-1} s for {preis} ",color:"gold",italic:false}},{{text:"{COIN}",color:"white",italic:false}}],'
                 f'{{text:"Take this to buy",color:"dark_gray",italic:false}}]]')
-    return (f'minecraft:netherite_pickaxe[{knopf_modell("tempomax", "an")}custom_data={{nw_zwerg_up:1b}},custom_name={{text:"Max speed",color:"yellow",italic:false}},'
+    return (f'minecraft:netherite_pickaxe[{knopf_modell("tempomax", "an")}custom_data={{nw_knopf:1b,nw_zwerg_up:1b}},custom_name={{text:"Max speed",color:"yellow",italic:false}},'
             f'lore=[{{text:"One block every {sek} s (level {l})",color:"gray",italic:false}}]]')
 
 def zwerg_item(lvl, bp=0, inv=None):
@@ -383,23 +385,37 @@ load += [
     f"tellraw @a {J([txt('[Nightwatch] ', 'dark_red'), txt('Datapack loaded. ', 'gray'), txt('/trigger nw.hilfe', 'yellow', click_event={'action':'run_command','command':'trigger nw.hilfe'}), txt(' shows the help.', 'gray')])}",
 ]
 fn("load", load)
+# Migration laeuft bei jedem Versionssprung. Zwei Sorten Schritte (Luis 10.09.2026, Befund F1 im Review):
+# - IMMER: was idempotent ist (Stand, Sammler, Strasse, Gegnerinsel, Quell-Marker, Kaufmenue, Lebenstafeln).
+# - EINMALIG: Umbauten alter Faessungen (Doppeltruhe v0.9.16, Inselumbau v0.13, Generatoren v0.15). Die
+#   liefen bis v0.40 bei JEDEM Sprung mit und haben dabei jedes Mal Fraggles Rucksack auf 0 Reihen gesetzt,
+#   den Inhalt ab Fach 5 geloescht (faellt heraus, Insel-Kill raeumt ihn weg) und Fach 0..4 verdoppelt.
+#   Sie laufen nur noch, wenn die Welt aelter als MIGRATION_ALT ist. #alt = Stand der Welt vor dem Sprung.
+MIGRATION_ALT = 75                       # v0.40; Welten ab diesem Stand brauchen die alten Umbauten nicht mehr
+def einmalig(zeilen):
+    return [f"execute if score #alt nw.status matches ..{MIGRATION_ALT - 1} run {z}" for z in zeilen]
 fn("migration", [
+    "scoreboard players operation #alt nw.status = #version nw.status",
     f"scoreboard players set #version nw.status {PACK_VERSION}", "scoreboard players set #migrieren nw.status 0",
-    "kill @e[tag=nw.kasse]", "fill -4 64 -6 -3 65 -5 minecraft:air", "fill -1 64 -5 1 64 -5 minecraft:air",
+    *einmalig(["kill @e[tag=nw.kasse]", "fill -4 64 -6 -3 65 -5 minecraft:air", "fill -1 64 -5 1 64 -5 minecraft:air"]),
     f"function {NS}:welt/stand", f"function {NS}:sammler/erscheinen",
     f"function {NS}:strasse/entfernen", f"function {NS}:welt/gegnerinsel",
-    f"fill -1 {BODEN_Y} 6 1 {BODEN_Y} 8 minecraft:polished_deepslate",
+    *einmalig([f"fill -1 {BODEN_Y} 6 1 {BODEN_Y} 8 minecraft:polished_deepslate"]),
     f"execute unless score #phase nw.phase matches 1.. run scoreboard players set #phase nw.phase 1",
-    f"setblock {QUELL[0]} {QUELL[1]} {QUELL[2]} minecraft:air", f"function {NS}:quell/setzen",
-    'kill @e[type=item,x=-2,y=62,z=-2,dx=4,dy=4,dz=4,nbt={Item:{id:"minecraft:budding_amethyst"}}]',
+    *einmalig([f"setblock {QUELL[0]} {QUELL[1]} {QUELL[2]} minecraft:air"]),   # loescht eingelegte Items, deshalb nur einmal
+    f"function {NS}:quell/setzen",
+    *einmalig(['kill @e[type=item,x=-2,y=62,z=-2,dx=4,dy=4,dz=4,nbt={Item:{id:"minecraft:budding_amethyst"}}]']),
     f"function {NS}:sammler/kaufmenue",
-    # Lebenszahl ueber dem Beacon neu setzen: Hintergrund, Farbe und Hoehe haben sich geaendert
+    # Lebenszahl am Beacon neu setzen (Tafeln, Hintergrund, Hoehe haben sich geaendert), gefahrlos: nur Anzeige
     "kill @e[tag=nw.herz_text]", f"function {NS}:beacon/aufbauen", f"function {NS}:beacon/anzeige",
     f"scoreboard players set #zoff nw.status {ZWERG_YAW_VERSATZ}",
-    # Fraggles Rucksack ist jetzt eine Doppeltruhe: bestehende Zwerge einmal neu aufbauen, der alte Inhalt faellt heraus
-    f"execute as @e[type=marker,tag=nw.zwerg] at @s run function {NS}:zwerg/migrieren",
-    f"function {NS}:zwerg/altlast",
+    # v0.9.16: Fraggles Rucksack wurde eine Doppeltruhe. Bestehende Zwerge einmal neu aufbauen, der alte Inhalt faellt heraus.
+    *einmalig([f"execute as @e[type=marker,tag=nw.zwerg] at @s run function {NS}:zwerg/migrieren", f"function {NS}:zwerg/altlast"]),
+    # alte Knoepfe ohne nw_knopf-Kennung aus den Rucksaecken nehmen, symbol setzt sie eine Sekunde spaeter neu (v0.41)
+    f"execute as @e[type=marker,tag=nw.zwerg] at @s run function {NS}:zwerg/knoepfe_raeumen",
+    f"execute as @e[type=marker,tag=nw.bogi] at @s run function {NS}:bogi/knoepfe_raeumen",
     # Starttruhe und Brunnen aus aelteren Fassungen abraeumen (Luis 07.09.2026), nur die eigenen Bloecke
+    *einmalig([
     f"execute if block {TRUHE[0]} {TRUHE[1]} {TRUHE[2]} minecraft:chest run setblock {TRUHE[0]} {TRUHE[1]} {TRUHE[2]} minecraft:air destroy",
     "fill -1 64 4 1 64 6 minecraft:air replace minecraft:cobblestone_wall",
     "fill -1 65 4 1 65 6 minecraft:air replace minecraft:oak_fence",
@@ -425,16 +441,17 @@ fn("migration", [
     "kill @e[type=marker,tag=nw.gen_neu,x=0,y=64,z=0,dx=0,dy=0,dz=0]",
     "kill @e[type=block_display,tag=nw.gen_block,x=-1,y=63,z=-1,dx=2,dy=2,dz=2]",
     "setblock 0 64 0 minecraft:air",
-    f"function {NS}:welt/startinsel",
+    f"function {NS}:welt/startinsel",                                        # setzt den Inselboden flaechig neu
+    ]),
     f"function {NS}:welt/stand",
     f"function {NS}:sammler/erscheinen", f"function {NS}:sammler/kaufmenue",
     f"function {NS}:beacon/aufbauen",
     "kill @e[tag=nw.herz]", "kill @e[tag=nw.herz_text]",
     # v0.15: Generatoren sind jetzt sichtbar, die alten grossen Farbwuerfel weg (werden klein neu gesetzt)
-    "kill @e[type=block_display,tag=nw.gen_block]",
+    *einmalig(["kill @e[type=block_display,tag=nw.gen_block]"]),
     "execute as @e[tag=nw.welle] run attribute @s minecraft:follow_range base set 128",
     f"spawnpoint @a {SPAWN[0]} {SPAWN[1]} {SPAWN[2]}", f"setworldspawn {SPAWN[0]} {SPAWN[1]} {SPAWN[2]}",
-    "tellraw @a " + J([txt("[Nightwatch] The island has been rebuilt: longer, the beacon at the far end, the stall off to the side.", "yellow")]),
+    *einmalig(["tellraw @a " + J([txt("[Nightwatch] The island has been rebuilt: longer, the beacon at the far end, the stall off to the side.", "yellow")])]),
 ])
 
 # ---- init: Welt bauen -------------------------------------------------------
@@ -530,12 +547,21 @@ FREI_OBEN = BODEN_Y + 9                 # bis hierhin wird ueber dem Dach freige
 
 # Gegnerinsel
 GZ, GR = GEGNER_Z, GEGNER_RADIUS
+# Baustoffe der Bruecke, die Insel schliesst den Gang mit denselben
+BR_BODEN = "minecraft:polished_blackstone_bricks"
+BR_WAND = "minecraft:deepslate_bricks"
+BR_BOGEN = "minecraft:polished_blackstone_bricks"
+BR_GITTER = "minecraft:iron_bars"
 geg = []
 # Wall rundherum, damit niemand von der Gegnerinsel faellt (Luis 08.09.2026). Ring aus den Zellen,
 # die im Kreis mit Radius GR liegen, aber nicht mehr im Kreis mit Radius GR-1.
-def ring_fills(cx, cz, r_aussen, r_innen, y1, y2, block):
+def ring_fills(cx, cz, r_aussen, r_innen, y1, y2, block, ohne=()):
+    """ohne: z-Versaetze, die ausgelassen werden (Torreihe: dort wuerde der Ring gesetzt und vom Tor sofort
+    wieder geraeumt, zweimal je Sekunde Block und Luft an derselben Stelle)."""
     out = []
     for z in range(-r_aussen, r_aussen + 1):
+        if z in ohne:
+            continue
         ha = int(math.sqrt(r_aussen * r_aussen - z * z + 0.25))
         hi = int(math.sqrt(r_innen * r_innen - z * z + 0.25)) if abs(z) <= r_innen else -1
         if hi < 0:
@@ -568,10 +594,19 @@ geg += [
     f"fill -1 {BODEN_Y} {GZ-GR-1} 1 {BODEN_Y} {GZ-GR+1} minecraft:blackstone",   # Steg zur Strasse (z 60..62)
 ]
 # Wall am Rand, drei Bloecke hoch, damit niemand herunterfaellt oder gedraengt wird
-geg += ring_fills(0, GZ, GR, GR - 1, BODEN_Y + 1, WAND_OBEN, "minecraft:polished_blackstone_bricks")
+geg += ring_fills(0, GZ, GR, GR - 1, BODEN_Y + 1, WAND_OBEN, "minecraft:polished_blackstone_bricks", ohne=(-GR,))
+# Brueckenkopf z = GZ-GR (61): die Reihe zwischen Gangende (ZE = 60) und Wall (62) gehoert der Insel und wird
+# von ihr geschlossen: Wand an x = +-2 ueber dem Crying Obsidian, Gitterdach wie im Gang. Vorher stand hier
+# nur der Obsidian auf Fusshoehe, darueber und daneben war alles offen (Review 10.09.2026: draufspringen,
+# seitlich raus, Absturz). Die Pflege raeumt erst ab GZ-GR+1 ab, sonst wuerde sie das Dach hier jeden
+# zweiten Tick wegnehmen und die Insel es zurueckbauen (Flackern wie beim Brueckendach in v0.38).
 geg += [
     f"fill -1 {BODEN_Y+1} {GZ-GR-1} 1 {WAND_OBEN} {GZ-GR+2} minecraft:air",      # Tor zur Bruecke, so hoch wie der Gang
     f"setblock -2 {BODEN_Y+1} {GZ-GR} minecraft:crying_obsidian", f"setblock 2 {BODEN_Y+1} {GZ-GR} minecraft:crying_obsidian",
+    f"fill -2 {BODEN_Y+2} {GZ-GR} -2 {DACH_Y} {GZ-GR} {BR_WAND}",                # Wand links ueber dem Obsidian bis zum Dachrand
+    f"fill 2 {BODEN_Y+2} {GZ-GR} 2 {DACH_Y} {GZ-GR} {BR_WAND}",
+    f"fill -1 {DACH_Y} {GZ-GR} 1 {DACH_Y} {GZ-GR} {BR_GITTER}",                  # Gitterdach
+    f"fill -3 {DACH_Y+1} {GZ-GR} 3 {FREI_OBEN} {GZ-GR} minecraft:air",           # darueber frei (nur Luft, kein Umbau)
     f"setblock -2 {WAND_OBEN} {GZ-GR+1} minecraft:shroomlight", f"setblock 2 {WAND_OBEN} {GZ-GR+1} minecraft:shroomlight",
 ]
 # Zwei Fassungen. Die volle raeumt erst alles ueber dem Boden ab und baut dann neu, sie laeuft nur
@@ -585,7 +620,7 @@ geg += [
 # Bruecke, das die Insel damit jeden zweiten Tick weggenommen und die Strasse jeden zweiten Tick
 # wieder gesetzt hat (Luis 09.09.2026: "letzte reihe der decke von der bruecke" flackert).
 fn("welt/gegnerinsel", [f"fill -{GR+1} {BODEN_Y+1} {GZ-GR} {GR+1} {BODEN_Y+12} {GZ+GR+1} minecraft:air"] + geg)
-fn("welt/gegnerinsel_pflege", [f"fill -{GR+1} {BODEN_Y+6} {GZ-GR} {GR+1} {BODEN_Y+12} {GZ+GR+1} minecraft:air"] + geg)
+fn("welt/gegnerinsel_pflege", [f"fill -{GR+1} {BODEN_Y+6} {GZ-GR+1} {GR+1} {BODEN_Y+12} {GZ+GR+1} minecraft:air"] + geg)
 
 # Strasse
 # REGEL (Lehre vom 06.09.2026): Bloecke, die einen Traeger brauchen (Fackeln, Laternen, Schilder, Zaeune mit
@@ -606,10 +641,6 @@ POSTEN = list(range(Z1 + 2, Z2, 6))          # z-Positionen der Pfosten (x = -2 
 # im Wall (Luis 09.09.2026: "irgendwelche Bloecke scheinen zu overlappen"). Ab z Z2+2 gehoert alles
 # der Insel, ihr Wall mit dem Tor schliesst den Gang ab.
 ZE = Z2 + 1
-BR_BODEN = "minecraft:polished_blackstone_bricks"
-BR_WAND = "minecraft:deepslate_bricks"
-BR_BOGEN = "minecraft:polished_blackstone_bricks"
-BR_GITTER = "minecraft:iron_bars"
 
 def strasse_bauen():
     out = [
@@ -843,27 +874,37 @@ for b in range(ZWERG_BP_MAX + 1):
                     for pred in (ZWERG_SELL_PRED, ZWERG_BP_PRED, ZWERG_UP_PRED, ZWERG_AUTO_PRED):
                         symbol.append(f"{vor} if items block {ziel} {pred} run item replace block {ziel} with minecraft:air")
             elif sl - ende < len(knoepfe):
+                # Ein Knopf wird nur in ein leeres Fach oder ueber einen anderen Knopf gesetzt (nw_knopf), nie
+                # ueber ein gelagertes Item. Vorher hat beim Layoutwechsel (v0.30: drei statt vier Knoepfe) der
+                # Auto-Knopf das Item in Fach 22 eines alten Rucksacks ueberschrieben (Review 10.09.2026).
                 art = knoepfe[sl - ende]
+                vorf = f"{vor} {FREI(ziel)}"
                 if art == "auto":
                     for av in ((0,) if a == 0 else (1, 2)):
-                        symbol.append(f"{vor} if score @s nw.zwerg_a matches {av} run item replace block {ziel} with {zwerg_auto_knopf(av)}")
+                        symbol.append(f"{vorf} if score @s nw.zwerg_a matches {av} run item replace block {ziel} with {zwerg_auto_knopf(av)}")
                     if a == 0:
-                        symbol.append(f"{vor} unless score @s nw.zwerg_a matches 0 run item replace block {ziel} with {zwerg_auto_knopf(0)}")
+                        symbol.append(f"{vorf} unless score @s nw.zwerg_a matches 0 run item replace block {ziel} with {zwerg_auto_knopf(0)}")
                 elif art == "sell":
-                    symbol.append(f"{vor} run item replace block {ziel} with {ZWERG_VERKAUF_KNOPF}")
+                    symbol.append(f"{vorf} run item replace block {ziel} with {ZWERG_VERKAUF_KNOPF}")
                 elif art == "bp":
-                    symbol.append(f"{vor} run item replace block {ziel} with {zwerg_bp_knopf(b, a)}")
+                    symbol.append(f"{vorf} run item replace block {ziel} with {zwerg_bp_knopf(b, a)}")
                 else:
                     for l in range(ZWERG_MAX + 1):
-                        symbol.append(f"{vor} if score @s nw.zwerg matches {l} run item replace block {ziel} with {zwerg_up_knopf(l)}")
+                        symbol.append(f"{vorf} if score @s nw.zwerg matches {l} run item replace block {ziel} with {zwerg_up_knopf(l)}")
             elif sl == SLOT_TAKE:
-                symbol.append(f"{vor} run item replace block {ziel} with {ZWERG_TAKE_KNOPF}")
+                symbol.append(f"{vor} {FREI(ziel)} run item replace block {ziel} with {ZWERG_TAKE_KNOPF}")
             else:
-                symbol.append(f"{vor} run item replace block {ziel} with {ZWERG_SPERRE}")
+                symbol.append(f"{vor} {FREI(ziel)} run item replace block {ziel} with {ZWERG_SPERRE}")
 for l in range(ZWERG_MAX + 1):
     symbol.append(f'execute if score @s nw.zwerg matches {l} run data merge block ~ ~ ~ '
                   f'{{CustomName:[{{text:"Fraggle   ",color:"aqua"}},{{text:"Level {l}",color:"gray"}}]}}')
 fn("zwerg/symbol", symbol)
+# Knoepfe alter Fassungen (ohne nw_knopf) aus dem Rucksack nehmen, sonst haelt FREI sie fuer Lagerware.
+# Laeuft bei der Migration, symbol setzt eine Sekunde spaeter die neuen.
+fn("zwerg/knoepfe_raeumen", [f"execute if items block ~ ~ ~ container.{sl} *[!custom_data~{{nw_knopf:1b}},custom_data~{{{pred}:1b}}] run item replace block ~ ~ ~ container.{sl} with minecraft:air"
+                             for sl in range(MIN_ENDE, 27) for pred in ("nw_zwerg_lock", "nw_zwerg_sell", "nw_zwerg_bp", "nw_zwerg_up", "nw_zwerg_auto", "nw_zwerg_take")]
+   # sofort neu setzen: ein leeres Knopffach gilt in zwerg/einer als Klick (haette beim Test alles verkauft)
+   + [f"function {NS}:zwerg/symbol"])
 
 fn("zwerg/einer", [
     f"execute unless block ~ ~ ~ minecraft:trapped_chest run return run function {NS}:zwerg/kaputt",
@@ -1045,6 +1086,8 @@ kaputt += [
     "setblock ~ ~ ~ minecraft:air",
     'kill @e[type=item,distance=..2.5,nbt={Item:{id:"minecraft:trapped_chest"}}]',
     f'kill @e[type=item,distance=..2.5,nbt={{Item:{{components:{{"minecraft:custom_data":{{nw_zwerg_take:1b}}}}}}}}]',
+    # Der Knopf liegt nach dem Klick im Spielerinventar (so wie beim Generator), dort wieder wegnehmen (Review 10.09.2026)
+    f"clear @a[distance=..8] {ZWERG_TAKE_PRED}",
     "tellraw @p[distance=..10] " + J([txt("[Fraggle] ", "aqua"), txt("Packing up. I am in your inventory.", "gray")]),
     "playsound minecraft:entity.item.pickup player @p[distance=..10] ~ ~ ~ 1 0.8",
     "kill @s",
@@ -1455,31 +1498,34 @@ fn("bogi/spur", [
 ])
 
 # Knoepfe (rechts nach links), gesperrte Faecher und Kauf
-BOGI_SPERRE = ('minecraft:gray_stained_glass_pane[' + ('item_model="nachtwache:knopf_sperre_aus",' if RESSOURCENPAKET else "") + 'custom_data={nw_bogi_lock:1b},custom_name={text:"Locked",color:"dark_gray",italic:false},'
+BOGI_SPERRE = ('minecraft:gray_stained_glass_pane[' + ('item_model="nachtwache:knopf_sperre_aus",' if RESSOURCENPAKET else "") + 'custom_data={nw_knopf:1b,nw_bogi_lock:1b},custom_name={text:"Locked",color:"dark_gray",italic:false},'
                'lore=[{text:"Bogi only carries one row",color:"dark_gray",italic:false}]]')
 symbol_b = []
 for k, name, ikon, maxst, preis, text in BOGI_UPGRADES:
     for n in range(maxst + 1):
         if n < maxst:
-            it = (f'{ikon}[{knopf_modell("b_" + k)}custom_data={{nw_bogi_{k}:1b}},custom_name={{text:"{name}",color:"yellow",italic:false}},'
+            it = (f'{ikon}[{knopf_modell("b_" + k)}custom_data={{nw_knopf:1b,nw_bogi_{k}:1b}},custom_name={{text:"{name}",color:"yellow",italic:false}},'
                   f'lore=[{{text:"Now: {text(n)}",color:"gray",italic:false}},'
                   f'[{{text:"Next: {text(n + 1)} for {preis * (n + 1)} ",color:"gold",italic:false}},{{text:"{COIN}",color:"white",italic:false}}],'
                   f'{{text:"Take this to buy",color:"dark_gray",italic:false}}]]')
         else:
-            it = (f'{ikon}[{knopf_modell("b_" + k, "an")}enchantment_glint_override=true,custom_data={{nw_bogi_{k}:1b}},custom_name={{text:"{name} (max)",color:"yellow",italic:false}},'
+            it = (f'{ikon}[{knopf_modell("b_" + k, "an")}enchantment_glint_override=true,custom_data={{nw_knopf:1b,nw_bogi_{k}:1b}},custom_name={{text:"{name} (max)",color:"yellow",italic:false}},'
                   f'lore=[{{text:"{text(n)}",color:"gray",italic:false}}]]')
-        symbol_b.append(f"execute if score @s nw.b_{k} matches {n} run item replace block ~ ~ ~ container.{BOGI_SLOT[k]} with {it}")
+        symbol_b.append(f"execute if score @s nw.b_{k} matches {n} {FREI(f'~ ~ ~ container.{BOGI_SLOT[k]}')} run item replace block ~ ~ ~ container.{BOGI_SLOT[k]} with {it}")
 symbol_b += [f"execute if items block ~ ~ ~ container.{sl} *[custom_data~{{nw_bogi_lock:1b}}] run item replace block ~ ~ ~ container.{sl} with minecraft:air" for sl in BOGI_PFEIL_SLOTS]
 symbol_b += [f"execute unless items block ~ ~ ~ container.{sl} * run item replace block ~ ~ ~ container.{sl} with {BOGI_SPERRE}"
              for sl in range(BOGI_LAGER, 27) if sl != SLOT_TAKE]
 # Mitnehmen-Knopf unten rechts, beschriftet mit dem Namen des jeweiligen Bogenschuetzen
-symbol_b += [f'execute if score @s nw.b_nm matches {_n} run item replace block ~ ~ ~ container.{SLOT_TAKE} with {take_knopf("nw_bogi_take", _nm)}'
+symbol_b += [f'execute if score @s nw.b_nm matches {_n} {FREI(f"~ ~ ~ container.{SLOT_TAKE}")} run item replace block ~ ~ ~ container.{SLOT_TAKE} with {take_knopf("nw_bogi_take", _nm)}'
              for _n, _nm in enumerate(["Bogi"] + BOGI_NAMEN)]
 for _n, _nm in enumerate(["Bogi"] + BOGI_NAMEN):
     symbol_b.append(f'execute if score @s nw.b_nm matches {_n} run data merge block ~ ~ ~ '
                     f'{{CustomName:{{text:"{_nm}",color:"green"}}}}')
 symbol_b.append('execute unless score @s nw.b_nm matches 0..%d run data merge block ~ ~ ~ {CustomName:{text:"Bogi",color:"green"}}' % len(BOGI_NAMEN))
 fn("bogi/symbol", symbol_b)
+fn("bogi/knoepfe_raeumen", [f"execute if items block ~ ~ ~ container.{sl} *[!custom_data~{{nw_knopf:1b}},custom_data~{{{pred}:1b}}] run item replace block ~ ~ ~ container.{sl} with minecraft:air"
+                            for sl in sorted(BOGI_SLOT.values()) + list(range(BOGI_LAGER, 27)) for pred in ["nw_bogi_lock", "nw_bogi_take"] + [f"nw_bogi_{k}" for k, *_ in BOGI_UPGRADES]]
+   + [f"function {NS}:bogi/symbol"])   # sofort neu setzen, leere Knopffaecher gelten als Klick
 
 for k, name, ikon, maxst, preis, text in BOGI_UPGRADES:
     fn(f"bogi/kauf_{k}", [
@@ -1517,6 +1563,7 @@ fn("bogi/mitnehmen", [
     "setblock ~ ~ ~ minecraft:air",
     'kill @e[type=item,distance=..2.5,nbt={Item:{id:"minecraft:trapped_chest"}}]',
     'kill @e[type=item,distance=..2.5,nbt={Item:{components:{"minecraft:custom_data":{nw_bogi_take:1b}}}}]',
+    "clear @a[distance=..8] *[custom_data~{nw_bogi_take:1b}]",
     "tellraw @p[distance=..10] " + J([txt("[Bogi] ", "green"), txt("Packing up. I am in your inventory.", "gray")]),
     "playsound minecraft:entity.item.pickup player @p[distance=..10] ~ ~ ~ 1 0.8",
     "kill @s",
@@ -1630,7 +1677,7 @@ def gen_item(stufe=0):
             f'custom_data={{nw_gen:1b{daten}}},'
             f'entity_data={{id:"minecraft:marker",Tags:["nw.gen_neu"]}},lore={lore}]')
 
-GEN_TAKE_KNOPF = ('minecraft:ender_eye[' + knopf_modell("gen_take") + 'custom_data={nw_gen_take:1b},custom_name={text:"Take the generator",color:"yellow",italic:false},'
+GEN_TAKE_KNOPF = ('minecraft:ender_eye[' + knopf_modell("gen_take") + 'custom_data={nw_knopf:1b,nw_gen_take:1b},custom_name={text:"Take the generator",color:"yellow",italic:false},'
                   'lore=[{text:"Take this and it goes back into your inventory",color:"gray",italic:false},'
                   '{text:"Everything it dropped so far stays with you",color:"dark_gray",italic:false}]]')
 
@@ -2516,6 +2563,7 @@ for t, kg in KOPFGELD.items():
         f"scoreboard players operation #p_{t} nw.tmp2 = #c_{t} nw.tmp2",
     ]
 gt += [
+    "execute if score #treffer nw.status matches 1.. run scoreboard players remove #treffer nw.status 1",
     f"execute as @e[tag=nw.welle] at @s run function {NS}:gegner/einer",
     # Waechterglocke
     f"execute if score #glocke nw.upgrade matches 1 if score #glocke_geklingelt nw.upgrade matches 0 if entity @e[tag=nw.welle,x=-4,y=55,z={STRASSE_Z[0]},dx=8,dy=20,dz=25] run function {NS}:gegner/glocke",
@@ -2543,12 +2591,23 @@ fn("gegner/glocke", [
     "playsound minecraft:block.bell.use block @a ~ ~ ~ 2 0.7", "playsound minecraft:block.bell.resonate block @a ~ ~ ~ 2 0.7",
     f"tellraw @a {J([txt('The watch bell rings. Something is on the road.', 'red')])}",
 ])
+# Nur Schaden durch den SPIELER macht wuetend (Luis 10.09.2026). Bogis Pfeile (damage ohne Angreifer), Feuer
+# oder Stuerze zaehlen nicht, sonst wuerde mit einem Bogi in Reichweite nie ein Gegner channeln.
+# Weg: Advancement player_hurt_entity auf einen Wellengegner setzt #treffer fuer zwei Ticks, gegner/einer
+# koppelt den Gesundheitsabfall daran. Spieler-Pfeile und Schwert zaehlen beide.
+w(f"{NS}/advancement/gegner_getroffen.json", {"criteria": {"treffer": {"trigger": "minecraft:player_hurt_entity", "conditions": {
+    "entity": [{"condition": "minecraft:entity_properties", "entity": "this", "predicate": {"nbt": '{Tags:["nw.welle"]}'}}]}}},
+    "rewards": {"function": f"{NS}:gegner/spielertreffer"}})
+fn("gegner/spielertreffer", [
+    f"advancement revoke @s only {NS}:gegner_getroffen",
+    "scoreboard players set #treffer nw.status 2",
+])
 fn("gegner/einer", [
     # Am Beacon: fuenf Sekunden ungestoert, dann loest sich der Gegner auf und kostet ein Leben
     "execute store result score @s nw.hpv run data get entity @s Health",
-    # Treffer: Channeln abbrechen und fuer eine Weile auf den Spieler losgehen (Luis 09.09.2026)
-    "execute if score @s nw.hpv < @s nw.hpp run scoreboard players set @s nw.chan 0",
-    f"execute if score @s nw.hpv < @s nw.hpp run scoreboard players set @s nw.wut {WUT_TICKS}",
+    # Spielertreffer: Channeln abbrechen und fuer eine Weile auf den Spieler losgehen (Luis 09.09.2026)
+    "execute if score @s nw.hpv < @s nw.hpp if score #treffer nw.status matches 1.. run scoreboard players set @s nw.chan 0",
+    f"execute if score @s nw.hpv < @s nw.hpp if score #treffer nw.status matches 1.. run scoreboard players set @s nw.wut {WUT_TICKS}",
     "scoreboard players operation @s nw.hpp = @s nw.hpv",
     "execute if score @s nw.wut matches 1.. run scoreboard players remove @s nw.wut 1",
     # Channeln nur, wer auf dem Eisensockel steht, nicht schon im Umkreis (Luis 09.09.2026)

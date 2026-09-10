@@ -1,15 +1,16 @@
 # Ankaufspreise des Sammlers, wert = Coins je Stueck (Verkaufsfass und Lieferrampe, Rampe zahlt 80 Prozent).
 # Massstab: Kaufpreise im Laden (Eisen 50, Gold 100, Diamant 1000, Obsidian 500) und Seltenheit am Quell.
 # Verarbeitung lohnt sich: Erz < Rohstoff < Barren < Block (Kupfererz 4, Kupferbarren 5, Kupferblock 50).
-# Werkzeuge und Ruestung, die der Laden verkauft, kauft der Sammler zur Haelfte zurueck (aufgerundet, Luis 09.09.2026).
-# Alles andere an Werkzeug und Waffen nimmt er weiterhin nicht.
+# REGEL (Luis 10.09.2026): Alles, was der Laden verkauft, kauft der Sammler zur HAELFTE des Kaufpreises zurueck
+# (aufgerundet), ohne Ausnahme. Diese Zeilen pflegt build-seitig niemand von Hand: bei Preisaenderung im Laden
+# hier den Wert nachziehen (python3 preise_ableiten.py danach). Was der Laden nicht verkauft, hat hier einen festen Wert.
 item,name,wert
 cobblestone,Cobblestone,1
-stone,Stone,1
+stone,Stone,2
 dirt,Dirt,1
 coarse_dirt,Coarse Dirt,1
-sand,Sand,3
-gravel,Gravel,3
+sand,Sand,5
+gravel,Gravel,5
 andesite,Andesite,1
 granite,Granite,1
 diorite,Diorite,1
@@ -21,19 +22,19 @@ clay,Clay,4
 clay_ball,Clay Ball,1
 brick,Brick,2
 glass,Glass,3
-oak_log,Oak Log,15
+oak_log,Oak Log,25
 dark_oak_log,Dark Oak Log,15
 spruce_log,Spruce Log,15
 birch_log,Birch Log,15
-oak_planks,Oak Planks,4
+oak_planks,Oak Planks,8
 crimson_stem,Crimson Stem,10
 warped_stem,Warped Stem,10
-bookshelf,Bookshelf,40
-cobweb,Cobweb,5
-bone,Bone,3
-string,String,4
-apple,Apple,8
-bread,Bread,12
+bookshelf,Bookshelf,75
+cobweb,Cobweb,10
+bone,Bone,18
+string,String,5
+apple,Apple,15
+bread,Bread,25
 wheat,Wheat,3
 carrot,Carrot,3
 potato,Potato,3
@@ -47,9 +48,9 @@ bamboo,Bamboo,2
 egg,Egg,2
 feather,Feather,2
 white_wool,White Wool,4
-leather,Leather,8
+leather,Leather,15
 beef,Beef,25
-cooked_beef,Cooked Beef,40
+cooked_beef,Cooked Beef,50
 mutton,Mutton,15
 cooked_mutton,Cooked Mutton,25
 porkchop,Porkchop,25
@@ -85,36 +86,36 @@ emerald,Emerald,125
 emerald_block,Emerald Block,2500
 nether_quartz_ore,Nether Quartz Ore,40
 quartz,Quartz,20
-obsidian,Obsidian,120
+obsidian,Obsidian,250
 amethyst_shard,Amethyst Shard,25
 amethyst_block,Amethyst Block,20
 netherrack,Netherrack,2
 soul_sand,Soul Sand,4
 soul_soil,Soul Soil,4
-nether_wart,Nether Wart,6
+nether_wart,Nether Wart,30
 glowstone_dust,Glowstone Dust,20
 glowstone,Glowstone,15
-magma_block,Magma Block,8
+magma_block,Magma Block,10
 blackstone,Blackstone,3
 end_stone,End Stone,5
 purpur_block,Purpur Block,6
 chorus_fruit,Chorus Fruit,8
 sculk,Sculk,8
-rotten_flesh,Rotten Flesh,1
-spider_eye,Spider Eye,3
-gunpowder,Gunpowder,8
-slime_ball,Slime Ball,8
-arrow,Arrow,1
-ender_pearl,Ender Pearl,40
-phantom_membrane,Phantom Membrane,10
-blaze_rod,Blaze Rod,20
-ghast_tear,Ghast Tear,40
-wither_skeleton_skull,Wither Skeleton Skull,150
+rotten_flesh,Rotten Flesh,5
+spider_eye,Spider Eye,13
+gunpowder,Gunpowder,20
+slime_ball,Slime Ball,15
+arrow,Arrow,10
+ender_pearl,Ender Pearl,50
+phantom_membrane,Phantom Membrane,75
+blaze_rod,Blaze Rod,60
+ghast_tear,Ghast Tear,150
+wither_skeleton_skull,Wither Skeleton Skull,600
 ancient_debris,Ancient Debris,300
 netherite_scrap,Netherite Scrap,300
 shulker_shell,Shulker Shell,400
 enchanted_golden_apple,Enchanted Golden Apple,1500
-honeycomb,Honeycomb,5
+honeycomb,Honeycomb,20
 honey_bottle,Honey Bottle,8
 crying_obsidian,Crying Obsidian,150
 prismarine_shard,Prismarine Shard,5
@@ -148,7 +149,7 @@ pointed_dripstone,Pointed Dripstone,3
 amethyst_cluster,Amethyst Cluster,20
 mud,Mud,1
 sculk_catalyst,Sculk Catalyst,50
-sculk_sensor,Sculk Sensor,30
+sculk_sensor,Sculk Sensor,150
 sculk_shrieker,Sculk Shrieker,40
 sculk_vein,Sculk Vein,3
 glow_lichen,Glow Lichen,2
@@ -171,10 +172,10 @@ nether_wart_block,Nether Wart Block,3
 basalt,Basalt,2
 gilded_blackstone,Gilded Blackstone,40
 chorus_flower,Chorus Flower,10
-dragon_breath,Dragon's Breath,40
+dragon_breath,Dragon's Breath,200
 flint,Flint,2
-water_bucket,Water Bucket,100
-lava_bucket,Lava Bucket,400
+water_bucket,Water Bucket,250
+lava_bucket,Lava Bucket,250
 milk_bucket,Milk Bucket,70
 powder_snow_bucket,Powder Snow Bucket,70
 axolotl_bucket,Bucket of Axolotl,80
@@ -196,7 +197,7 @@ terracotta,Terracotta,5
 packed_mud,Packed Mud,2
 white_wool,White Wool,4
 bone_block,Bone Block,10
-cobweb,Cobweb,5
+cobweb,Cobweb,10
 bee_nest,Bee Nest,30
 wither_rose,Wither Rose,15
 cooked_rabbit,Cooked Rabbit,20
@@ -262,3 +263,22 @@ vex_armor_trim_smithing_template,Vex Armor Trim,500
 ward_armor_trim_smithing_template,Ward Armor Trim,500
 wayfinder_armor_trim_smithing_template,Wayfinder Armor Trim,500
 wild_armor_trim_smithing_template,Wild Armor Trim,500
+oak_sapling,Oak Sapling,20
+wheat_seeds,Wheat Seeds,3
+end_portal_frame,End Portal Frame,1250
+enchanting_table,Enchanting Table,2000
+observer,Observer,30
+tnt,TNT,100
+experience_bottle,Bottle o' Enchanting,25
+totem_of_undying,Totem of Undying,750
+elytra,Elytra,2500
+iron_golem_spawn_egg,Iron Golem Egg,1000
+sea_lantern,Sea Lantern,60
+sponge,Sponge,150
+name_tag,Name Tag,100
+saddle,Saddle,150
+heart_of_the_sea,Heart of the Sea,1250
+trident,Trident,1000
+beacon,Beacon,4000
+magma_cream,Magma Cream,45
+nether_star,Nether Star,3000
