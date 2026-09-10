@@ -27,8 +27,6 @@ id,stufe,name,preis,max,item,kat,pos
 45,2,Steak,100,64,cooked_beef,FOOD,
 46,4,Leather,30,64,leather,MOB,
 47,2,String,10,64,string,MOB,
-63,3,Enchanting Table,4000,1,enchanting_table,BREW,
-64,3,Bookshelf,150,64,bookshelf,BLOCKS,
 67,3,Potion of Healing II,150,1,TRANK_HEILUNG,BREW,
 68,3,Potion of Strength,200,1,TRANK_STAERKE,BREW,
 69,3,Potion of Night Vision (long),100,1,TRANK_NACHTSICHT,BREW,
