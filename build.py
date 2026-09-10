@@ -19,7 +19,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 87                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 88                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -132,6 +132,59 @@ _summe = 0
 for _b, _f, _n, _s, _c, _m in STUFEN[:-1]:
     _summe += _n; PHASEN_GRENZEN.append(_summe)
 SPLITTER_PRO_ABBAU = {i + 1: st[3] for i, st in enumerate(STUFEN)}
+# Inhalt der Kisten, seit v0.53 nach Kategorien und je Stufe eigen (Luis 10.09.2026: pro Stufe eine
+# eigene Kiste, Inhalt gewuerfelt, wird nach oben mehr und besser). Vier Toepfe: Erz, Essen,
+# wertvolle Bloecke, Besonderes. Eintrag = (Item, min, max, Gewicht).
+KISTE_TOEPFE = {
+ "erz": {
+    1: [("coal", 8, 16, 3), ("raw_copper", 6, 12, 3), ("raw_iron", 3, 6, 2)],
+    2: [("coal", 16, 24, 2), ("raw_iron", 8, 14, 3), ("copper_ingot", 8, 16, 3)],
+    3: [("iron_ingot", 8, 16, 3), ("gold_ingot", 4, 8, 3), ("lapis_lazuli", 12, 24, 2), ("redstone", 16, 32, 2)],
+    4: [("iron_ingot", 16, 24, 3), ("gold_ingot", 8, 16, 3), ("diamond", 1, 2, 2)],
+    5: [("diamond", 3, 5, 3), ("emerald", 6, 10, 3), ("gold_ingot", 24, 32, 2)],
+    6: [("diamond", 6, 10, 3), ("emerald", 12, 20, 3), ("netherite_scrap", 1, 2, 2)],
+    7: [("diamond", 8, 12, 3), ("emerald", 16, 32, 2), ("netherite_ingot", 1, 1, 2)],
+ },
+ "essen": {
+    1: [("bread", 4, 8, 3), ("apple", 3, 6, 2)],
+    2: [("bread", 8, 12, 3), ("cooked_beef", 4, 8, 2)],
+    3: [("cooked_beef", 8, 16, 3), ("bread", 12, 16, 2)],
+    4: [("cooked_beef", 16, 24, 3), ("golden_apple", 1, 1, 2)],
+    5: [("golden_apple", 1, 2, 3), ("cooked_beef", 24, 32, 2)],
+    6: [("golden_apple", 2, 3, 3), ("enchanted_golden_apple", 1, 1, 1)],
+    7: [("enchanted_golden_apple", 1, 2, 3), ("golden_apple", 4, 6, 2)],
+ },
+ "block": {
+    1: [("oak_log", 8, 16, 3), ("cobblestone", 32, 48, 2), ("sand", 16, 32, 2)],
+    2: [("oak_log", 16, 24, 3), ("stone", 32, 48, 2), ("gravel", 24, 32, 2)],
+    3: [("obsidian", 2, 4, 3), ("magma_block", 8, 16, 2), ("honeycomb", 8, 16, 2)],
+    4: [("obsidian", 4, 8, 3), ("sea_lantern", 8, 16, 2), ("honeycomb", 16, 24, 2)],
+    5: [("obsidian", 8, 12, 3), ("sea_lantern", 16, 24, 2), ("sponge", 2, 4, 2)],
+    6: [("obsidian", 12, 20, 3), ("sponge", 4, 8, 2), ("sculk_sensor", 2, 4, 2)],
+    7: [("obsidian", 24, 32, 3), ("sponge", 8, 16, 2), ("sculk_sensor", 4, 8, 2)],
+ },
+ "spezial": {
+    1: [("arrow", 16, 32, 3), ("string", 8, 16, 2), ("bone", 8, 16, 2)],
+    2: [("arrow", 32, 48, 3), ("slime_ball", 6, 12, 2), ("name_tag", 1, 1, 1)],
+    3: [("experience_bottle", 8, 16, 3), ("ender_pearl", 2, 4, 2), ("name_tag", 1, 1, 2)],
+    4: [("experience_bottle", 16, 24, 3), ("saddle", 1, 1, 2), ("iron_golem_spawn_egg", 1, 1, 1)],
+    5: [("experience_bottle", 24, 32, 3), ("ender_pearl", 8, 12, 2), ("totem_of_undying", 1, 1, 2)],
+    6: [("totem_of_undying", 1, 2, 3), ("shulker_shell", 2, 4, 2), ("heart_of_the_sea", 1, 1, 2), ("trident", 1, 1, 1)],
+    7: [("totem_of_undying", 2, 3, 3), ("nether_star", 1, 1, 2), ("elytra", 1, 1, 1), ("beacon", 1, 1, 1)],
+ },
+}
+# Welche Toepfe eine Kiste fuellt. Die Zahl der Faecher waechst mit der Stufe.
+KISTE_FAECHER = {
+    1: ["erz", "essen", "block"],
+    2: ["erz", "essen", "block"],
+    3: ["erz", "essen", "block", "spezial"],
+    4: ["erz", "erz", "essen", "block"],
+    5: ["erz", "erz", "essen", "block", "spezial", "spezial"],
+    6: ["erz", "erz", "essen", "block", "spezial", "spezial"],
+    7: ["erz", "erz", "essen", "block", "spezial", "spezial"],
+}
+KISTE_CHANCE = 0.5                      # Prozent, mit der der Quell eine Kiste seiner Stufe ausgibt
+
 QUELL_MOBS = False                       # Luis 07.09.2026: kein Mob aus dem Quell, die Wellen reichen
 MOB_CHANCE = {i + 1: (st[4] if QUELL_MOBS else 0.0) for i, st in enumerate(STUFEN)}
 MOB_AUS_QUELL = {i + 1: st[5] for i, st in enumerate(STUFEN)}
@@ -257,12 +310,6 @@ for _n, _ls, _, _ in BUECHER:
                                           '[%sstored_enchantments={"minecraft:%s":%d}]' % (_modell, _n.lower(), _l))
 
 # Vorgefuellte Kisten aus dem Quell (Name -> Liste von (item, anzahl))
-KISTEN = {
-    "KISTE_1": [("minecraft:bread", 4), ("minecraft:torch", 8), ("minecraft:string", 3), ("minecraft:iron_ingot", 2), ("minecraft:arrow", 8)],
-    "KISTE_2": [("minecraft:iron_ingot", 5), ("minecraft:gold_ingot", 2), ("minecraft:redstone", 8), ("minecraft:bread", 6), ("minecraft:leather", 3), ("minecraft:name_tag", 1)],
-    "KISTE_3": [("minecraft:diamond", 2), ("minecraft:enchanted_book", 1), ("minecraft:golden_apple", 1), ("minecraft:ender_pearl", 2), ("minecraft:blaze_rod", 2), ("minecraft:experience_bottle", 6)],
-    "KISTE_4": [("minecraft:diamond", 4), ("minecraft:netherite_scrap", 1), ("minecraft:golden_apple", 2), ("minecraft:totem_of_undying", 1), ("minecraft:experience_bottle", 12), ("minecraft:enchanted_golden_apple", 1)],
-}
 
 # Mob-Typen der Wellen: name -> (entity, zusatz-NBT)
 HELM = '{id:"minecraft:leather_helmet",count:1,components:{"minecraft:unbreakable":{},"minecraft:dyed_color":1315860}}'
@@ -1273,16 +1320,16 @@ for p in range(1, ANZ_STUFEN + 1):
         if p not in phasen_von(r["phasen"]):
             continue
         item = r["item"]; wgt = int(r["gewicht"]); mn, mx = int(r["min"]), int(r["max"])
-        if item.startswith("KISTE_"):
-            inhalt = [{"slot": i, "item": {"id": it, "count": c}} for i, (it, c) in enumerate(KISTEN[item])]
-            entries.append({"type": "minecraft:item", "name": "minecraft:chest", "weight": wgt,
-                            "functions": [{"function": "minecraft:set_components", "components": {"minecraft:container": inhalt}},
-                                          {"function": "minecraft:set_name", "name": {"text": "Crate from the Source", "color": "gold"}, "target": "custom_name"}]})
-        else:
-            e = {"type": "minecraft:item", "name": f"minecraft:{item}", "weight": wgt}
-            if mx > 1:
-                e["functions"] = [{"function": "minecraft:set_count", "count": {"min": mn, "max": mx}}]
-            entries.append(e)
+        e = {"type": "minecraft:item", "name": f"minecraft:{item}", "weight": wgt * 100}
+        if mx > 1:
+            e["functions"] = [{"function": "minecraft:set_count", "count": {"min": mn, "max": mx}}]
+        entries.append(e)
+    # Die Stufenkiste (v0.53). Alle uebrigen Gewichte sind mal 100 genommen, damit sich die
+    # gewuenschten 0,5 Prozent ganzzahlig treffen lassen: bei Restgewicht S braucht die Kiste
+    # S * p / (100 - p). Die Verhaeltnisse der anderen Eintraege bleiben davon unberuehrt.
+    _rest = sum(x["weight"] for x in entries)
+    _kiste = max(1, round(_rest * KISTE_CHANCE / (100 - KISTE_CHANCE)))
+    entries.append({"type": "minecraft:loot_table", "value": f"{NS}:kiste/stufe{p}", "weight": _kiste})
     w(f"{NS}/loot_table/quell/phase{p}.json", {"pools": [{"rolls": 1, "entries": entries}]})
 
 # Belohnung bei komplett getoeteter Welle ab Nacht 10
@@ -1892,42 +1939,28 @@ GLUECK_KISTEN = [
     (1,  "Black Crate",  "dark_purple"),
 ]
 # Inhalt je Truhe: (Item, min, max, Gewicht). Aus jedem Topf wird gezogen, drei Zuege je Truhe.
-GLUECK_INHALT = {
-    1: [("dirt", 16, 32, 3), ("cobblestone", 16, 32, 3), ("stone", 8, 16, 2), ("coal", 4, 8, 2),
-        ("bone", 4, 8, 2), ("rotten_flesh", 8, 16, 2), ("arrow", 8, 16, 1)],
-    2: [("iron_ingot", 4, 8, 3), ("bread", 6, 12, 2), ("arrow", 16, 32, 2), ("copper_ingot", 8, 16, 2),
-        ("string", 6, 12, 1), ("oak_log", 8, 16, 1)],
-    3: [("gold_ingot", 4, 8, 3), ("lapis_lazuli", 8, 16, 2), ("redstone", 12, 24, 2),
-        ("iron_ingot", 12, 24, 2), ("cooked_beef", 8, 16, 2), ("iron_pickaxe", 1, 1, 1)],
-    4: [("diamond", 2, 4, 3), ("amethyst_shard", 6, 12, 2), ("ender_pearl", 2, 4, 2),
-        ("golden_apple", 1, 2, 2), ("blaze_rod", 3, 6, 1), ("diamond_pickaxe", 1, 1, 1)],
-    5: [("emerald", 8, 16, 3), ("ender_pearl", 6, 12, 2), ("diamond", 6, 10, 2),
-        ("totem_of_undying", 1, 1, 2), ("experience_bottle", 16, 32, 2), ("enchanted_golden_apple", 1, 1, 1)],
-    6: [("netherite_scrap", 1, 2, 3), ("shulker_shell", 2, 4, 2), ("diamond", 12, 20, 2),
-        ("emerald", 24, 40, 2), ("totem_of_undying", 2, 3, 1), ("elytra", 1, 1, 1)],
-    7: [("netherite_ingot", 1, 2, 3), ("nether_star", 1, 1, 2), ("netherite_scrap", 4, 6, 2),
-        ("diamond", 32, 48, 2), ("enchanted_golden_apple", 3, 5, 2), ("beacon", 1, 1, 1)],
-}
-GLUECK_ZUEGE = 3                        # so viele Faecher hat jede gewonnene Truhe
 GLUECK_FELDER = 9                       # Breite des Laufbands
 # Bremskurve: Bild -> Ticks bis zum naechsten. Laeuft rund vier Sekunden und wird spuerbar langsamer.
 GLUECK_TAKT = [1] * 14 + [2] * 6 + [3] * 4 + [4, 5, 6, 8, 10, 13, 16]
 GLUECK_BILDER = len(GLUECK_TAKT)
 
+# Eine Kiste je Quellstufe, benutzt von beiden Quellen: das Gluecksrad zieht die Farbe aus, der Quell
+# gibt die Kiste seiner eigenen Stufe aus (v0.53). Dadurch gibt es nur ein Kistensystem.
+for _kat, _stufen in KISTE_TOEPFE.items():
+    for _st, _eintraege in _stufen.items():
+        w(f"{NS}/loot_table/kiste/topf_{_kat}{_st}.json", {"pools": [{"rolls": 1, "entries": [
+            {"type": "minecraft:item", "name": f"minecraft:{it}", "weight": g,
+             "functions": ([{"function": "minecraft:set_count", "count": {"min": mn, "max": mx}}] if mx > 1 else [])}
+            for it, mn, mx, g in _eintraege]}]})
 for _st, (_gew, _name, _farbe) in enumerate(GLUECK_KISTEN, 1):
     _modell = f'"minecraft:item_model": "nachtwache:crate_{_st}", ' if RESSOURCENPAKET else ""
-    _inhalt = GLUECK_INHALT[_st]
-    w(f"{NS}/loot_table/glueck/kiste{_st}.json", {"pools": [{"rolls": 1, "entries": [{
+    w(f"{NS}/loot_table/kiste/stufe{_st}.json", {"pools": [{"rolls": 1, "entries": [{
         "type": "minecraft:item", "name": "minecraft:chest", "functions": [
             {"function": "minecraft:set_components", "components": json.loads(
                 "{" + _modell + '"minecraft:custom_name": {"text": "%s", "color": "%s", "italic": false}}' % (_name, _farbe))},
             {"function": "minecraft:set_contents", "component": "container", "entries": [
-                {"type": "minecraft:loot_table", "value": f"{NS}:glueck/topf{_st}"} for _ in range(GLUECK_ZUEGE)]},
+                {"type": "minecraft:loot_table", "value": f"{NS}:kiste/topf_{_kat}{_st}"} for _kat in KISTE_FAECHER[_st]]},
         ]}]}]})
-    w(f"{NS}/loot_table/glueck/topf{_st}.json", {"pools": [{"rolls": 1, "entries": [
-        {"type": "minecraft:item", "name": f"minecraft:{it}", "weight": g,
-         "functions": ([{"function": "minecraft:set_count", "count": {"min": mn, "max": mx}}] if mx > 1 else [])}
-        for it, mn, mx, g in _inhalt]}]})
 
 # ----------------------------------------------------------------------------
 # Nether und End: erst ab einer Quellstufe, und der Nether nie nachts (Luis 10.09.2026)
@@ -2034,7 +2067,7 @@ for _st, (_gew, _name, _farbe) in enumerate(GLUECK_KISTEN, 1):
     fn(f"glueck/ende_{_st}", [
         f"title @s title {glueck_band(0, _st)}",
         f"title @s subtitle " + J([txt(_name, _farbe, bold=True)]),
-        f"loot give @s loot {NS}:glueck/kiste{_st}",
+        f"loot give @s loot {NS}:kiste/stufe{_st}",
         "playsound minecraft:entity.player.levelup master @s ~ ~ ~ 1 1",
         f"playsound minecraft:block.note_block.bell master @s ~ ~ ~ 1 {1.4 if laut else 1.0}",
         "playsound minecraft:entity.ender_dragon.growl hostile @a ~ ~ ~ 0.6 1.4" if laut else None,
