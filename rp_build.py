@@ -21,6 +21,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 import icons
 import buecher, zwerg
+import ench_icons          # Symbole der Upgrade-Station, 32x32 (v0.47)
 
 HERE = Path(__file__).resolve().parent
 VORLAGEN = HERE / "vorlagen"
@@ -424,31 +425,30 @@ ENCH_TYPEN = [
 # Vanilla laesst diese Paare nicht zusammen auf ein Teil
 ENCH_STREIT = {"fortune": "silk_touch", "silk_touch": "fortune", "infinity": "mending", "mending": "infinity"}
 
-def ench_platte(zeichen, stufe, maxstufe, zustand):
-    """Knopf der Upgrade-Station: Platte im Zustandston, Zeichen darauf, unten ein Punkt je moegliche
-    Stufe. Weiss heisst erreicht, dunkel heisst offen. Dadurch sieht man Faehigkeit und Stand auf einen
-    Blick, ohne die Beschreibung lesen zu muessen (Luis 10.09.2026: nur Icons, keine Buchgrafik)."""
+ENCH_G = ench_icons.G          # 32: das Symbol fuellt den ganzen Slot, also darf die Textur hoeher aufloesen
+
+def ench_platte(zeichner, stufe, maxstufe, zustand):
+    """Knopf der Upgrade-Station: Farbplatte im Zustandston, darauf das Symbol aus ench_icons, unten
+    ein Balken je moegliche Stufe. Weiss heisst erreicht, dunkel heisst offen. Dadurch sieht man
+    Faehigkeit und Stand auf einen Blick, ohne die Beschreibung zu lesen (Luis 10.09.2026).
+    Seit v0.47 32x32 statt 16x16, die alten 5x5-Zeichen waren zu grob."""
+    g = ENCH_G
     fuell = PLATTE_FARBEN[zustand][0]
-    im = Image.new("RGBA", (16, 16), fuell + (255,))
+    im = Image.new("RGBA", (g, g), fuell + (255,))
     px = im.load()
-    for x, y in ((0, 0), (15, 0), (0, 15), (15, 15)):
+    for x, y in ((0, 0), (1, 0), (0, 1), (g - 1, 0), (g - 2, 0), (g - 1, 1),
+                 (0, g - 1), (1, g - 1), (0, g - 2), (g - 1, g - 1), (g - 2, g - 1), (g - 1, g - 2)):
         px[x, y] = (0, 0, 0, 0)
-    rows, P = buecher.ZEICHEN[zeichen]
-    for y, row in enumerate(rows):          # Zeichen doppelt so gross, etwas hoeher als sonst
-        for x, ch in enumerate(row):        # damit unten Platz fuer die Stufenpunkte bleibt
-            if P.get(ch):
-                for dy in range(2):
-                    for dx in range(2):
-                        px[3 + x * 2 + dx, 1 + y * 2 + dy] = P[ch] + (255,)
+    sym = Image.new("RGBA", (g, g), (0, 0, 0, 0))
+    sym.alpha_composite(ench_icons.umriss(zeichner()), (0, -3))   # drei Pixel hoch, unten liegen die Balken
+    im.alpha_composite(sym)
     if maxstufe:
-        breite = maxstufe * 3 - 1
-        x0 = (16 - breite) // 2
-        offen = (120, 100, 40) if zustand == "an" else (38, 32, 50)
+        z = ImageDraw.Draw(im)
+        breite = (g - 6) // maxstufe
+        offen = (150, 126, 56) if zustand == "an" else ((92, 44, 44) if zustand == "off" else (46, 40, 58))
         for n in range(maxstufe):
-            farbe = (255, 255, 255) if n < stufe else offen
-            for dx in range(2):
-                for dy in range(2):
-                    px[x0 + n * 3 + dx, 13 + dy] = farbe + (255,)
+            x0 = 3 + n * breite
+            z.rectangle([x0, g - 5, x0 + breite - 2, g - 3], fill=(255, 255, 255) if n < stufe else offen)
     return im
 
 def pack_icon():
@@ -528,12 +528,13 @@ def build(out_dir=None):
     # off = gesperrt (Quellstufe fehlt oder die Gegenverzauberung liegt schon drauf). Dazu der gruene
     # Einlegeslot, das einzige Fach der Kauftruhe, das ein echtes Item annimmt (v0.45).
     ench_bilder = {}
-    for kurz, (_, zeichen, maxs, _, _) in ENCH.items():
+    for kurz, (_, _, maxs, _, _) in ENCH.items():
+        zeichner = ench_icons.SYMBOL[kurz]
         for lvl in range(maxs):
-            ench_bilder[f"ench_{kurz}_{lvl}_aus"] = ench_platte(zeichen, lvl, maxs, "aus")
-            ench_bilder[f"ench_{kurz}_{lvl}_off"] = ench_platte(zeichen, lvl, maxs, "off")
-        ench_bilder[f"ench_{kurz}_{maxs}_an"] = ench_platte(zeichen, maxs, maxs, "an")
-    ench_bilder["ench_slot"] = ench_platte("pfeil_ab", 0, 0, "gruen")
+            ench_bilder[f"ench_{kurz}_{lvl}_aus"] = ench_platte(zeichner, lvl, maxs, "aus")
+            ench_bilder[f"ench_{kurz}_{lvl}_off"] = ench_platte(zeichner, lvl, maxs, "off")
+        ench_bilder[f"ench_{kurz}_{maxs}_an"] = ench_platte(zeichner, maxs, maxs, "an")
+    ench_bilder["ench_slot"] = ench_platte(ench_icons.einlegen, 0, 0, "gruen")
     for name, img in ench_bilder.items():
         w(nw / "textures" / "item" / f"{name}.png", img)
         w(nw / "models" / "item" / f"{name}.json", json.dumps({"parent": "minecraft:item/generated", "textures": {"layer0": f"nachtwache:item/{name}"}}))
