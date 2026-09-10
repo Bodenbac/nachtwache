@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 78                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 79                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -182,15 +182,30 @@ STILL_TICKS = 80                       # Stillstand, bis ein Gegner anfaengt zu 
 GRAB_WEICH, GRAB_MITTEL, GRAB_HART = 40, 100, 200   # zusaetzliche Ticks je Materialklasse
 EINGEBAUT_TICKS = 600                  # 30 s Stillstand UND undurchgrabbarer Block Richtung Spieler (Obsidian, Portalrahmen): erst dann taucht der Gegner neben ihm auf
 
-# Bosse: nacht -> (mob-Typ, Name, Leben, Faehigkeit)
+MARSCH_AB = 6                           # so nah am Ziel uebernimmt wieder die Vanilla-KI
+MARSCH_SCHRITT = 0.11                   # je Tick, entspricht gut zwei Bloecken je Sekunde
+# Zielwahl: Entfernungsstufen fuer die Sichtweite (siehe gegner/fokus), FOKUS_WEIT = volle Sicht
+FOKUS_STUFEN = [4, 6, 8, 11, 14, 18, 23, 29, 36, 45, 56, 70, 88, 110, 128]
+FOKUS_WEIT = 128
+
+# Bosse: nacht -> (mob-Typ, Name, Leben, Faehigkeit, Begleitung)
+# Umgebaut in v0.44 nach Luis' Vorgaben (10.09.2026): jeder Boss bringt eine feste Begleitung seiner
+# eigenen Sorte mit, Boss und Begleitung gehen NUR auf Spieler los (nie auf den Beacon) und starten
+# BOSS_VERZUG Ticks nach der Welle, laufen also leicht hinter ihr her.
 BOSSE = {
-    5:  ("zombie_eisen", "The First", 60, None),
-    10: ("spider", "The Mother", 48, "mutter"),        # ruft Hoehlenspinnen
-    15: ("skeleton", "The Marksman", 60, "schuetze"),  # Bogen mit Staerke V
-    20: ("ravager", "The Colossus", 150, None),
-    25: ("witch", "The Witch", 84, "hexe"),             # ruft Diener
-    30: ("warden", "The Collector", 170, "finale"),
+    5:  ("zombie_eisen", "The First",     80,  "tank",     ("zombie", 6)),
+    10: ("skeleton",     "The Marksman",  80,  "schuetze", ("skeleton", 6)),
+    15: ("spider",       "The Mother",    60,  "mutter",   ("cave_spider", 6)),
+    20: ("ravager",      "The Colossus",  150, "koloss",   ("brutalo", 4)),
+    25: ("witch",        "The Witch",     100, "hexe",     ("wither_skeleton", 6)),
+    30: ("warden",       "The Collector", 170, "finale",   None),
 }
+BOSS_VERZUG = 300                       # 15 s nach dem Wellenstart kommt der Bosstrupp los
+BOSS_NACHSCHUB = 6                      # Deckel fuer nachgerufene Diener (Mutter)
+BOSS_SCHUSS_TAKT = 40                   # The Marksman: alle 2 s ein Schuss
+BOSS_SCHUSS_WEITE = 26                  # ... auf bis zu 26 Bloecke, aber nur mit freier Sicht
+BOSS_SCHUSS_SCHADEN = 6
+BOSS_ABSTAND = 8                        # Schuetze, Mutter und Hexe weichen zurueck, wenn ein Spieler naeher kommt
 
 # Materialklassen fuer den Durchbruch (Block-Tags). Alles andere gilt als unzerstoerbar.
 WEICH = ["#minecraft:dirt", "minecraft:sand", "minecraft:red_sand", "minecraft:gravel", "minecraft:clay",
@@ -1176,6 +1191,7 @@ fn("tick", [
     f"execute if score #m20 nw.tmp matches 15 run function {NS}:uhr/anzeige",
     f"execute if score #m20 nw.tmp matches 5 run function {NS}:atmo/sekunde",
     f"function {NS}:spieler/bett",
+    f"function {NS}:nacht/boss_ruf",
     f"function {NS}:nacht/boss_tick",
 ])
 
@@ -2424,26 +2440,52 @@ BOSS_ENTITY = {"zombie_eisen": "minecraft:zombie", "spider": "minecraft:spider",
 
 def boss_summon(key, name, hp, ability):
     extra = BOSS_NBT[key]
-    tags = '"nw.welle","nw.boss"' + (f',"nw.boss_{ability}"' if ability else "")
+    # nw.bosstrupp: Boss und Begleitung gehen nur auf Spieler los und channeln nie am Beacon (v0.44)
+    tags = '"nw.welle","nw.boss","nw.bosstrupp"' + (f',"nw.boss_{ability}"' if ability else "")
+    attribute = [f'{{id:"minecraft:follow_range",base:{FOKUS_WEIT}d}}', f'{{id:"minecraft:max_health",base:{hp}d}}']
+    if ability == "tank":     # The First ist sichtbar groesser als seine Begleitung
+        attribute.append('{id:"minecraft:scale",base:1.4d}')
+        attribute.append('{id:"minecraft:knockback_resistance",base:0.6d}')
+    if ability == "koloss":   # der Rammbock ist langsam, dafuer haelt er alles aus
+        attribute.append('{id:"minecraft:movement_speed",base:0.24d}')
+        attribute.append('{id:"minecraft:knockback_resistance",base:1.0d}')
     nbt = (f'Tags:[{tags}],CustomName:{{text:"{name}",color:"dark_purple",bold:true}},CustomNameVisible:1b,PersistenceRequired:1b,Glowing:1b,'
-           f'attributes:[{{id:"minecraft:follow_range",base:100d}},{{id:"minecraft:max_health",base:{hp}d}}],Health:{hp}f')
+           f'attributes:[{",".join(attribute)}],Health:{hp}f')
     if extra:
         nbt += "," + extra
     if key == "warden":   # sonst graebt er sich nach dem Auftauchen sofort wieder ein
         nbt += ',Brain:{memories:{"minecraft:dig_cooldown":{value:{},ttl:6000L}}}'
     return f"summon {BOSS_ENTITY[key]} {SPAWN_GEGNER[0]} {SPAWN_GEGNER[1]} {SPAWN_GEGNER[2]} {{{nbt}}}"
 
-for n, (key, name, hp, ability) in BOSSE.items():
+for n, (key, name, hp, ability, trupp) in BOSSE.items():
+    begleitung = []
+    if trupp:
+        mob, anzahl = trupp
+        begleitung = [summon_mob(mob, ["nw.bosstrupp", "nw.neu"]) for _ in range(anzahl)]
+        begleitung.append(f"spreadplayers 0 {GEGNER_Z} 2 {GEGNER_RADIUS - 2} false @e[tag=nw.neu]")
+        begleitung.append("tag @e[tag=nw.neu] remove nw.neu")
     fn(f"nacht/boss_{n}", [
         boss_summon(key, name, hp, ability),
+        *begleitung,
         f'bossbar set nw:boss name {J([txt(name, "dark_purple", bold=True)])}',
         f"bossbar set nw:boss max {hp}", f"bossbar set nw:boss value {hp}", "bossbar set nw:boss players @a", "bossbar set nw:boss visible true",
         "scoreboard players set #boss nw.boss 1",
-        f'title @a subtitle {J([txt(f"{name} is on the road.", "dark_purple")])}',
+        f'title @a subtitle {J([txt(f"{name} is coming for you.", "dark_purple")])}',
         f'title @a title {J([txt("Night ", "dark_red"), {"score": {"name": "#nacht", "objective": "nw.nacht"}, "color": "dark_red"}])}',
         "playsound minecraft:entity.ender_dragon.growl hostile @a ~ ~ ~ 0.7 0.5",
         f"function {NS}:nacht/warden_wut",
     ])
+# Bosstrupp kommt mit Verzug: nacht/start legt die Nacht auf #bossruf, der Tick zaehlt #bosszeit herunter
+boss_ruf = ["execute if score #bosszeit nw.boss matches ..0 run return 0",
+            "scoreboard players remove #bosszeit nw.boss 1",
+            "execute unless score #bosszeit nw.boss matches 0 run return 0",
+            # Die Nacht kann in der Zwischenzeit vorbei sein (/trigger endnight, alle tot): dann faellt der Boss aus.
+            # Der Aufruf von Hand (/trigger boss set N) laeuft nicht hierueber und geht weiterhin jederzeit.
+            "execute unless score #status nw.status matches 1 run return 0"]
+for n in BOSSE:
+    boss_ruf.append(f"execute if score #bossruf nw.boss matches {n} run function {NS}:nacht/boss_{n}")
+boss_ruf.append("execute if score #bossruf nw.boss matches -1 run function {}:nacht/boss_zufall".format(NS))
+fn("nacht/boss_ruf", boss_ruf)
 boss_random = ["execute store result score #r nw.tmp2 run random value 1..5"]
 for i, n in enumerate([5, 10, 15, 20, 25], 1):
     boss_random.append(f"execute if score #r nw.tmp2 matches {i} run function {NS}:nacht/boss_{n}")
@@ -2463,12 +2505,17 @@ nacht_start = [
     f"execute if score #nacht nw.nacht matches {LETZTE_NACHT} unless score #modus nw.status matches 2 run function {NS}:nacht/finale_start",
     f"function {NS}:nacht/welle",
 ]
+nacht_start += [
+    # Der Bosstrupp kommt BOSS_VERZUG Ticks spaeter los, damit er hinter der Welle herlaeuft (Luis 10.09.2026)
+    "scoreboard players set #bossruf nw.boss 0", "scoreboard players set #bosszeit nw.boss 0",
+]
 for n in BOSSE:
-    nacht_start.append(f"execute if score #nacht nw.nacht matches {n} unless score #modus nw.status matches 2 run function {NS}:nacht/boss_{n}")
+    nacht_start.append(f"execute if score #nacht nw.nacht matches {n} unless score #modus nw.status matches 2 run scoreboard players set #bossruf nw.boss {n}")
 nacht_start += [
     # Endlosmodus: alle fuenf Naechte ein zufaelliger Boss
     "scoreboard players operation #m5 nw.tmp2 = #nacht nw.nacht", "scoreboard players operation #m5 nw.tmp2 %= #5 nw.const",
-    f"execute if score #modus nw.status matches 2 if score #m5 nw.tmp2 matches 0 run function {NS}:nacht/boss_zufall",
+    f"execute if score #modus nw.status matches 2 if score #m5 nw.tmp2 matches 0 run scoreboard players set #bossruf nw.boss -1",
+    f"execute unless score #bossruf nw.boss matches 0 run scoreboard players set #bosszeit nw.boss {BOSS_VERZUG}",
     f"execute unless score #nacht nw.nacht matches {LETZTE_NACHT} run function {NS}:sammler/spruch/nacht",
     "scoreboard players set #glocke_geklingelt nw.upgrade 0",
 ]
@@ -2523,17 +2570,45 @@ fn("nacht/boss_tick", [
     "execute unless score #boss nw.boss matches 1 run return 0",
     "execute store result bossbar nw:boss value run data get entity @e[tag=nw.boss,limit=1] Health",
     f"execute unless entity @e[tag=nw.boss] run return run function {NS}:nacht/boss_tot",
+    # Jeden Tick: Schuetze, Mutter und Hexe halten Abstand, der Schuetze schiesst (v0.44)
+    f"execute as @e[tag=nw.boss_schuetze] at @s run function {NS}:nacht/boss_rueckzug",
+    f"execute as @e[tag=nw.boss_mutter] at @s run function {NS}:nacht/boss_rueckzug",
+    f"execute as @e[tag=nw.boss_hexe] at @s run function {NS}:nacht/boss_rueckzug",
+    f"scoreboard players operation #ms nw.tmp2 = #tick nw.tick", f"scoreboard players set #k nw.tmp2 {BOSS_SCHUSS_TAKT}",
+    "scoreboard players operation #ms nw.tmp2 %= #k nw.tmp2",
+    f"execute if score #ms nw.tmp2 matches 0 as @e[tag=nw.boss_schuetze] at @s run function {NS}:nacht/boss_schuss",
     "scoreboard players operation #m200 nw.tmp2 = #tick nw.tick", "scoreboard players operation #m200 nw.tmp2 %= #200 nw.const",
     "execute unless score #m200 nw.tmp2 matches 0 run return 0",
-    # Nachschub der Bosse, beide mit Deckel 6 (Luis 10.09.2026). Die Hexe hatte bis v0.41 gar keinen:
-    # zwei Zombies alle zehn Sekunden ohne Ende, und die Nacht endet erst bei null Gegnern.
+    # Die Mutter zieht ihre Brut nach, hoechstens BOSS_NACHSCHUB Stueck (Luis 10.09.2026).
     "execute store result score #cs nw.tmp2 if entity @e[type=cave_spider,tag=nw.welle]",
-    f"execute if score #cs nw.tmp2 matches ..5 as @e[tag=nw.boss_mutter] at @s run " + summon_mob("cave_spider", pos=("~", "~", "~")),
-    f"execute if score #cs nw.tmp2 matches ..4 as @e[tag=nw.boss_mutter] at @s run " + summon_mob("cave_spider", pos=("~", "~", "~")),
-    "execute store result score #hz nw.tmp2 if entity @e[tag=nw.hexe_z,tag=nw.welle]",
-    f"execute if score #hz nw.tmp2 matches ..5 as @e[tag=nw.boss_hexe] at @s run " + summon_mob("zombie", ["nw.hexe_z"], pos=("~", "~", "~")),
-    f"execute if score #hz nw.tmp2 matches ..4 as @e[tag=nw.boss_hexe] at @s run " + summon_mob("zombie", ["nw.hexe_z"], pos=("~", "~", "~")),
+    *[f"execute if score #cs nw.tmp2 matches ..{BOSS_NACHSCHUB - 1 - i} as @e[tag=nw.boss_mutter] at @s run "
+      + summon_mob("cave_spider", ["nw.bosstrupp"], pos=("~", "~", "~")) for i in range(2)],
+    # Die Hexe beschwoert seit v0.44 nichts mehr, sie haelt ihren Trupp am Leben
+    "execute as @e[tag=nw.boss_hexe] at @s run effect give @e[tag=nw.welle,distance=..12] minecraft:instant_health 1 0 true",
+    "execute as @e[tag=nw.boss_hexe] at @s run particle minecraft:happy_villager ~ ~1 ~ 6 1 6 0 30",
     f"function {NS}:nacht/warden_wut",
+])
+_SP_ARG = "gamemode=!spectator,gamemode=!creative"
+_SPIELER = f"@p[{_SP_ARG}]"
+# Wer im Hintergrund bleiben soll, weicht zurueck, sobald ein Spieler naeher als BOSS_ABSTAND kommt.
+# Rueckwaerts heisst: zum Spieler drehen und mit negativem ^z gehen. Ohne die Bodenpruefung liefe
+# die Mutter rueckwaerts in den Nebel.
+fn("nacht/boss_rueckzug", [
+    f"execute unless entity @p[{_SP_ARG},distance=..{BOSS_ABSTAND}] run return 0",
+    f"execute facing entity {_SPIELER} feet rotated ~ 0 "
+    "if block ^ ^ ^-1 minecraft:air if block ^ ^1 ^-1 minecraft:air unless block ^ ^-1 ^-1 minecraft:air "
+    f"run tp @s ^ ^ ^-{MARSCH_SCHRITT} ~ ~",
+])
+# The Marksman: kein echtes Projektil, sondern Schaden plus Spur wie bei Bogi, aber nur mit freier Sicht.
+fn("nacht/boss_schuss", [
+    f"execute unless entity @p[{_SP_ARG},distance=..{BOSS_SCHUSS_WEITE}] run return 0",
+    f"scoreboard players set #sicht nw.tmp {BOSS_SCHUSS_WEITE}",
+    f"execute store result score #frei nw.tmp2 positioned ~ ~1.4 ~ facing entity {_SPIELER} eyes run function {NS}:gegner/sicht",
+    "execute unless score #frei nw.tmp2 matches 1 run return 0",
+    f"scoreboard players set #spur nw.tmp {2 * BOSS_SCHUSS_WEITE}",
+    f"execute positioned ~ ~1.4 ~ facing entity {_SPIELER} eyes run function {NS}:bogi/spur",
+    f"execute as @p[{_SP_ARG},distance=..{BOSS_SCHUSS_WEITE}] run damage @s {BOSS_SCHUSS_SCHADEN} minecraft:arrow",
+    "playsound minecraft:entity.arrow.shoot hostile @a[distance=..32] ~ ~ ~ 1 0.6",
 ])
 # Der Sammler (Warden) bleibt wuetend auf den naechsten Spieler und graebt sich nicht ein
 fn("nacht/warden_wut", [
@@ -2654,6 +2729,9 @@ fn("gegner/einer", [
     # Channeln nur, wer auf dem Eisensockel steht, nicht schon im Umkreis (Luis 09.09.2026)
     "scoreboard players set @s nw.sockel 0",
     SOCKEL_PRUEFUNG,
+    # Der Bosstrupp channelt nie: er will nur an die Spieler, der Beacon ist fuer ihn uninteressant
+    # (Luis 10.09.2026). Ueber nw.sockel geloest, dann bleibt nw.chan bei 0 und der Marsch laeuft weiter.
+    "execute if entity @s[tag=nw.bosstrupp] run scoreboard players set @s nw.sockel 0",
     "execute if score @s nw.sockel matches 0 run scoreboard players set @s nw.chan 0",
     "execute if score @s nw.sockel matches 1 unless score @s nw.wut matches 1.. run scoreboard players add @s nw.chan 1",
     "execute if score @s nw.chan matches 1.. if score #m20 nw.tmp matches 0 at @s run particle minecraft:dust{color:[1.0,0.2,0.2],scale:1.0} ~ ~1 ~ 0.3 0.5 0.3 0 6",
@@ -2688,8 +2766,6 @@ fn("gegner/einer", [
 # den Dorfbewohner am Beacon gar nicht als Ziel kennen. Deshalb schiebt das Datapack alle, die weit vom Beacon
 # weg sind und keinen Spieler in der Naehe haben, Schritt fuer Schritt vorwaerts: erst zum Tor der Gegnerinsel,
 # dann durch die Bruecke. Ab MARSCH_AB Bloecken uebernimmt wieder die normale KI.
-MARSCH_AB = 6                           # so nah am Ziel uebernimmt wieder die Vanilla-KI
-MARSCH_SCHRITT = 0.11                   # je Tick, entspricht gut zwei Bloecken je Sekunde
 MARSCH_TOR = (0.5, BODEN_Y + 1.5, GEGNER_Z - GEGNER_RADIUS + 0.5)
 _MZ = f"{BEACON[0]+0.5} {BEACON[1]+0.5} {BEACON[2]+0.5}"
 _SP = "@a[distance=..%d,gamemode=!spectator,gamemode=!creative]"
@@ -2698,6 +2774,8 @@ fn("gegner/marsch", [
     # und die Vanilla-KI blieb in Angriffsreichweite des Ankers stehen, also im Gras davor
     # (Luis 09.09.2026: "bleiben derzeit vor dem beacon stehen und greifen nicht an").
     "execute if score @s nw.sockel matches 1 run return 0",
+    # Bosstrupp geht immer auf den Spieler, auch direkt neben dem Beacon (Luis 10.09.2026)
+    f"execute if entity @s[tag=nw.bosstrupp] run return run function {NS}:gegner/marsch_spieler",
     # In Beacon-Naehe zaehlt der Sockel mehr als ein naher Spieler, sonst stehen sie ewig davor.
     # Ausnahme: wer gerade getroffen wurde (nw.wut), geht auf den Spieler los.
     f"execute if entity @s[x={BEACON[0]+0.5},y={BEACON[1]+0.5},z={BEACON[2]+0.5},distance=..{MARSCH_AB}] "
@@ -2706,6 +2784,17 @@ fn("gegner/marsch", [
     f"execute if score @s nw.ziel matches 1 run return run function {NS}:gegner/marsch_spieler",
     f"execute if score @s nw.pz matches {GEGNER_Z - GEGNER_RADIUS + 2}.. run return run function {NS}:gegner/marsch_tor",
     f"function {NS}:gegner/marsch_ziel",
+])
+# Freie Sicht auf den naechsten Spieler? Schrittweise die Linie ablaufen, wie bogi/spur, aber mit
+# Abbruch am ersten festen Block. Rueckgabe 1 = frei, 0 = verbaut. Wird mit "facing entity @p eyes"
+# aufgerufen, die Rotation kommt also vom Aufrufer (v0.44).
+fn("gegner/sicht", [
+    "execute if entity @p[gamemode=!spectator,gamemode=!creative,distance=..1.6] run return 1",
+    "execute unless block ~ ~ ~ minecraft:air unless block ~ ~ ~ minecraft:cave_air "
+    "unless block ~ ~ ~ minecraft:short_grass unless block ~ ~ ~ minecraft:tall_grass run return 0",
+    "scoreboard players remove #sicht nw.tmp 1",
+    "execute if score #sicht nw.tmp matches ..0 run return 0",
+    f"execute positioned ^ ^ ^1 run return run function {NS}:gegner/sicht",
 ])
 fn("gegner/marsch_spieler", [
     f"execute if entity {_SP % 12} run return 0",
@@ -2725,11 +2814,15 @@ fn("gegner/marsch_ziel", [
 # Spieler naeher ist als der Beacon, gehen sie auf den Spieler. Vanilla gibt dem Spielerziel immer Vorrang,
 # also wird die Sichtweite auf die Beacon-Entfernung gedrueckt: der Anker liegt dann drin, weiter entfernte
 # Spieler draussen. Untergrenze FOKUS_MIN, sonst findet der Wegfinder keinen Weg mehr und der Gegner steht.
-FOKUS_STUFEN = [4, 6, 8, 11, 14, 18, 23, 29, 36, 45, 56, 70, 88, 110, 128]
-FOKUS_WEIT = 128
 _bp = f"x={BEACON[0]+0.5},y={BEACON[1]+0.5},z={BEACON[2]+0.5}"
 _ziel = "@a[distance=..%d,gamemode=!spectator,gamemode=!creative]"
-fokus = ["scoreboard players set #bk nw.tmp2 0"]
+fokus = [
+    # Bosstrupp: immer der Spieler, volle Sichtweite, kein Blick auf den Beacon (v0.44)
+    f"execute if entity @s[tag=nw.bosstrupp] run attribute @s minecraft:follow_range base set {FOKUS_WEIT}",
+    "execute if entity @s[tag=nw.bosstrupp] run scoreboard players set @s nw.ziel 1",
+    "execute if entity @s[tag=nw.bosstrupp] run return 0",
+    "scoreboard players set #bk nw.tmp2 0",
+]
 fokus += [f"execute if entity @s[{_bp},distance=..{r}] run scoreboard players set #bk nw.tmp2 {r}" for r in reversed(FOKUS_STUFEN)]
 fokus.append("scoreboard players set @s nw.ziel 0")
 for r in FOKUS_STUFEN:
@@ -2772,6 +2865,9 @@ fn("gegner/graben", [
     f"execute if score #klasse nw.tmp matches 3 unless score @s nw.still matches {STILL_TICKS + GRAB_HART}.. run return run function {NS}:gegner/klopfen",
     f"execute if block ~ ~ ~ #{NS}:grabbar run setblock ~ ~ ~ minecraft:air destroy",
     f"execute if block ~ ~1 ~ #{NS}:grabbar run setblock ~ ~1 ~ minecraft:air destroy",
+    # The Colossus reisst eine Bresche von drei mal drei, Mauern helfen gegen ihn nicht (v0.44)
+    *[f"execute if entity @s[tag=nw.boss_koloss] if block {p} #{NS}:grabbar run setblock {p} minecraft:air destroy"
+      for p in ("~ ~2 ~", "^1 ^ ^0", "^1 ^1 ^0", "^1 ^2 ^0", "^-1 ^ ^0", "^-1 ^1 ^0", "^-1 ^2 ^0")],
     "playsound minecraft:block.stone.break hostile @a ~ ~ ~ 1 0.5",
     "playsound minecraft:entity.zombie.break_wooden_door hostile @a ~ ~ ~ 0.6 0.6",
     f"scoreboard players set @s nw.still {STILL_TICKS - 20}",
