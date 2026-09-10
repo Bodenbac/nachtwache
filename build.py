@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 77                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 78                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -551,6 +551,21 @@ FREI_OBEN = BODEN_Y + 9                 # bis hierhin wird ueber dem Dach freige
 
 # Gegnerinsel
 GZ, GR = GEGNER_Z, GEGNER_RADIUS
+# Baustoffe von Bruecke und Gegnerinsel. Nur DIESE Items werden dort weggeraeumt, damit ein abgeschlagener
+# Blocke keine Rohstoffquelle wird. Alles andere (Tod, Wegwerfen mit Q, Mobdrops) bleibt liegen
+# (Luis 10.09.2026: bis v0.42 loeschte die Pflege dort jedes Item, man verlor beim Sterben sein Zeug).
+SCHUTT_AUSSEN = ["polished_blackstone_bricks", "deepslate_bricks", "iron_bars", "iron_chain", "soul_lantern",
+                 "crying_obsidian", "blackstone", "deepslate", "polished_deepslate", "soul_soil", "soul_sand",
+                 "netherrack", "shroomlight", "crimson_stem"]
+# Ab hier faengt die Bruecke an, davor liegt die Startinsel. Bauen ist ab dieser Reihe verboten.
+def AUSSERHALB(zurueck, name):
+    """Setzt einen Minion oder Generator zurueck, wenn er auf Bruecke oder Gegnerinsel gesetzt wird."""
+    return [
+        "execute at @s store result score #bz nw.tmp2 run data get entity @s Pos[2]",
+        f"execute if score #bz nw.tmp2 matches {STRASSE_Z[0]}.. run tellraw @p[distance=..10] "
+        + J([txt("[Nightwatch] ", "dark_red"), txt(f"The road and the far island are not yours to build on. {name} comes back.", "gray")]),
+        f"execute if score #bz nw.tmp2 matches {STRASSE_Z[0]}.. run return run function {NS}:{zurueck}",
+    ]
 # Baustoffe der Bruecke, die Insel schliesst den Gang mit denselben
 BR_BODEN = "minecraft:polished_blackstone_bricks"
 BR_WAND = "minecraft:deepslate_bricks"
@@ -801,6 +816,7 @@ neu = [
     "execute align xyz positioned ~0.5 ~0.5 ~0.5 run tp @s ~ ~ ~",
     f"execute at @s unless block ~ ~ ~ minecraft:air run return run function {NS}:zwerg/zurueck",
     f"execute at @s if block ~ ~-1 ~ minecraft:air run return run function {NS}:zwerg/zurueck",
+    *AUSSERHALB("zwerg/zurueck", "Fraggle"),
     "scoreboard players set @s nw.zwerg_d -1",
 ]
 for d in range(4):
@@ -1386,6 +1402,7 @@ fn("bogi/neu", [
     "execute align xyz positioned ~0.5 ~0.5 ~0.5 run tp @s ~ ~ ~",
     f"execute at @s unless block ~ ~ ~ minecraft:air run return run function {NS}:bogi/zurueck",
     f"execute at @s unless block ~ ~-1 ~ #{NS}:grabbar unless block ~ ~-1 ~ minecraft:grass_block run return run function {NS}:bogi/zurueck",
+    *AUSSERHALB("bogi/zurueck", "Bogi"),
     "tag @s add nw.bogi",
     # ab hier auf der ausgerichteten Position weiterarbeiten, sonst stecken die Modelle im Boden
     # Stufen aus dem Marker lesen
@@ -1693,6 +1710,7 @@ fn("gen/neu", [
     "tag @s remove nw.gen_neu",
     "execute align xyz positioned ~0.5 ~0.5 ~0.5 run tp @s ~ ~ ~",
     f"execute at @s unless block ~ ~ ~ minecraft:air run return run function {NS}:gen/zurueck",
+    *AUSSERHALB("gen/zurueck", "The generator"),
     "tag @s add nw.gen",
     f"execute at @s run function {NS}:gen/aufbauen",
     "playsound minecraft:block.amethyst_cluster.place block @a ~ ~ ~ 1 0.8",
@@ -2795,8 +2813,17 @@ fn("schutz/tick", [
     f"function {NS}:welt/stand",
     f"execute if score #m2 nw.tmp2 matches 1 if score #status nw.status matches 1 run function {NS}:strasse/bauen",
     f"execute if score #m2 nw.tmp2 matches 1 if score #status nw.status matches 0 run function {NS}:strasse/entfernen",
-    f"kill @e[type=item,x={-GEGNER_RADIUS-2},y={BODEN_Y-8},z={GEGNER_Z-GEGNER_RADIUS-1},dx={2*GEGNER_RADIUS+4},dy=25,dz={2*GEGNER_RADIUS+2}]",
-    f"kill @e[type=item,x=-4,y={BODEN_Y-1},z={STRASSE_Z[0]},dx=8,dy=6,dz={STRASSE_Z[1]-STRASSE_Z[0]}]",
+    # Abgeschlagene Bausteine der Bruecke und der Gegnerinsel verschwinden, alles andere bleibt liegen
+    # (Luis 10.09.2026). Vorher starb dort jedes Item, auch das eigene Zeug beim Tod. Alle vier Ticks
+    # reicht: die Aufhebesperre eines Blockdrops liegt bei zehn Ticks, vorher kommt niemand daran.
+    "scoreboard players operation #m4 nw.tmp2 = #tick nw.tick", "scoreboard players operation #m4 nw.tmp2 %= #4 nw.const",
+    f"execute if score #m4 nw.tmp2 matches 0 run function {NS}:schutz/schutt",
+])
+fn("schutz/schutt", [
+    *[f'kill @e[type=item,x={-GEGNER_RADIUS-2},y={BODEN_Y-8},z={GEGNER_Z-GEGNER_RADIUS-1},dx={2*GEGNER_RADIUS+4},dy=25,dz={2*GEGNER_RADIUS+2},nbt={{Item:{{id:"minecraft:{b}"}}}}]'
+      for b in SCHUTT_AUSSEN],
+    *[f'kill @e[type=item,x=-4,y={BODEN_Y-1},z={STRASSE_Z[0]},dx=8,dy=6,dz={STRASSE_Z[1]-STRASSE_Z[0]},nbt={{Item:{{id:"minecraft:{b}"}}}}]'
+      for b in SCHUTT_AUSSEN],
 ])
 fn("schutz/sekunde", [
     *[f"tag @a[name={n}] add nw.admin" for n in ADMINS],
