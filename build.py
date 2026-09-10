@@ -19,7 +19,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 84                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 85                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -379,6 +379,7 @@ OBJEKTIVE = [("nw.mined_gen", "minecraft.mined:minecraft.barrel")] + [
     ("nw.px", "dummy"), ("nw.py", "dummy"), ("nw.pz", "dummy"), ("nw.qx", "dummy"), ("nw.qy", "dummy"), ("nw.qz", "dummy"),
     ("nw.still", "dummy"), ("nw.kills", "dummy"), ("nw.verdient", "dummy"), ("nw.anzeige", "dummy"), ("nw.const", "dummy"),
     ("nw.boss", "dummy"), ("nw.upgrade", "dummy"), ("nw.laterne", "dummy"), ("nw.zwerg", "dummy"), ("nw.zwerg_t", "dummy"), ("nw.zwerg_b", "dummy"), ("nw.zwerg_d", "dummy"), ("nw.zwerg_a", "dummy"), ("nw.leben", "dummy"), ("nw.chan", "dummy"), ("nw.wut", "dummy"), ("nw.sockel", "dummy"), ("nw.hpv", "dummy"), ("nw.hpp", "dummy"),
+    ("nw.gl", "dummy"), ("nw.glw", "dummy"), ("nw.glz", "dummy"), ("nw.glr", "dummy"),   # Gluecksrad (v0.50)
     ("nw.b_sp", "dummy"), ("nw.b_st", "dummy"), ("nw.b_mu", "dummy"), ("nw.b_fl", "dummy"), ("nw.b_inf", "dummy"), ("nw.b_kb", "dummy"), ("nw.b_rg", "dummy"), ("nw.b_t", "dummy"), ("nw.b_nm", "dummy"), ("nw.ziel", "dummy"), ("reset", "trigger"), ("yes", "trigger"), ("night", "trigger"), ("boss", "trigger"), ("fraggle", "trigger"), ("endnight", "trigger"), ("money", "trigger"), ("nw.schlaf", "dummy"), ("nw.fest", "dummy"), ("nw.dmin", "dummy"),
 ]
 
@@ -1183,6 +1184,7 @@ fn("tick", [
     f"function {NS}:zwerg/tick",
     f"function {NS}:bogi/tick",
     f"function {NS}:gen/tick",
+    f"function {NS}:glueck/tick",
     f"execute as @a[tag=nw.admin,scores={{reset=1..}}] run function {NS}:admin/reset_trigger",
     f"execute as @a[tag=nw.admin,scores={{yes=1..}}] run function {NS}:admin/yes_trigger",
     f"execute as @a[tag=nw.admin,scores={{night=1..}}] run function {NS}:admin/night_trigger",
@@ -1864,7 +1866,72 @@ MODELL_SKULL = 'item_model="nachtwache:skull_item",' if RESSOURCENPAKET else ""
 LORE_SKULL_L = ['{text:"Right-click: three enemies drop where they stand.",color:"gray",italic:false}',
                 '{text:"Works as often as you can pay for it.",color:"gray",italic:false}',
                 '{text:"Only at night.",color:"dark_gray",italic:false}']
+LORE_KEY_L = ['{text:"Right-click: the Collector spins the wheel.",color:"gray",italic:false}',
+              '{text:"You win a crate. Colour decides what is inside.",color:"gray",italic:false}',
+              '{text:"Costs 10 player levels, not coins.",color:"dark_gray",italic:false}']
 KONSUM = 'consumable={consume_seconds:0.6f,animation:"drink",sound:"minecraft:block.amethyst_block.chime",has_consume_particles:false},max_stack_size=16'
+
+# ----------------------------------------------------------------------------
+# Gluecksrad (v0.50, Luis' Entwurf vom 10.09.2026)
+#
+# Der Key kostet 10 Spielerlevel statt Coins, das ist der zweite Zweck fuer Erfahrung neben
+# Mending. Rechtsklick loest ihn ein: ein Laufband aus den sieben Stufenscheiben rennt durch den
+# Titel, wird langsamer, klackt bei jedem Feld und bleibt auf einer Farbe stehen. Gewonnen wird
+# eine Truhe in dieser Farbe mit zufaelligem Inhalt, wie die Kisten aus dem Quell.
+# Ein Truhenfenster geht dafuer nicht: ein Datapack kann keinem Spieler eine GUI oeffnen.
+# ----------------------------------------------------------------------------
+KEY_LEVEL = 10                          # Preis eines Keys in Spielerleveln
+# Stufe -> (Gewicht in Prozent, Anzeigename, Farbe im Chat)
+GLUECK_KISTEN = [
+    (40, "Grey Crate",   "gray"),
+    (25, "Green Crate",  "green"),
+    (15, "Blue Crate",   "blue"),
+    (10, "Purple Crate", "light_purple"),
+    (6,  "Yellow Crate", "yellow"),
+    (3,  "Orange Crate", "gold"),
+    (1,  "Black Crate",  "dark_purple"),
+]
+# Inhalt je Truhe: (Item, min, max, Gewicht). Aus jedem Topf wird gezogen, drei Zuege je Truhe.
+GLUECK_INHALT = {
+    1: [("dirt", 16, 32, 3), ("cobblestone", 16, 32, 3), ("stone", 8, 16, 2), ("coal", 4, 8, 2),
+        ("bone", 4, 8, 2), ("rotten_flesh", 8, 16, 2), ("arrow", 8, 16, 1)],
+    2: [("iron_ingot", 4, 8, 3), ("bread", 6, 12, 2), ("arrow", 16, 32, 2), ("copper_ingot", 8, 16, 2),
+        ("string", 6, 12, 1), ("oak_log", 8, 16, 1)],
+    3: [("gold_ingot", 4, 8, 3), ("lapis_lazuli", 8, 16, 2), ("redstone", 12, 24, 2),
+        ("iron_ingot", 12, 24, 2), ("cooked_beef", 8, 16, 2), ("iron_pickaxe", 1, 1, 1)],
+    4: [("diamond", 2, 4, 3), ("amethyst_shard", 6, 12, 2), ("ender_pearl", 2, 4, 2),
+        ("golden_apple", 1, 2, 2), ("blaze_rod", 3, 6, 1), ("diamond_pickaxe", 1, 1, 1)],
+    5: [("emerald", 8, 16, 3), ("ender_pearl", 6, 12, 2), ("diamond", 6, 10, 2),
+        ("totem_of_undying", 1, 1, 2), ("experience_bottle", 16, 32, 2), ("enchanted_golden_apple", 1, 1, 1)],
+    6: [("netherite_scrap", 1, 2, 3), ("shulker_shell", 2, 4, 2), ("diamond", 12, 20, 2),
+        ("emerald", 24, 40, 2), ("totem_of_undying", 2, 3, 1), ("elytra", 1, 1, 1)],
+    7: [("netherite_ingot", 1, 2, 3), ("nether_star", 1, 1, 2), ("netherite_scrap", 4, 6, 2),
+        ("diamond", 32, 48, 2), ("enchanted_golden_apple", 3, 5, 2), ("beacon", 1, 1, 1)],
+}
+GLUECK_ZUEGE = 3                        # so viele Faecher hat jede gewonnene Truhe
+GLUECK_FELDER = 9                       # Breite des Laufbands
+# Bremskurve: Bild -> Ticks bis zum naechsten. Laeuft rund vier Sekunden und wird spuerbar langsamer.
+GLUECK_TAKT = [1] * 14 + [2] * 6 + [3] * 4 + [4, 5, 6, 8, 10, 13, 16]
+GLUECK_BILDER = len(GLUECK_TAKT)
+
+for _st, (_gew, _name, _farbe) in enumerate(GLUECK_KISTEN, 1):
+    _modell = f'"minecraft:item_model": "nachtwache:crate_{_st}", ' if RESSOURCENPAKET else ""
+    _inhalt = GLUECK_INHALT[_st]
+    w(f"{NS}/loot_table/glueck/kiste{_st}.json", {"pools": [{"rolls": 1, "entries": [{
+        "type": "minecraft:item", "name": "minecraft:chest", "functions": [
+            {"function": "minecraft:set_components", "components": json.loads(
+                "{" + _modell + '"minecraft:custom_name": {"text": "%s", "color": "%s", "italic": false}}' % (_name, _farbe))},
+            {"function": "minecraft:set_contents", "component": "container", "entries": [
+                {"type": "minecraft:loot_table", "value": f"{NS}:glueck/topf{_st}"} for _ in range(GLUECK_ZUEGE)]},
+        ]}]}]})
+    w(f"{NS}/loot_table/glueck/topf{_st}.json", {"pools": [{"rolls": 1, "entries": [
+        {"type": "minecraft:item", "name": f"minecraft:{it}", "weight": g,
+         "functions": ([{"function": "minecraft:set_count", "count": {"min": mn, "max": mx}}] if mx > 1 else [])}
+        for it, mn, mx, g in _inhalt]}]})
+
+w(f"{NS}/advancement/key_benutzt.json", {"criteria": {"benutzt": {"trigger": "minecraft:consume_item", "conditions": {
+    "item": {"predicates": {"minecraft:custom_data": "{nw_key:1b}"}}}}},
+    "rewards": {"function": f"{NS}:glueck/start"}})
 
 w(f"{NS}/advancement/focus_benutzt.json", {"criteria": {"benutzt": {"trigger": "minecraft:consume_item", "conditions": {
     "item": {"predicates": {"minecraft:custom_data": "{nw_focus:1b}"}}}}},
@@ -1875,6 +1942,81 @@ w(f"{NS}/advancement/decoy_benutzt.json", {"criteria": {"benutzt": {"trigger": "
 w(f"{NS}/advancement/skull_benutzt.json", {"criteria": {"benutzt": {"trigger": "minecraft:consume_item", "conditions": {
     "item": {"predicates": {"minecraft:custom_data": "{nw_skull:1b}"}}}}},
     "rewards": {"function": f"{NS}:skull/benutzen"}})
+
+# Das Laufband: eine feste Folge von Stufenscheiben, das Bild zeigt ein Fenster darauf. Von Bild zu
+# Bild rutscht das Fenster um eins, dadurch laeuft das Band. Die Folge ist nach den echten Gewichten
+# gezogen, damit unterwegs meist Grau und Gruen vorbeikommt und Schwarz die Ausnahme bleibt.
+import random as _zufall
+_zufall.seed(20260910)
+_GEWICHTE = [g for g, _, _ in GLUECK_KISTEN]
+GLUECK_FOLGE = _zufall.choices(range(1, 8), weights=_GEWICHTE, k=GLUECK_BILDER + GLUECK_FELDER + 2)
+
+def glueck_band(offset, mitte=None):
+    """Titelzeile des Rades: neun Scheiben, die mittlere in eckigen Klammern."""
+    teile = []
+    for i in range(GLUECK_FELDER):
+        st = GLUECK_FOLGE[offset + i]
+        if i == GLUECK_FELDER // 2:
+            if mitte:
+                st = mitte
+            teile.append(txt("[", "yellow", bold=True))
+            teile.append(icon(f"tier{st}"))
+            teile.append(txt("]", "yellow", bold=True))
+        else:
+            teile.append(icon(f"tier{st}"))
+    return J(teile)
+
+fn("glueck/start", [
+    f"advancement revoke @s only {NS}:key_benutzt",
+    "execute if score @s nw.gl matches 1.. run return run tellraw @s " + J([txt("The wheel is still turning.", "gray", italic=True)]),
+    "execute store result score @s nw.glr run random value 1..100",
+] + [f"execute if score @s nw.glr matches {lo}..{hi} run scoreboard players set @s nw.glz {st}"
+     for st, lo, hi in [(st, sum(_GEWICHTE[:st - 1]) + 1, sum(_GEWICHTE[:st])) for st in range(1, 8)]] + [
+    f"scoreboard players set @s nw.gl {GLUECK_BILDER}",
+    "scoreboard players set @s nw.glw 0",
+    "title @s times 0 40 6",
+    "playsound minecraft:block.note_block.bit master @s ~ ~ ~ 1 0.6",
+    "tellraw @s " + J([txt("The Collector spins the wheel.", "gold", italic=True)]),
+])
+# Ein Bild je Halt des Bandes. Die Tonhoehe steigt zum Ende hin, das macht die Bremse hoerbar.
+for _f in range(1, GLUECK_BILDER):
+    _p = 0.7 + 0.9 * (GLUECK_BILDER - _f) / GLUECK_BILDER
+    fn(f"glueck/bild_{_f}", [
+        f"title @s title {glueck_band(_f)}",
+        f"playsound minecraft:block.note_block.hat master @s ~ ~ ~ 0.7 {_p:.2f}",
+    ])
+schritt = ["execute if score @s nw.glw matches 1.. run return run scoreboard players remove @s nw.glw 1",
+           "scoreboard players remove @s nw.gl 1",
+           f"execute if score @s nw.gl matches ..0 run return run function {NS}:glueck/ende"]
+for _f in range(1, GLUECK_BILDER):
+    schritt.append(f"execute if score @s nw.gl matches {_f} run function {NS}:glueck/bild_{_f}")
+    schritt.append(f"execute if score @s nw.gl matches {_f} run scoreboard players set @s nw.glw {GLUECK_TAKT[_f - 1]}")
+fn("glueck/schritt", schritt)
+fn("glueck/tick", [f"execute as @a[scores={{nw.gl=1..}}] at @s run function {NS}:glueck/schritt"])
+# Ende: die gewonnene Truhe, Ton und Ansage. Ab Orange hoert es die ganze Insel.
+fn("glueck/ende", [
+    "scoreboard players set @s nw.gl 0", "scoreboard players set @s nw.glw 0",
+    "title @s times 0 60 10",
+] + [f"execute if score @s nw.glz matches {st} run function {NS}:glueck/ende_{st}" for st in range(1, 8)] + [
+    "scoreboard players set @s nw.glz 0",
+])
+for _st, (_gew, _name, _farbe) in enumerate(GLUECK_KISTEN, 1):
+    laut = _st >= 6
+    fn(f"glueck/ende_{_st}", [
+        f"title @s title {glueck_band(0, _st)}",
+        f"title @s subtitle " + J([txt(_name, _farbe, bold=True)]),
+        f"loot give @s loot {NS}:glueck/kiste{_st}",
+        "playsound minecraft:entity.player.levelup master @s ~ ~ ~ 1 1",
+        f"playsound minecraft:block.note_block.bell master @s ~ ~ ~ 1 {1.4 if laut else 1.0}",
+        "playsound minecraft:entity.ender_dragon.growl hostile @a ~ ~ ~ 0.6 1.4" if laut else None,
+        "tellraw @a " + J([{"selector": "@s", "color": "white"}, txt(" opened a ", "gray"), txt(_name, _farbe, bold=True),
+                           txt("!" if laut else ".", "gray")]),
+    ])
+
+fn("sammler/zu_wenig_level", [
+    "tellraw @s " + J([txt("[The Collector] ", "dark_red"), txt(f"Come back with {KEY_LEVEL} levels of experience.", "gray")]),
+    "playsound minecraft:entity.villager.no neutral @s ~ ~ ~ 1 1",
+])
 
 # Reaper's Skull: toetet drei zufaellige Gegner der Welle sofort. Bosse sind ausgenommen, sonst waere er zu stark.
 SKULL_ITEM = ("minecraft:echo_shard[" + MODELL_SKULL +
@@ -1999,6 +2141,10 @@ def item_spec(spec):
         return "minecraft:carved_pumpkin", MODELL_DECOY + 'custom_name={text:"Decoy Totem",color:"gold",italic:false},custom_data={nw_decoy:1b},' + KONSUM + ',lore=[' + ",".join(LORE_DECOY_L) + ']', 1
     if spec == "LATERNE":
         return "minecraft:soul_lantern", MODELL_LATERNE + 'custom_name={text:"Collector Lantern",color:"aqua",italic:false},custom_data={nw_laterne:1b},lore=' + LORE_LATERNE, 1
+    if spec == "KEY":
+        modell = 'item_model="nachtwache:key",' if RESSOURCENPAKET else ""
+        return "minecraft:tripwire_hook", (modell + 'custom_name={text:"Key",color:"gold",italic:false},'
+            'custom_data={nw_key:1b},' + KONSUM + ',lore=[' + ",".join(LORE_KEY_L) + ']'), 1
     if spec == "KONTRAKT":
         return "minecraft:paper", MODELL_KONTRAKT + 'custom_name={text:"Bounty Contract",color:"red",italic:false},custom_data={nw_kontrakt:1b},lore=' + LORE_KONTRAKT, 1
     if spec == "GLOCKE":
@@ -2021,6 +2167,9 @@ def menue_item(r):
     preis, mx, name = int(r["preis"]), int(r["max"]), r["name"]
     lore = [f'[{{text:"Price: {preis} ",color:"gold",italic:false}},{{text:"{COIN}",color:"white",italic:false}}]',
             f'{{text:"Click: buy 1",color:"gray",italic:false}}']
+    if r["item"] == "KEY":      # zahlt in Spielerleveln, nicht in Coins (v0.50)
+        lore = LORE_KEY_L + [f'{{text:"Price: {KEY_LEVEL} levels",color:"gold",italic:false}}',
+                             '{text:"Click: buy 1",color:"gray",italic:false}']
     if r["item"] == "LATERNE":
         lore = LORE_LATERNE_L + lore
     if r["item"] == "KONTRAKT":
@@ -2034,8 +2183,10 @@ def menue_item(r):
     if mx > 1:
         lore.append(f'[{{text:"Shift-click: buy {mx} for {preis * mx} ",color:"gray",italic:false}},{{text:"{COIN}",color:"white",italic:false}}]')
     comps = [f'custom_data={{nw_menu:{int(r["id"])}}}', f'custom_name={{text:"{name}",color:"white",italic:false}}', "lore=[" + ",".join(lore) + "]"]
-    if comp and not r["item"].startswith("SET:") and r["item"] not in ("GLOCKE", "LATERNE", "KONTRAKT", "ZWERG", "FOCUS", "DECOY", "SKULL", "BOGI", "LEBEN", "GENERATOR"):
+    if comp and not r["item"].startswith("SET:") and r["item"] not in ("GLOCKE", "LATERNE", "KONTRAKT", "ZWERG", "FOCUS", "DECOY", "SKULL", "BOGI", "LEBEN", "GENERATOR", "KEY"):
         comps.insert(0, comp)
+    elif r["item"] == "KEY" and RESSOURCENPAKET:
+        comps.insert(0, 'item_model="nachtwache:key"')
     elif r["item"] == "GLOCKE" and MODELL_GLOCKE:
         comps.insert(0, MODELL_GLOCKE[:-1])
     elif r["item"] == "LATERNE" and MODELL_LATERNE:
@@ -2424,6 +2575,17 @@ for r in angebot:
         f"execute as @a[x={KAUF_A[0]},y={KAUF_A[1]},z={KAUF_A[2]},distance=..8,scores={{nw.tmp=1..}}] run function {NS}:sammler/kauf_abwickeln/{rid}",
         f"function {NS}:sammler/kaufmenue",
     ])
+    if r["item"] == "KEY":
+        # Bezahlt wird in Spielerleveln. Das ist der zweite Zweck fuer Erfahrung neben Mending (v0.50).
+        fn(f"sammler/kauf_abwickeln/{rid}", [
+            f"clear @s {pred}",
+            f"execute unless entity @s[level={KEY_LEVEL}..] run return run function {NS}:sammler/zu_wenig_level",
+            f"xp add @s -{KEY_LEVEL} levels",
+            f"give @s {give_arg}",
+            "playsound minecraft:block.chain.place master @s ~ ~ ~ 1 1.4",
+            f"tellraw @s " + J([txt("[The Collector] ", "dark_red"), txt("A key. What is behind the door is your problem.", "gray")]),
+        ])
+        continue
     if r["item"] == "KONTRAKT":
         fn(f"sammler/kauf_abwickeln/{rid}", [
             f"clear @s {pred}",

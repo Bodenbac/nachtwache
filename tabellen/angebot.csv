@@ -59,6 +59,7 @@ id,stufe,name,preis,max,item,kat,pos
 33,1,Decoy Totem,600,16,DECOY,SPECIAL,
 48,1,Bogi the Archer,7500,1,BOGI,SPECIAL,
 34,1,One more Life,1500,1,LEBEN,SPECIAL,
+36,1,Key,0,1,KEY,SPECIAL,
 35,1,Source Generator,20000,1,GENERATOR,SPECIAL,
 178,1,Rotten Flesh,10,64,rotten_flesh,MOB,
 179,2,Spider Eye,25,64,spider_eye,MOB,

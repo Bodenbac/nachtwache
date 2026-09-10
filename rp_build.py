@@ -22,6 +22,7 @@ from PIL import Image, ImageDraw
 import icons
 import buecher, zwerg
 import ench_icons          # Symbole der Upgrade-Station, 32x32 (v0.47)
+import kiste_icons         # Key und die sieben Gluecksrad-Truhen (v0.50)
 
 HERE = Path(__file__).resolve().parent
 VORLAGEN = HERE / "vorlagen"
@@ -536,6 +537,12 @@ def build(out_dir=None):
         ench_bilder[f"ench_{kurz}_{maxs}_an"] = ench_platte(zeichner, maxs, maxs, "an")
     ench_bilder["ench_slot"] = ench_platte(ench_icons.einlegen, 0, 0, "gruen")
     for name, img in ench_bilder.items():
+        w(nw / "textures" / "item" / f"{name}.png", img)
+        w(nw / "models" / "item" / f"{name}.json", json.dumps({"parent": "minecraft:item/generated", "textures": {"layer0": f"nachtwache:item/{name}"}}))
+        w(nw / "items" / f"{name}.json", json.dumps({"model": {"type": "minecraft:model", "model": f"nachtwache:item/{name}"}}))
+
+    # Gluecksrad: Key und die sieben Truhen in den Stufenfarben (v0.50)
+    for name, img in kiste_icons.alle().items():
         w(nw / "textures" / "item" / f"{name}.png", img)
         w(nw / "models" / "item" / f"{name}.json", json.dumps({"parent": "minecraft:item/generated", "textures": {"layer0": f"nachtwache:item/{name}"}}))
         w(nw / "items" / f"{name}.json", json.dumps({"model": {"type": "minecraft:model", "model": f"nachtwache:item/{name}"}}))
