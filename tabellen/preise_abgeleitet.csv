@@ -426,7 +426,7 @@ end_stone_brick_slab,End Stone Brick Slab,3,rezept
 end_stone_brick_stairs,End Stone Brick Stairs,5,rezept
 end_stone_brick_wall,End Stone Brick Wall,5,rezept
 end_stone_bricks,End Stone Bricks,5,rezept
-ender_chest,Ender Chest,278,rezept
+ender_chest,Ender Chest,762,rezept
 ender_eye,Eye of Ender,92,rezept
 ender_pearl,Ender Pearl,50,basis
 experience_bottle,Bottle o' Enchanting,25,basis
@@ -794,7 +794,7 @@ oak_stairs,Oak Stairs,14,rezept
 oak_trapdoor,Oak Trapdoor,27,rezept
 oak_wood,Oak Wood,37,rezept
 observer,Observer,30,basis
-obsidian,Obsidian,20,basis
+obsidian,Obsidian,75,basis
 ochre_froglight,Ochre Froglight,15,muster
 ominous_banner,Ominous Banner,1,rest
 ominous_bottle,Ominous Bottle,20,muster

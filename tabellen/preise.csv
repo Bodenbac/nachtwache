@@ -3,7 +3,7 @@
 # Verarbeitung lohnt sich: Erz < Rohstoff < Barren < Block (Kupfererz 4, Kupferbarren 5, Kupferblock 50).
 # REGEL (Luis 10.09.2026): Alles, was der Laden verkauft, kauft der Sammler zur HAELFTE des Kaufpreises zurueck
 # AUSNAHME (Luis 10.09.2026): nachwachsende Ware nicht. Obsidian ist mit Lava aus dem Nether umsonst
-# herstellbar, deshalb Ankauf 20 statt 250. Kaufpreis bleibt 500, es ist der einzige Block, den die
+# herstellbar, deshalb Ankauf 75 statt 250 (Luis 10.09.2026). Kaufpreis bleibt 500, es ist der einzige Block, den die
 # Gegner nicht durchgraben. Crying Obsidian und Zaubertisch mit, sonst wandert die Schleife nur weiter.
 # (aufgerundet), ohne Ausnahme. Diese Zeilen pflegt build-seitig niemand von Hand: bei Preisaenderung im Laden
 # hier den Wert nachziehen (python3 preise_ableiten.py danach). Was der Laden nicht verkauft, hat hier einen festen Wert.
@@ -89,7 +89,7 @@ emerald,Emerald,125
 emerald_block,Emerald Block,2500
 nether_quartz_ore,Nether Quartz Ore,40
 quartz,Quartz,20
-obsidian,Obsidian,20
+obsidian,Obsidian,75
 amethyst_shard,Amethyst Shard,25
 amethyst_block,Amethyst Block,20
 netherrack,Netherrack,2

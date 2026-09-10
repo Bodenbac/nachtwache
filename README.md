@@ -37,7 +37,7 @@ Seit v0.51 haben beide eine Stufensperre (Luis 10.09.2026): der **Nether geht ab
 
 Dazu läuft die Uhr nur weiter, solange **mindestens ein Spieler in der Oberwelt** steht. Wer im Nether ist, hält den Tag an, der Nether ist also kein Weg, eine Nacht auszusitzen. Vorher genügte es, dass überhaupt jemand online war.
 
-Der Ankauf von Obsidian ist auf 20 gefallen (Kaufpreis bleibt 500). Mit Lava aus dem Nether ist Obsidian umsonst herstellbar, und nachwachsende Ware darf nicht zur Hälfte zurückgehen, sonst ist es eine Geldquelle ohne Ende. Dieselbe Entscheidung wie bei Setzling und Samen in v0.41. Crying Obsidian (20) und Zaubertisch (60) sind mitgezogen, sonst wandert die Schleife nur eine Ecke weiter. Obsidian bleibt bewusst ab Stufe 1 kaufbar, es ist der einzige Block, den die Gegner nicht durchgraben.
+Der Ankauf von Obsidian ist auf 75 gefallen (Kaufpreis bleibt 500). Mit Lava aus dem Nether ist Obsidian umsonst herstellbar, und nachwachsende Ware darf nicht zur Hälfte zurückgehen, sonst ist es eine Geldquelle ohne Ende. Dieselbe Entscheidung wie bei Setzling und Samen in v0.41. Crying Obsidian (20) und Zaubertisch (60) sind mitgezogen, sonst wandert die Schleife nur eine Ecke weiter. Obsidian bleibt bewusst ab Stufe 1 kaufbar, es ist der einzige Block, den die Gegner nicht durchgraben.
 
 Ansonsten sind beide Dimensionen normal: die Flat-Void-Einstellung gilt nur für die Oberwelt, Netherrack und Endstein werden ganz normal erzeugt.
 
