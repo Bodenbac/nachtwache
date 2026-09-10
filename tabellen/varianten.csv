@@ -1,0 +1,7 @@
+# Zombie-Varianten (Luis, 10.09.2026). Sie kommen NICHT zusaetzlich, sondern statt eines normalen Zombies:
+# beim Spawn wird fuer JEDEN Zombie der Welle einzeln gewuerfelt, jede Nacht neu.
+# prozent = Wahrscheinlichkeit je Zombie, dass er diese Variante ist. Der Rest bleibt ein normaler Zombie.
+# Die Summe der ab einer Nacht gueltigen Prozente muss unter 100 bleiben. Reihenfolge = Reihenfolge der Wuerfelfenster.
+variante,ab,prozent
+zombie_leder,4,20
+zombie_eisen,8,10

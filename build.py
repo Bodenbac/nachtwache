@@ -18,7 +18,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 76                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 77                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -164,13 +164,17 @@ TAG_ZAEHLER, TAG_NENNER = 45, 32       # 1,40625 je Tick -> Tag genau 8 Minuten 
 NACHT_ZAEHLER, NACHT_NENNER = 5, 7     # 0,714 je Tick -> Nacht bis 23000 in ca. 11,7 Minuten, dann steht die Uhr, bis alle Gegner tot sind
 NACHT_START, TAG_START = 13000, 23500  # Uhrzeiten fuer Strasse auf / Strasse weg
 
-WELLE_BASIS, WELLE_PRO_NACHT = 4, 2    # Groesse = 4 + 2*Nacht (+ Nacht*Nacht/WELLE_QUADRAT, 0 = aus) * Phasenfaktor/10. Luis: Nacht 1 = 6, dann +2 je Nacht
-WELLE_QUADRAT = 0                      # quadratischer Anteil, 0 = aus
-PHASEN_FAKTOR = {1: 10, 2: 10, 3: 10, 4: 10, 5: 10, 6: 10, 7: 10}   # Wellengroesse je Quellstufe in Zehnteln (10 = keine Aenderung); Luis will exakte Zahlen, daher aus   # in Zehnteln
+# Wellengroesse: seit v0.42 feste Zahlen je Sorte aus tabellen/wellen.csv, keine Zufallsgewichte mehr
+# (Luis 10.09.2026: die Welle soll planbar sein, Mini-Zombies und Endermen kamen vorher zu haeufig).
+WELLE_MAX_NACHT = 35                   # ab hier waechst die Welle nicht weiter (rund 150 Gegner), Ersatz fuer den alten Deckel
+KONTRAKT_PROZENT = 130                 # Bounty Contract: Welle 30 Prozent groesser (Luis 10.09.2026, vorher 50)
 LETZTE_NACHT = 30
 BONUS_PRO_NACHT = 16                    # Splitter fuer eine komplett getoetete Welle (mal Nacht)
-KOPFGELD = {"zombie": 6, "husk": 6, "skeleton": 9, "spider": 9, "cave_spider": 6, "creeper": 15, "enderman": 20,
-            "witch": 18, "wither_skeleton": 18, "pillager": 15, "ravager": 45, "warden": 0}
+# Kopfgeld je MOBS-Sorte, nicht je Entity-Typ: alle Zombievarianten sind minecraft:zombie und werden
+# seit v0.42 ueber ihr Kennzeichen nw.a_<sorte> auseinandergehalten (Luis 10.09.2026).
+KOPFGELD = {"zombie": 6, "zombie_baby": 20, "zombie_leder": 9, "zombie_eisen": 14, "husk": 6, "brutalo": 25,
+            "skeleton": 9, "spider": 6, "cave_spider": 4, "enderman": 30,
+            "witch": 18, "wither_skeleton": 18, "pillager": 15, "ravager": 45}
 KOPFGELD_BOSS = 150
 TOD_ABZUG_PROZENT = 10
 
@@ -1925,7 +1929,8 @@ MODELL_ZWERG = 'item_model="nachtwache:dwarf",' if RESSOURCENPAKET else ""
 MODELL_LATERNE = 'item_model="nachtwache:lantern",' if RESSOURCENPAKET else ""
 MODELL_KONTRAKT = 'item_model="nachtwache:contract",' if RESSOURCENPAKET else ""
 LORE_LATERNE_L = ['{text:"Place it on the road or on your island.",color:"gray",italic:false}', '{text:"Enemies within 8 blocks are slowed.",color:"gray",italic:false}', '{text:"Burns for three nights, then goes out.",color:"gray",italic:false}']
-LORE_KONTRAKT_L = ['{text:"Tonight: double bounty, wave 50% bigger.",color:"gray",italic:false}', '{text:"One contract at a time. Signed by daylight only.",color:"gray",italic:false}']
+LORE_KONTRAKT_L = ['{text:"Tonight: double bounty, wave %d%% bigger.",color:"gray",italic:false}' % (KONTRAKT_PROZENT - 100),
+                   '{text:"One contract at a time. Signed by daylight only.",color:"gray",italic:false}']
 LORE_LATERNE = "[" + ",".join(LORE_LATERNE_L) + "]"
 LORE_KONTRAKT = "[" + ",".join(LORE_KONTRAKT_L) + "]"
 
@@ -2322,55 +2327,64 @@ fn("uhr/anzeige", [
 # ----------------------------------------------------------------------------
 # Naechte
 # ----------------------------------------------------------------------------
-wellen = read_csv("wellen.csv")
-brackets = {}
-for r in wellen:
-    brackets.setdefault((int(r["von"]), int(r["bis"])), []).append((r["mob"], int(r["gewicht"])))
+wellen = [(r["mob"], int(r["ab"]), int(r["start"]), int(r["zuwachs"]), int(r["takt"])) for r in read_csv("wellen.csv")]
+varianten = [(r["variante"], int(r["ab"]), int(r["prozent"])) for r in read_csv("varianten.csv")]
 
 SPAWN_GEGNER = (0.5, 64, GEGNER_Z - 4.5)   # Spawnpunkt der Wellen: vor dem Seelenfeuer in der Inselmitte, sonst brennen alle (Boss-Bug Nacht 10)
 def summon_mob(key, extra_tags=(), pos=SPAWN_GEGNER):
+    """Ein Gegner der Welle. nw.a_<sorte> ist das Kennzeichen fuer das Kopfgeld: alle Zombievarianten
+    sind minecraft:zombie, ueber den Entity-Typ allein waeren sie nicht auseinanderzuhalten (v0.42)."""
     ent, nbt = MOBS[key]
-    tags = '"nw.welle"' + "".join(f',"{t}"' for t in extra_tags)
+    tags = f'"nw.welle","nw.a_{key}"' + "".join(f',"{t}"' for t in extra_tags)
     return f"summon {ent} {pos[0]} {pos[1]} {pos[2]} {{Tags:[{tags}],{nbt}}}"
 
-typ_dispatch = []
-for i, ((a, b), lst) in enumerate(sorted(brackets.items()), 1):
-    total = sum(g for _, g in lst)
-    lines = [f"execute store result score #r nw.tmp2 run random value 1..{total}"]
-    lo = 1
-    for mob, g in lst:
-        lines.append(f"execute if score #r nw.tmp2 matches {lo}..{lo + g - 1} run " + summon_mob(mob, ["nw.neu"]))
-        lo += g
-    fn(f"nacht/typ_{i}", lines)
-    typ_dispatch.append(f"execute if score #nacht nw.nacht matches {a}..{b} run return run function {NS}:nacht/typ_{i}")
-fn("nacht/spawn_einer", typ_dispatch)
-fn("nacht/spawn_schleife", [
-    "execute if score #anz nw.tmp matches ..0 run return 0",
-    f"function {NS}:nacht/spawn_einer",
-    "scoreboard players remove #anz nw.tmp 1",
-    f"function {NS}:nacht/spawn_schleife",
-])
+# Zombie-Varianten: ein Wurf 1..100 je Zombie, live beim Spawn (Luis 10.09.2026). Faellt der Wurf in ein
+# Fenster, dessen Nacht noch nicht erreicht ist, laeuft die Funktion weiter bis zum normalen Zombie.
+zombie_lines = ["execute store result score #v nw.tmp2 run random value 1..100"]
+_lo = 1
+for _var, _ab, _pz in varianten:
+    zombie_lines.append(f"execute if score #nacht nw.nacht matches {_ab}.. if score #v nw.tmp2 matches {_lo}..{_lo + _pz - 1} "
+                        f"run return run " + summon_mob(_var, ["nw.neu"]))
+    _lo += _pz
+zombie_lines.append(summon_mob("zombie", ["nw.neu"]))
+fn("nacht/zombie_variante", zombie_lines)
 
+# Je Sorte eine Anzahl und eine Spawn-Schleife. #wn ist die Nacht, gedeckelt auf WELLE_MAX_NACHT.
 welle = [
-    "scoreboard players operation #anz nw.tmp = #nacht nw.nacht",
-    f"scoreboard players set #k nw.tmp2 {WELLE_PRO_NACHT}",
-    "scoreboard players operation #anz nw.tmp *= #k nw.tmp2",
+    "scoreboard players set #anz0 nw.tmp 0",
+    "scoreboard players operation #wn nw.tmp2 = #nacht nw.nacht",
+    f"execute if score #wn nw.tmp2 matches {WELLE_MAX_NACHT + 1}.. run scoreboard players set #wn nw.tmp2 {WELLE_MAX_NACHT}",
 ]
-welle.append(f"scoreboard players add #anz nw.tmp {WELLE_BASIS}")
-if WELLE_QUADRAT:
-    welle += ["scoreboard players operation #q nw.tmp2 = #nacht nw.nacht", "scoreboard players operation #q nw.tmp2 *= #nacht nw.nacht",
-              f"scoreboard players operation #q nw.tmp2 /= #{WELLE_QUADRAT} nw.const", "scoreboard players operation #anz nw.tmp += #q nw.tmp2"]
-for p, f in PHASEN_FAKTOR.items():
-    welle.append(f"execute if score #phase nw.phase matches {p} run scoreboard players set #f nw.tmp2 {f}")
+for mob, ab, start, zuwachs, takt in wellen:
+    fn(f"nacht/anz_{mob}", [
+        "scoreboard players operation #c nw.tmp2 = #wn nw.tmp2",
+        f"scoreboard players remove #c nw.tmp2 {ab}",
+        f"scoreboard players set #k nw.tmp2 {takt}",
+        "scoreboard players operation #c nw.tmp2 /= #k nw.tmp2",
+        f"scoreboard players set #k nw.tmp2 {zuwachs}",
+        "scoreboard players operation #c nw.tmp2 *= #k nw.tmp2",
+        f"scoreboard players add #c nw.tmp2 {start}",
+        # Bounty Contract: Welle groesser. Der Kontrakt wird erst nach allen Sorten auf 2 gesetzt.
+        f"execute if score #kontrakt nw.upgrade matches 1.. run scoreboard players set #k nw.tmp2 {KONTRAKT_PROZENT}",
+        "execute if score #kontrakt nw.upgrade matches 1.. run scoreboard players operation #c nw.tmp2 *= #k nw.tmp2",
+        "execute if score #kontrakt nw.upgrade matches 1.. run scoreboard players operation #c nw.tmp2 /= #100 nw.const",
+        f"scoreboard players operation #n_{mob} nw.tmp = #c nw.tmp2",
+        "scoreboard players operation #anz0 nw.tmp += #c nw.tmp2",
+    ])
+    einer = f"function {NS}:nacht/zombie_variante" if mob == "zombie" else summon_mob(mob, ["nw.neu"])
+    fn(f"nacht/spawn_{mob}", [
+        f"execute if score #n_{mob} nw.tmp matches ..0 run return 0",
+        einer,
+        f"scoreboard players remove #n_{mob} nw.tmp 1",
+        f"function {NS}:nacht/spawn_{mob}",
+    ])
+    welle.append(f"scoreboard players set #n_{mob} nw.tmp 0")
+    welle.append(f"execute if score #wn nw.tmp2 matches {ab}.. run function {NS}:nacht/anz_{mob}")
+    welle.append(f"execute if score #wn nw.tmp2 matches {ab}.. run function {NS}:nacht/spawn_{mob}")
+
 welle += [
-    "scoreboard players operation #anz nw.tmp *= #f nw.tmp2", "scoreboard players operation #anz nw.tmp /= #10 nw.const",
-    f"execute if score #nacht nw.nacht matches {LETZTE_NACHT} unless score #modus nw.status matches 2 run scoreboard players operation #anz nw.tmp *= #2 nw.const",
-    "execute if score #kontrakt nw.upgrade matches 1.. run scoreboard players operation #anz nw.tmp *= #3 nw.const",
-    "execute if score #kontrakt nw.upgrade matches 1.. run scoreboard players operation #anz nw.tmp /= #2 nw.const",
+    # erst jetzt auf 2 ("laeuft heute Nacht"), sonst haette die erste Sorte den Kontrakt schon verbraucht
     "execute if score #kontrakt nw.upgrade matches 1 run scoreboard players set #kontrakt nw.upgrade 2",
-    "execute if score #anz nw.tmp matches 151.. run scoreboard players set #anz nw.tmp 150",
-    "scoreboard players operation #anz0 nw.tmp = #anz nw.tmp",
-    f"function {NS}:nacht/spawn_schleife",
     f"spreadplayers 0 {GEGNER_Z} 2 {GEGNER_RADIUS - 2} false @e[tag=nw.neu]",
     "tag @e[tag=nw.neu] remove nw.neu",
     "execute store result bossbar nw:welle max run scoreboard players get #anz0 nw.tmp",
@@ -2493,11 +2507,14 @@ fn("nacht/boss_tick", [
     f"execute unless entity @e[tag=nw.boss] run return run function {NS}:nacht/boss_tot",
     "scoreboard players operation #m200 nw.tmp2 = #tick nw.tick", "scoreboard players operation #m200 nw.tmp2 %= #200 nw.const",
     "execute unless score #m200 nw.tmp2 matches 0 run return 0",
+    # Nachschub der Bosse, beide mit Deckel 6 (Luis 10.09.2026). Die Hexe hatte bis v0.41 gar keinen:
+    # zwei Zombies alle zehn Sekunden ohne Ende, und die Nacht endet erst bei null Gegnern.
     "execute store result score #cs nw.tmp2 if entity @e[type=cave_spider,tag=nw.welle]",
-    f"execute if score #cs nw.tmp2 matches ..7 as @e[tag=nw.boss_mutter] at @s run " + summon_mob("cave_spider", pos=("~", "~", "~")),
-    f"execute if score #cs nw.tmp2 matches ..6 as @e[tag=nw.boss_mutter] at @s run " + summon_mob("cave_spider", pos=("~", "~", "~")),
-    f"execute as @e[tag=nw.boss_hexe] at @s run " + summon_mob("zombie", pos=("~", "~", "~")),
-    f"execute as @e[tag=nw.boss_hexe] at @s run " + summon_mob("zombie", pos=("~", "~", "~")),
+    f"execute if score #cs nw.tmp2 matches ..5 as @e[tag=nw.boss_mutter] at @s run " + summon_mob("cave_spider", pos=("~", "~", "~")),
+    f"execute if score #cs nw.tmp2 matches ..4 as @e[tag=nw.boss_mutter] at @s run " + summon_mob("cave_spider", pos=("~", "~", "~")),
+    "execute store result score #hz nw.tmp2 if entity @e[tag=nw.hexe_z,tag=nw.welle]",
+    f"execute if score #hz nw.tmp2 matches ..5 as @e[tag=nw.boss_hexe] at @s run " + summon_mob("zombie", ["nw.hexe_z"], pos=("~", "~", "~")),
+    f"execute if score #hz nw.tmp2 matches ..4 as @e[tag=nw.boss_hexe] at @s run " + summon_mob("zombie", ["nw.hexe_z"], pos=("~", "~", "~")),
     f"function {NS}:nacht/warden_wut",
 ])
 # Der Sammler (Warden) bleibt wuetend auf den naechsten Spieler und graebt sich nicht ein
@@ -2550,7 +2567,7 @@ gt = [
 ]
 for t, kg in KOPFGELD.items():
     gt += [
-        f"execute store result score #c_{t} nw.tmp2 if entity @e[tag=nw.welle,type=minecraft:{t},tag=!nw.boss]",
+        f"execute store result score #c_{t} nw.tmp2 if entity @e[tag=nw.welle,tag=nw.a_{t},tag=!nw.boss]",
         f"execute if score #c_{t} nw.tmp2 < #p_{t} nw.tmp2 run scoreboard players operation #d nw.tmp = #p_{t} nw.tmp2",
         f"execute if score #c_{t} nw.tmp2 < #p_{t} nw.tmp2 run scoreboard players operation #d nw.tmp -= #c_{t} nw.tmp2",
         f"execute if score #c_{t} nw.tmp2 < #p_{t} nw.tmp2 run scoreboard players operation #kills nw.kills += #d nw.tmp",
@@ -2573,6 +2590,12 @@ fn("gegner/tick", gt)
 fn("gegner/durchbruch", [
     "execute at @s run particle minecraft:soul ~ ~1 ~ 0.3 0.5 0.3 0.05 30",
     "execute at @s run playsound minecraft:entity.evoker.cast_spell hostile @a ~ ~ ~ 1 0.5",
+    # Loest sich ein BOSS am Beacon auf, ist er nicht erlegt: kein Kopfgeld, keine Beutetruhe (Fehler bis v0.41).
+    # nacht/boss_tick schaut nur, ob noch ein Boss-Entity da ist, und haette boss_tot ausgeloest. Deshalb
+    # hier schon #boss auf 0, dann kehrt boss_tick in der ersten Zeile um.
+    "execute if entity @s[tag=nw.boss] run scoreboard players set #boss nw.boss 0",
+    "execute if entity @s[tag=nw.boss] run bossbar set nw:boss visible false",
+    "execute if entity @s[tag=nw.boss] run tellraw @a " + J([txt("The boss reached the beacon. ", "dark_purple"), txt("No bounty.", "gray")]),
     "kill @s",
     f"function {NS}:gegner/vergessen",
     f"function {NS}:beacon/verlust",
