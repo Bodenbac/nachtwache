@@ -19,7 +19,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 92                    # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 93                    # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -429,6 +429,7 @@ OBJEKTIVE = [("nw.mined_gen", "minecraft.mined:minecraft.barrel")] + [
     ("nw.gl", "dummy"), ("nw.glw", "dummy"), ("nw.glz", "dummy"), ("nw.glr", "dummy"),   # Gluecksrad (v0.50)
     ("nw.b_sp", "dummy"), ("nw.b_st", "dummy"), ("nw.b_mu", "dummy"), ("nw.b_fl", "dummy"), ("nw.b_inf", "dummy"), ("nw.b_kb", "dummy"), ("nw.b_rg", "dummy"), ("nw.b_t", "dummy"), ("nw.b_nm", "dummy"), ("nw.ziel", "dummy"), ("reset", "trigger"), ("yes", "trigger"), ("night", "trigger"), ("boss", "trigger"), ("fraggle", "trigger"), ("endnight", "trigger"), ("money", "trigger"), ("nw.schlaf", "dummy"), ("nw.fest", "dummy"), ("nw.dmin", "dummy"),
     ("nw.gh", "dummy"), ("nw.gh_alt", "dummy"),   # Gesundheit und Vorwert, fuer das Netz auf der Gegnerinsel (v0.56)
+    ("start", "trigger"),                          # /trigger start: die Uhr nach einem Reset offiziell anwerfen (v0.58)
 ]
 
 # ---- load ------------------------------------------------------------------
@@ -538,6 +539,9 @@ init = [
     "scoreboard players set #modus nw.status 0", "scoreboard players set #finale nw.status 0", "scoreboard players set #kills nw.kills 0",
     "scoreboard players set #verdient nw.verdient 0", "scoreboard players set #tode nw.tode 0", f"scoreboard players set #leben nw.leben {LEBEN_START}", "scoreboard players set #ende nw.status 0", "scoreboard players set #glocke nw.upgrade 0", "scoreboard players set #kontrakt nw.upgrade 0", "kill @e[type=marker,tag=nw.laterne]", "kill @e[tag=nw.zwerg]", "kill @e[tag=nw.zwerg_k]", "kill @e[tag=nw.zwerg_a]",
     "scoreboard players set #boss nw.boss 0",
+    # Die Uhr laeuft. Nur der Reset stellt danach #pause auf 1, dann wartet das Spiel auf /trigger start
+    # (Luis 11.09.2026). Eine frisch gebaute Welt soll wie bisher sofort loslaufen.
+    "scoreboard players set #pause nw.status 0",
     f"forceload add -20 -20 20 100",
     f"function {NS}:welt/startinsel", f"function {NS}:welt/stand", f"function {NS}:welt/gegnerinsel",
     f"function {NS}:quell/setzen",
@@ -1235,6 +1239,7 @@ fn("tick", [
     f"function {NS}:glueck/tick",
     f"execute as @a[tag=nw.admin,scores={{reset=1..}}] run function {NS}:admin/reset_trigger",
     f"execute as @a[tag=nw.admin,scores={{yes=1..}}] run function {NS}:admin/yes_trigger",
+    f"execute as @a[tag=nw.admin,scores={{start=1..}}] run function {NS}:admin/start_trigger",
     f"execute as @a[tag=nw.admin,scores={{night=1..}}] run function {NS}:admin/night_trigger",
     f"execute as @a[tag=nw.admin,scores={{boss=1..}}] run function {NS}:admin/boss_trigger",
     f"execute as @a[tag=nw.admin,scores={{fraggle=1..}}] run function {NS}:admin/fraggle_trigger",
@@ -1407,6 +1412,7 @@ fn("hilfe", [
     "tellraw @s " + J([txt("At night ", "red"), txt("the wave comes over the road. The night only ends when everything is dead. Beds only work when nothing is alive. Walling up does not help, they dig.", "gray")]),
     "tellraw @s " + J([txt("Building ", "green"), txt("is allowed anywhere except the enemy island and the road.", "gray")]),
     "tellraw @s " + J([txt("Night 30 ", "dark_purple"), txt("is the last one. After that it is over, or ", "gray"), txt("[endless mode]", "yellow", click_event={"action": "run_command", "command": "trigger nw.endlos"}), txt(".", "gray")]),
+    "execute if score #pause nw.status matches 1 run tellraw @s " + J([txt("The clock stands still. ", "yellow"), txt("An admin starts the watch with ", "gray"), txt("/trigger start", "yellow"), txt(".", "gray")]),
 ])
 
 # ----------------------------------------------------------------------------
@@ -2756,6 +2762,10 @@ fn("sammler/minion_slot", [
 # ----------------------------------------------------------------------------
 fn("uhr/tick", [
     "execute if score #ende nw.status matches 1 run return 0",     # nach dem Verlust steht die Zeit
+    # Nach einem Reset steht die Zeit, bis jemand /trigger start gibt (Luis 11.09.2026). Alles andere
+    # laeuft weiter: Generator, Laden, Bauen. Nur der Tag zieht nicht weiter, also kommt auch keine Nacht.
+    # Die Vanilla-Uhr steht ohnehin (gamerule advance_time false), die Zeit stellt allein uhr/setzen.
+    "execute if score #pause nw.status matches 1 run return 0",
     # Zeit laeuft nur, wenn jemand in der Oberwelt ist. Wer im Nether steckt, haelt den Tag an
     # (Luis 10.09.2026), sonst waere der Nether ein Weg, die Nacht auszusitzen.
     "scoreboard players set #ow nw.tmp2 0",
@@ -2797,6 +2807,7 @@ fn("nacht/haelt", [
 # Tages-Uhr als Bossleiste: wie lange noch bis zur Nacht (in echten Minuten)
 uhr_name = lambda pad, stern=False: J([txt("Day  ", "green"), txt("night in ", "gray"), {"score": {"name": "#umin", "objective": "nw.tmp2"}, "color": "white"}, txt(":" + ("0" if pad else ""), "white"), {"score": {"name": "#usek", "objective": "nw.tmp2"}, "color": "white"}] + ([txt("  ", "white"), star()] if stern else []))
 fn("uhr/anzeige", [
+    f"execute if score #pause nw.status matches 1 run return run function {NS}:uhr/pause_leiste",
     "execute if score #status nw.status matches 1 run return run bossbar set nw:uhr visible false",
     "execute if score #modus nw.status matches 3 run return run bossbar set nw:uhr visible false",
     f"scoreboard players set #rest nw.tmp2 {NACHT_START}",
@@ -2819,6 +2830,12 @@ fn("uhr/anzeige", [
     "execute if score #rest nw.tmp2 matches ..4000 run bossbar set nw:uhr color yellow",
     "execute if score #rest nw.tmp2 matches ..1000 run bossbar set nw:uhr color red",
     "execute if score #rest nw.tmp2 matches 1000..1020 run playsound minecraft:block.bell.use block @a ~ ~ ~ 1 0.6",
+    "bossbar set nw:uhr players @a", "bossbar set nw:uhr visible true",
+])
+# Pausenleiste: voll und weiss, damit auf einen Blick klar ist, dass die Uhr nicht kaputt ist, sondern wartet.
+fn("uhr/pause_leiste", [
+    f"bossbar set nw:uhr name {J([txt('Paused  ', 'yellow'), txt('the watch begins with ', 'gray'), txt('/trigger start', 'yellow')])}",
+    "bossbar set nw:uhr color white", "bossbar set nw:uhr value 13500",
     "bossbar set nw:uhr players @a", "bossbar set nw:uhr visible true",
 ])
 
@@ -3457,7 +3474,7 @@ fn("schutz/schutt", [
 ])
 fn("schutz/sekunde", [
     *[f"tag @a[name={n}] add nw.admin" for n in ADMINS],
-    "scoreboard players enable @a[tag=nw.admin] reset", "scoreboard players enable @a[tag=nw.admin] yes", "scoreboard players enable @a[tag=nw.admin] night", "scoreboard players enable @a[tag=nw.admin] boss", "scoreboard players enable @a[tag=nw.admin] fraggle", "scoreboard players enable @a[tag=nw.admin] endnight", "scoreboard players enable @a[tag=nw.admin] money",
+    "scoreboard players enable @a[tag=nw.admin] reset", "scoreboard players enable @a[tag=nw.admin] yes", "scoreboard players enable @a[tag=nw.admin] start", "scoreboard players enable @a[tag=nw.admin] night", "scoreboard players enable @a[tag=nw.admin] boss", "scoreboard players enable @a[tag=nw.admin] fraggle", "scoreboard players enable @a[tag=nw.admin] endnight", "scoreboard players enable @a[tag=nw.admin] money",
     f"function {NS}:laterne/sekunde",
     f"function {NS}:focus/sekunde",
     f"function {NS}:beacon/aufbauen",
@@ -3521,10 +3538,15 @@ fn("admin/reset_trigger", ["scoreboard players set @s reset 0", "scoreboard play
 fn("admin/yes_trigger", ["scoreboard players set @s yes 0", "scoreboard players enable @s yes", f"function {NS}:admin/reset_ja"])
 fn("admin/reset", [
     "scoreboard players operation #reset_frist nw.status = #tick nw.tick", "scoreboard players add #reset_frist nw.status 1200",
-    "tellraw @a " + J([txt("[Nightwatch] FULL RESET requested: every block in the play area, all inventories, coins, night, tier. ", "red"), txt("Type ", "gray"), txt("/trigger yes", "yellow"), txt(" within 60 seconds to confirm.", "gray")]),
+    "tellraw @a " + J([txt("[Nightwatch] FULL RESET requested: every block in the play area, all inventories, coins, night, tier. ", "red"), txt("Confirm within 60 seconds: ", "gray"), txt("/trigger yes", "yellow"), txt(" in game, ", "gray"), txt("function nachtwache:yes", "yellow"), txt(" in the server console.", "gray")]),
+    # Aus der Konsole gibt es kein @s, dann ist tellraw nutzlos: die Konsole sieht nur say (geprueft 11.09.2026).
+    "execute unless entity @s run say [Nightwatch] FULL RESET requested. Confirm within 60 seconds: function nachtwache:yes",
 ])
+_KEIN_RESET = "execute unless score #reset_frist nw.status >= #tick nw.tick "
 reset_ja = [
-    "execute unless score #reset_frist nw.status >= #tick nw.tick run return run tellraw @a " + J([txt("[Nightwatch] No reset pending. Type /trigger reset first.", "yellow")]),
+    _KEIN_RESET + "run tellraw @a " + J([txt("[Nightwatch] No reset pending. Type /trigger reset first, or function nachtwache:reset in the console.", "yellow")]),
+    _KEIN_RESET + "unless entity @s run say [Nightwatch] No reset pending. Run function nachtwache:reset first.",
+    _KEIN_RESET + "run return 0",
     "scoreboard players set #reset_frist nw.status 0",
     "tellraw @a " + J([txt("[Nightwatch] Resetting the world. This takes a moment.", "red")]),
     "gamemode survival @a", "clear @a", "experience set @a 0 points", "experience set @a 0 levels", "effect clear @a",
@@ -3539,9 +3561,33 @@ reset_ja += [
     f"forceload remove {RESET_X[0]} {RESET_Z[0]} {RESET_X[1]} {RESET_Z[1]}",
     "scoreboard players reset * nw.tode", "scoreboard players reset * nw.schlaf",
     f"function {NS}:admin/neustart",
+    # Nach dem Reset steht die Uhr, bis jemand offiziell startet (Luis 11.09.2026). Muss NACH admin/neustart
+    # kommen, denn das ruft init, und init stellt #pause wieder auf 0.
+    "scoreboard players set #pause nw.status 1",
     "tellraw @a " + J([txt("[Nightwatch] Fresh start. Day 1, tier 1, empty pockets. Nether and End are untouched.", "yellow")]),
+    "tellraw @a " + J([txt("[Nightwatch] The clock stands still. ", "yellow"), txt("Get ready, then start the watch with ", "gray"), txt("/trigger start", "yellow"), txt(" (console: ", "gray"), txt("function nachtwache:start", "yellow"), txt(").", "gray")]),
+    "execute unless entity @s run say [Nightwatch] Fresh start, the clock stands still. Begin with: function nachtwache:start",
 ]
 fn("admin/reset_ja", reset_ja)
+# /trigger start: die Uhr nach einem Reset offiziell anwerfen (Luis 11.09.2026)
+fn("admin/start_trigger", ["scoreboard players set @s start 0", "scoreboard players enable @s start", f"function {NS}:admin/start"])
+fn("admin/start", [
+    "execute unless score #pause nw.status matches 1 run tellraw @a " + J([txt("[Nightwatch] The watch is already running.", "yellow")]),
+    "execute unless score #pause nw.status matches 1 unless entity @s run say [Nightwatch] The watch is already running.",
+    "execute unless score #pause nw.status matches 1 run return 0",
+    "scoreboard players set #pause nw.status 0",
+    "title @a times 10 60 20",
+    "title @a title " + J([txt("NIGHTWATCH", "dark_red", bold=True)]),
+    "title @a subtitle " + J([txt("The watch begins.", "gray")]),
+    "playsound minecraft:block.bell.use block @a ~ ~ ~ 1 0.8",
+    "tellraw @a " + J([txt("[Nightwatch] The watch begins. The clock is running.", "yellow")]),
+    "execute unless entity @s run say [Nightwatch] The watch begins. The clock is running.",
+])
+# Kurze Namen fuer die Serverkonsole: /trigger braucht einen Spieler als Ausfuehrenden und geht dort
+# grundsaetzlich nicht, function schon (Luis 11.09.2026). Gleiche Wirkung, gleiche Sicherheitsabfrage.
+fn("reset", [f"function {NS}:admin/reset"])
+fn("yes", [f"function {NS}:admin/reset_ja"])
+fn("start", [f"function {NS}:admin/start"])
 # /trigger night set N: laufende Welle weg, Nacht N startet sofort (Uhr auf Nachtbeginn, nacht/start zaehlt hoch)
 fn("admin/night_trigger", [
     "scoreboard players operation #n nw.tmp = @s night", "scoreboard players set @s night 0", "scoreboard players enable @s night",
