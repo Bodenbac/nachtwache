@@ -19,7 +19,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 93                    # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 94                    # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -3258,7 +3258,17 @@ MARSCH_TOR = (0.5, BODEN_Y + 1.5, GEGNER_Z - GEGNER_RADIUS + 0.5)
 # (Luis 11.09.2026). Jetzt muessen beide Flanken frei sein, auf Fuss- und auf Kopfhoehe. Ist es eng,
 # faellt der Schritt aus und die Vanilla-KI uebernimmt, die Kollision kennt; steht wirklich eine Wand
 # davor, springt nach vier Sekunden wie gehabt gegner/blockiert an und der Gegner graebt sich durch.
-FREI_VORAUS = " ".join(f"if block ^{x} ^{y} ^1 minecraft:air" for y in (0, 1) for x in ("0", "0.4", "-0.4"))
+# Begehbar heisst: da passt ein Gegner durch. Feuer gehoert bewusst NICHT dazu, sonst schiebt der
+# Marsch sie in die Seelenfeuer der Gegnerinsel (Review 11.09.2026: "went up in flames").
+w(f"{NS}/tags/block/begehbar.json", {"values": [
+    "minecraft:air", "minecraft:cave_air", "minecraft:void_air", "minecraft:short_grass", "minecraft:tall_grass"]})
+FREI_VORAUS = " ".join(f"if block ^{x} ^{y} ^1 #{NS}:begehbar" for y in (0, 1) for x in ("0", "0.4", "-0.4"))
+# Ausweichwinkel des Marschschritts. Ohne sie kannte der Schritt nur "frei" oder "gar nicht": war eine
+# Flanke verbaut, blieb der Gegner stehen, statt an der Kante entlangzurutschen. Genau das hat Luis am
+# 11.09.2026 gesehen ("steuern gegen die Wand ohne pathfinding"). Nachgemessen an einem einzelnen
+# Zombie: er stand auf x 2,48 neben der Toroeffnung (die endet bei x 2,0), seine rechte Flanke lag auf
+# dem Wandblock daneben, und er stand dort ueber 300 Ticks, obwohl schraeg vorwaerts alles frei war.
+MARSCH_WINKEL = (0, 30, -30, 60, -60)
 _MZ = f"{BEACON[0]+0.5} {BEACON[1]+0.5} {BEACON[2]+0.5}"
 _SP = "@a[distance=..%d,gamemode=!spectator,gamemode=!creative]"
 fn("gegner/marsch", [
@@ -3274,6 +3284,14 @@ fn("gegner/marsch", [
     # Reichweite bis z 62 (Steg und Brueckenkopf), nicht 63: bei 63 ist die Insel innen bis x +-4 offen,
     # dort muss weiter marsch_tor zum Tor lenken, sonst zeigt der Schritt geradeaus in den Wall (Review 11.09.2026).
     f"execute if score @s nw.pz matches {Z1}..{GEGNER_Z - GEGNER_RADIUS + 1} run return run function {NS}:gegner/marsch_gasse",
+    # Auf der Gegnerinsel geht es IMMER erst zum Tor, nie direkt auf einen Spieler zu (Luis 11.09.2026:
+    # "sie laufen gar nicht in den Tunnel, sondern steuern gegen die Wand", "bleiben auf der Gegnerinsel,
+    # bis sich der Spieler naehert"). Grund: FOKUS_STUFEN reicht bis 128, der Spieler ist von dort rund
+    # 88 Bloecke weg, also ist nw.ziel gesetzt und der Marsch zielte auf ihn. Diese Linie fuehrt schraeg
+    # durch den Randwall, der Schritt wird abgelehnt und der Gegner steht. Vor v0.56 wurde er stattdessen
+    # in den Wall geschoben und erstickte, das war derselbe Fehler mit anderem Ausgang.
+    # Die Geografie entscheidet also zuerst: Gegnerinsel zum Tor, Bruecke laengs, Spielerinsel frei.
+    f"execute if score @s nw.pz matches {GEGNER_Z - GEGNER_RADIUS + 2}.. run return run function {NS}:gegner/marsch_tor",
     # Bosstrupp geht immer auf den Spieler, auch direkt neben dem Beacon (Luis 10.09.2026)
     f"execute if entity @s[tag=nw.bosstrupp] run return run function {NS}:gegner/marsch_spieler",
     # In Beacon-Naehe zaehlt der Sockel mehr als ein naher Spieler, sonst stehen sie ewig davor.
@@ -3282,7 +3300,6 @@ fn("gegner/marsch", [
     f"unless score @s nw.wut matches 1.. run return run function {NS}:gegner/marsch_ziel",
     # Sonst: ist der Spieler das naehere Ziel, wird er angemarschiert, sonst der Beacon
     f"execute if score @s nw.ziel matches 1 run return run function {NS}:gegner/marsch_spieler",
-    f"execute if score @s nw.pz matches {GEGNER_Z - GEGNER_RADIUS + 2}.. run return run function {NS}:gegner/marsch_tor",
     f"function {NS}:gegner/marsch_ziel",
 ])
 # Freie Sicht auf den naechsten Spieler? Schrittweise die Linie ablaufen, wie bogi/spur, aber mit
@@ -3296,6 +3313,18 @@ fn("gegner/sicht", [
     "execute if score #sicht nw.tmp matches ..0 run return 0",
     f"execute positioned ^ ^ ^1 run return run function {NS}:gegner/sicht",
 ])
+# Ein Marschschritt mit Ausweichen. Die Rotation kommt vom Aufrufer (facing ... rotated ~ 0).
+# Zuerst geradeaus, dann leicht schraeg, dann staerker schraeg: der erste freie Winkel gewinnt.
+# Damit rutscht ein Gegner an einer Kante entlang, statt davor zu erstarren (Luis 11.09.2026).
+# NUR fuer Gegnerinsel und Bruecke. Auf der Spielerinsel bleibt der Schritt streng, sonst liefe ein
+# Gegner um eine gebaute Mauer herum, statt sich durchzugraben, und Luis' Regel "Walling up does not
+# help, they dig" waere hin: Ausweichen haelt nw.still klein, und erst nw.still weckt das Graben.
+fn("gegner/schritt", [
+    f"execute {FREI_VORAUS} run return run tp @s ^ ^ ^{MARSCH_SCHRITT} ~ ~",
+] + [
+    f"execute rotated ~{w} ~ {FREI_VORAUS} run return run tp @s ^ ^ ^{MARSCH_SCHRITT} ~ ~"
+    for w in MARSCH_WINKEL if w
+])
 fn("gegner/marsch_spieler", [
     f"execute if entity {_SP % 12} run return 0",
     f"execute unless entity {_SP % 200} run return 0",
@@ -3308,11 +3337,20 @@ fn("gegner/marsch_spieler", [
 fn("gegner/marsch_gasse", [
     f"execute if entity {_SP % 12} run return 0",
     f"execute facing {STRASSENMUND[0]} {BODEN_Y + 1.5} {STRASSENMUND[2]} rotated ~ 0 "
-    f"{FREI_VORAUS} run tp @s ^ ^ ^{MARSCH_SCHRITT} ~ ~",
+    f"run function {NS}:gegner/schritt",
 ])
+# Von der Gegnerinsel zum Tor. Gezielt wird NICHT auf das Tor selbst, sondern auf einen mitwandernden
+# Punkt auf der Mittellinie, MARSCH_KARRE Bloecke voraus (Luis 11.09.2026). Der Unterschied ist gross:
+# ein fester Zielpunkt am Tor wird um so steiler angeflogen, je naeher der Gegner kommt, und genau an
+# der Torkante lehnt die Flankenpruefung den Schritt dann ab. Gemessen: mit festem Torpunkt war die
+# Insel erst nach 70 s leer statt nach 34 s. Der mitwandernde Punkt zieht dagegen erst sanft zur Mitte
+# und zeigt am Tor fast genau in -z, der Gegner faehrt also gerade ein.
+# Ist ein Spieler nah, wird gar nicht geschoben, dann greift die Vanilla-KI an.
+MARSCH_KARRE = 14
 fn("gegner/marsch_tor", [
-    f"execute facing {MARSCH_TOR[0]} {MARSCH_TOR[1]} {MARSCH_TOR[2]} rotated ~ 0 "
-    f"{FREI_VORAUS} run tp @s ^ ^ ^{MARSCH_SCHRITT} ~ ~",
+    f"execute if entity {_SP % 12} run return 0",
+    f"execute facing {MARSCH_TOR[0]} ~ ~-{MARSCH_KARRE} rotated ~ 0 "
+    f"run function {NS}:gegner/schritt",
 ])
 fn("gegner/marsch_ziel", [
     f"execute facing {_MZ} rotated ~ 0 "
