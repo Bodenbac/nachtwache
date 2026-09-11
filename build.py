@@ -19,7 +19,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 90                     # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 91                     # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -326,7 +326,7 @@ MOBS = {
     "husk":            _mob("minecraft:husk", 'CanBreakDoors:1b', helm=False),
     "zombie_leder":    _mob("minecraft:zombie", 'CanBreakDoors:1b,equipment:{head:%s,chest:{id:"minecraft:leather_chestplate",count:1},legs:{id:"minecraft:leather_leggings",count:1}},drop_chances:{head:0.0f,chest:0.0f,legs:0.0f}' % HELM, helm=False),
     "zombie_eisen":    _mob("minecraft:zombie", 'CanBreakDoors:1b,equipment:{head:{id:"minecraft:iron_helmet",count:1},chest:{id:"minecraft:iron_chestplate",count:1},mainhand:{id:"minecraft:iron_sword",count:1}},drop_chances:{head:0.0f,chest:0.0f,mainhand:0.05f}', helm=False),
-    "brutalo":         _mob("minecraft:zombie", 'CanBreakDoors:1b,CustomName:"Brute",attributes:[{id:"minecraft:follow_range",base:100d},{id:"minecraft:max_health",base:40d},{id:"minecraft:attack_damage",base:7d},{id:"minecraft:movement_speed",base:0.27d}],Health:40f,equipment:{head:{id:"minecraft:iron_chainmail_helmet",count:1}},drop_chances:{head:0.0f},active_effects:[{id:"minecraft:strength",duration:-1,amplifier:0,show_particles:0b}]', helm=False, follow=100),
+    "brutalo":         _mob("minecraft:zombie", 'CanBreakDoors:1b,CustomName:"Brute",attributes:[{id:"minecraft:follow_range",base:100d},{id:"minecraft:max_health",base:40d},{id:"minecraft:attack_damage",base:7d},{id:"minecraft:movement_speed",base:0.27d}],Health:40f,equipment:{head:{id:"minecraft:chainmail_helmet",count:1}},drop_chances:{head:0.0f},active_effects:[{id:"minecraft:strength",duration:-1,amplifier:0,show_particles:0b}]', helm=False, follow=100),
     "skeleton":        _mob("minecraft:skeleton", 'equipment:{head:%s,mainhand:{id:"minecraft:bow",count:1}},drop_chances:{head:0.0f,mainhand:0.05f}' % HELM, helm=False),
     "spider":          _mob("minecraft:spider", "", helm=False),
     "creeper":         _mob("minecraft:creeper", "", helm=False),
@@ -428,6 +428,7 @@ OBJEKTIVE = [("nw.mined_gen", "minecraft.mined:minecraft.barrel")] + [
     ("nw.boss", "dummy"), ("nw.upgrade", "dummy"), ("nw.laterne", "dummy"), ("nw.zwerg", "dummy"), ("nw.zwerg_t", "dummy"), ("nw.zwerg_b", "dummy"), ("nw.zwerg_d", "dummy"), ("nw.zwerg_a", "dummy"), ("nw.leben", "dummy"), ("nw.chan", "dummy"), ("nw.wut", "dummy"), ("nw.sockel", "dummy"), ("nw.hpv", "dummy"), ("nw.hpp", "dummy"),
     ("nw.gl", "dummy"), ("nw.glw", "dummy"), ("nw.glz", "dummy"), ("nw.glr", "dummy"),   # Gluecksrad (v0.50)
     ("nw.b_sp", "dummy"), ("nw.b_st", "dummy"), ("nw.b_mu", "dummy"), ("nw.b_fl", "dummy"), ("nw.b_inf", "dummy"), ("nw.b_kb", "dummy"), ("nw.b_rg", "dummy"), ("nw.b_t", "dummy"), ("nw.b_nm", "dummy"), ("nw.ziel", "dummy"), ("reset", "trigger"), ("yes", "trigger"), ("night", "trigger"), ("boss", "trigger"), ("fraggle", "trigger"), ("endnight", "trigger"), ("money", "trigger"), ("nw.schlaf", "dummy"), ("nw.fest", "dummy"), ("nw.dmin", "dummy"),
+    ("nw.gh", "dummy"), ("nw.gh_alt", "dummy"),   # Gesundheit und Vorwert, fuer das Netz auf der Gegnerinsel (v0.56)
 ]
 
 # ---- load ------------------------------------------------------------------
@@ -3234,6 +3235,13 @@ fn("gegner/einer", [
 # weg sind und keinen Spieler in der Naehe haben, Schritt fuer Schritt vorwaerts: erst zum Tor der Gegnerinsel,
 # dann durch die Bruecke. Ab MARSCH_AB Bloecken uebernimmt wieder die normale KI.
 MARSCH_TOR = (0.5, BODEN_Y + 1.5, GEGNER_Z - GEGNER_RADIUS + 0.5)
+# Der Schritt des Marsches ist ein tp, und tp kennt keine Kollision. Geprueft wurde bisher nur der Block
+# genau voraus, also ein Punkt. Eine Hitbox ist aber 0,6 breit: bei einem schraegen Schritt lag der
+# Mittelpunkt noch in der Luft, die halbe Hitbox aber schon in der Wand, und der Gegner erstickte
+# (Luis 11.09.2026). Jetzt muessen beide Flanken frei sein, auf Fuss- und auf Kopfhoehe. Ist es eng,
+# faellt der Schritt aus und die Vanilla-KI uebernimmt, die Kollision kennt; steht wirklich eine Wand
+# davor, springt nach vier Sekunden wie gehabt gegner/blockiert an und der Gegner graebt sich durch.
+FREI_VORAUS = " ".join(f"if block ^{x} ^{y} ^1 minecraft:air" for y in (0, 1) for x in ("0", "0.4", "-0.4"))
 _MZ = f"{BEACON[0]+0.5} {BEACON[1]+0.5} {BEACON[2]+0.5}"
 _SP = "@a[distance=..%d,gamemode=!spectator,gamemode=!creative]"
 fn("gegner/marsch", [
@@ -3241,6 +3249,12 @@ fn("gegner/marsch", [
     # und die Vanilla-KI blieb in Angriffsreichweite des Ankers stehen, also im Gras davor
     # (Luis 09.09.2026: "bleiben derzeit vor dem beacon stehen und greifen nicht an").
     "execute if score @s nw.sockel matches 1 run return 0",
+    # Auf der Bruecke wird IMMER laengs marschiert, nie schraeg auf einen Spieler zu, auch nicht vom
+    # Bosstrupp. Der Gang ist innen drei Bloecke breit (Weltkoordinaten x -1,0 bis 2,0), eine Hitbox
+    # ist 0,6 breit, die Mitte darf also nur zwischen -0,7 und 1,7 liegen. Ein schraeger Schritt schob
+    # sie darueber hinaus, und weil tp keine Kollision kennt, steckte der Gegner in der Wand und
+    # erstickte (Luis 11.09.2026, nachgestellt: 5 von 6 Zombies tot, alle bei x rund -0,9).
+    f"execute if score @s nw.pz matches {Z1}..{GEGNER_Z - GEGNER_RADIUS + 2} run return run function {NS}:gegner/marsch_gasse",
     # Bosstrupp geht immer auf den Spieler, auch direkt neben dem Beacon (Luis 10.09.2026)
     f"execute if entity @s[tag=nw.bosstrupp] run return run function {NS}:gegner/marsch_spieler",
     # In Beacon-Naehe zaehlt der Sockel mehr als ein naher Spieler, sonst stehen sie ewig davor.
@@ -3267,15 +3281,23 @@ fn("gegner/marsch_spieler", [
     f"execute if entity {_SP % 12} run return 0",
     f"execute unless entity {_SP % 200} run return 0",
     f"execute facing entity @p[gamemode=!spectator,gamemode=!creative] feet rotated ~ 0 "
-    f"if block ^ ^ ^1 minecraft:air if block ^ ^1 ^1 minecraft:air run tp @s ^ ^ ^{MARSCH_SCHRITT} ~ ~",
+    f"{FREI_VORAUS} run tp @s ^ ^ ^{MARSCH_SCHRITT} ~ ~",
+])
+# Laengs durch den Gang: Ziel ist der Strassenmund auf der Mittellinie (x 0,5). Damit zeigt der Schritt
+# fast genau in -z und zieht nebenbei zur Mitte. Ist ein Spieler nah, wird gar nicht geschoben, dann
+# uebernimmt die Vanilla-KI, die im Gegensatz zu tp Kollision kennt.
+fn("gegner/marsch_gasse", [
+    f"execute if entity {_SP % 12} run return 0",
+    f"execute facing {STRASSENMUND[0]} {BODEN_Y + 1.5} {STRASSENMUND[2]} rotated ~ 0 "
+    f"{FREI_VORAUS} run tp @s ^ ^ ^{MARSCH_SCHRITT} ~ ~",
 ])
 fn("gegner/marsch_tor", [
     f"execute facing {MARSCH_TOR[0]} {MARSCH_TOR[1]} {MARSCH_TOR[2]} rotated ~ 0 "
-    f"if block ^ ^ ^1 minecraft:air if block ^ ^1 ^1 minecraft:air run tp @s ^ ^ ^{MARSCH_SCHRITT} ~ ~",
+    f"{FREI_VORAUS} run tp @s ^ ^ ^{MARSCH_SCHRITT} ~ ~",
 ])
 fn("gegner/marsch_ziel", [
     f"execute facing {_MZ} rotated ~ 0 "
-    f"if block ^ ^ ^1 minecraft:air if block ^ ^1 ^1 minecraft:air run tp @s ^ ^ ^{MARSCH_SCHRITT} ~ ~",
+    f"{FREI_VORAUS} run tp @s ^ ^ ^{MARSCH_SCHRITT} ~ ~",
 ])
 # Zielwahl (Luis 08.09.2026): Gegner wollen IMMER zum Beacon, egal wie weit weg sie sind. Nur wenn ein
 # Spieler naeher ist als der Beacon, gehen sie auf den Spieler. Vanilla gibt dem Spielerziel immer Vorrang,
@@ -3376,11 +3398,54 @@ fn("schutz/tick", [
     f"function {NS}:welt/stand",
     f"execute if score #m2 nw.tmp2 matches 1 if score #status nw.status matches 1 run function {NS}:strasse/bauen",
     f"execute if score #m2 nw.tmp2 matches 1 if score #status nw.status matches 0 run function {NS}:strasse/entfernen",
+    f"execute if score #status nw.status matches 1 run function {NS}:schutz/gasse",
     # Abgeschlagene Bausteine der Bruecke und der Gegnerinsel verschwinden, alles andere bleibt liegen
     # (Luis 10.09.2026). Vorher starb dort jedes Item, auch das eigene Zeug beim Tod. Alle vier Ticks
     # reicht: die Aufhebesperre eines Blockdrops liegt bei zehn Ticks, vorher kommt niemand daran.
     "scoreboard players operation #m4 nw.tmp2 = #tick nw.tick", "scoreboard players operation #m4 nw.tmp2 %= #4 nw.const",
     f"execute if score #m4 nw.tmp2 matches 0 run function {NS}:schutz/schutt",
+    # Das Hitboxnetz der Gegnerinsel kostet acht Blockpruefungen je Gegner, deshalb nur jeden vierten
+    # Tick und versetzt zum Schutt. Ersticken zieht ein Leben je zehn Ticks ab, vier Ticks sind also
+    # frueh genug: selbst die schwaechste Spinne haette 160 Ticks, bevor es eng wird.
+    f"execute if score #m4 nw.tmp2 matches 2 if score #status nw.status matches 1 run function {NS}:schutz/wall",
+])
+# Sicherheitsnetz gegen den Erstickungstod im Gang (Luis 11.09.2026). Der Marsch schiebt seit v0.56 nur
+# noch laengs, aber die Vanilla-KI und das Gedraengel koennen einen Gegner immer noch in die Wand druecken.
+# Kasten-Selektoren testen die HITBOX, nicht den Mittelpunkt (siehe Nachtwache Technik), deshalb trifft
+# x=-2,dx=1 genau die, die in den linken Wandblock hineinragen. Sie werden zurueck in die Gasse geschoben,
+# ein Viertelblock je Tick, statt dort zu ersticken. "at @s" ist Pflicht, sonst misst ~ vom Weltnullpunkt.
+fn("schutz/gasse", [
+    f"execute as @e[tag=nw.welle,x=-2,y={BODEN_Y+1},z={Z1},dx=1,dy={WAND_OBEN-BODEN_Y},dz={GEGNER_Z-GEGNER_RADIUS+2-Z1}] at @s run tp @s ~0.25 ~ ~",
+    f"execute as @e[tag=nw.welle,x=2,y={BODEN_Y+1},z={Z1},dx=1,dy={WAND_OBEN-BODEN_Y},dz={GEGNER_Z-GEGNER_RADIUS+2-Z1}] at @s run tp @s ~-0.25 ~ ~",
+])
+# Dasselbe Netz fuer die Gegnerinsel. Dort liegt es nicht am Marsch, sondern am Gedraengel: in Nacht 10
+# stehen ueber 40 Gegner auf einer Insel mit Radius 11, und Vanilla schiebt Mobs dabei in Bloecke hinein.
+# Anders als im Gang ist hier nicht eine bestimmte Wand schuld (der erste Tote lag weder im Randwall noch
+# an einem Baum), deshalb wird gar nicht erst nach Geometrie gefragt: steckt der Kopf eines Wellengegners
+# in irgendetwas Festem, wird er zur Inselmitte geschoben. Auf der Gegnerinsel darf ohnehin nichts
+# abgebaut werden, ein Gegner hat dort also in keinem Block etwas verloren. Ausgenommen sind Seelenfeuer
+# und Feuer (die gehoeren zur Insel und ersticken niemanden) sowie die Torgasse (x -1..1, z 60..63),
+# sonst schoebe das Netz den Marsch zum Tor zurueck.
+# Auf der Gegnerinsel wird nicht nach Geometrie gefragt, sondern das Symptom gemessen: verliert ein
+# Wellengegner dort Leben, wird er zur Inselmitte geschoben. Zwei Fassungen davor sind gescheitert,
+# weil Ersticken nach der HITBOX geht, nicht nach dem Mittelpunkt. Erst wurde nur der Block am
+# Mittelpunkt geprueft: die Testspinne stand auf x -3,2, also in Block -4 (Luft), und erstickte
+# trotzdem, weil ihre 1,4 breite Hitbox bis ins Shroomlight auf Block -3 reichte. Dann die vier Ecken
+# der Hitbox: auch daneben, denn bei 1,4 Breite liegt der toetende Block zwischen den Ecken. Ueber die
+# Gesundheit ist es exakt und kostet drei Befehle je Gegner, und es faengt zugleich das Seelenfeuer ab,
+# in dem sonst ab und zu einer verbrannte. Auf der Gegnerinsel gibt es keinen erlaubten Schaden.
+fn("schutz/wall_weg", [f"execute facing 0.5 ~ {GZ+0.5} run tp @s ^ ^ ^0.8"])
+fn("schutz/wall", [
+    # Die Torgasse ist NICHT ausgenommen. Bei den Geometriefassungen musste sie es sein, sonst haetten
+    # sie den Marsch zum Tor zurueckgedrueckt; dieses Netz schiebt nur bei Schaden, und dort erstickte
+    # sonst der letzte Rest (einer von 172, genau in der Gasse bei x 0,03).
+    f"execute as @e[tag=nw.welle,x=0.5,y={BODEN_Y+1},z={GZ+0.5},distance=..13] at @s "
+    f"run function {NS}:schutz/wall_pruef",
+])
+fn("schutz/wall_pruef", [
+    "execute store result score @s nw.gh run data get entity @s Health 10",
+    f"execute if score @s nw.gh < @s nw.gh_alt run function {NS}:schutz/wall_weg",
+    "scoreboard players operation @s nw.gh_alt = @s nw.gh",
 ])
 fn("schutz/schutt", [
     *[f'kill @e[type=item,x={-GEGNER_RADIUS-2},y={BODEN_Y-8},z={GEGNER_Z-GEGNER_RADIUS-1},dx={2*GEGNER_RADIUS+4},dy=25,dz={2*GEGNER_RADIUS+2},nbt={{Item:{{id:"minecraft:{b}"}}}}]'
