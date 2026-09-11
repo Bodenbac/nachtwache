@@ -19,7 +19,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 89                       # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 90                     # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -3046,8 +3046,12 @@ fn("nacht/boss_tick", [
     "execute store result score #cs nw.tmp2 if entity @e[type=cave_spider,tag=nw.welle]",
     *[f"execute if score #cs nw.tmp2 matches ..{BOSS_NACHSCHUB - 1 - i} as @e[tag=nw.boss_mutter] at @s run "
       + summon_mob("cave_spider", ["nw.bosstrupp"], pos=("~", "~", "~")) for i in range(2)],
-    # Die Hexe beschwoert seit v0.44 nichts mehr, sie haelt ihren Trupp am Leben
-    "execute as @e[tag=nw.boss_hexe] at @s run effect give @e[tag=nw.welle,distance=..12] minecraft:instant_health 1 0 true",
+    # Die Hexe beschwoert seit v0.44 nichts mehr, sie haelt ihren Trupp am Leben.
+    # Untote heilt Instant Health nicht, es verletzt sie. Ihre eigene Eskorte (Witherskelette) verlor
+    # dadurch alle 10 s sechs Leben, statt geheilt zu werden (Feldtest 11.09.2026). Fuer Untote ist
+    # Instant Damage die Heilung, fuer alle anderen bleibt es Instant Health.
+    "execute as @e[tag=nw.boss_hexe] at @s run effect give @e[tag=nw.welle,distance=..12,type=#minecraft:undead] minecraft:instant_damage 1 0 true",
+    "execute as @e[tag=nw.boss_hexe] at @s run effect give @e[tag=nw.welle,distance=..12,type=!#minecraft:undead] minecraft:instant_health 1 0 true",
     "execute as @e[tag=nw.boss_hexe] at @s run particle minecraft:happy_villager ~ ~1 ~ 6 1 6 0 30",
     f"function {NS}:nacht/warden_wut",
 ])
