@@ -19,7 +19,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 91                     # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 92                    # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
@@ -3254,7 +3254,9 @@ fn("gegner/marsch", [
     # ist 0,6 breit, die Mitte darf also nur zwischen -0,7 und 1,7 liegen. Ein schraeger Schritt schob
     # sie darueber hinaus, und weil tp keine Kollision kennt, steckte der Gegner in der Wand und
     # erstickte (Luis 11.09.2026, nachgestellt: 5 von 6 Zombies tot, alle bei x rund -0,9).
-    f"execute if score @s nw.pz matches {Z1}..{GEGNER_Z - GEGNER_RADIUS + 2} run return run function {NS}:gegner/marsch_gasse",
+    # Reichweite bis z 62 (Steg und Brueckenkopf), nicht 63: bei 63 ist die Insel innen bis x +-4 offen,
+    # dort muss weiter marsch_tor zum Tor lenken, sonst zeigt der Schritt geradeaus in den Wall (Review 11.09.2026).
+    f"execute if score @s nw.pz matches {Z1}..{GEGNER_Z - GEGNER_RADIUS + 1} run return run function {NS}:gegner/marsch_gasse",
     # Bosstrupp geht immer auf den Spieler, auch direkt neben dem Beacon (Luis 10.09.2026)
     f"execute if entity @s[tag=nw.bosstrupp] run return run function {NS}:gegner/marsch_spieler",
     # In Beacon-Naehe zaehlt der Sockel mehr als ein naher Spieler, sonst stehen sie ewig davor.
@@ -3404,9 +3406,9 @@ fn("schutz/tick", [
     # reicht: die Aufhebesperre eines Blockdrops liegt bei zehn Ticks, vorher kommt niemand daran.
     "scoreboard players operation #m4 nw.tmp2 = #tick nw.tick", "scoreboard players operation #m4 nw.tmp2 %= #4 nw.const",
     f"execute if score #m4 nw.tmp2 matches 0 run function {NS}:schutz/schutt",
-    # Das Hitboxnetz der Gegnerinsel kostet acht Blockpruefungen je Gegner, deshalb nur jeden vierten
-    # Tick und versetzt zum Schutt. Ersticken zieht ein Leben je zehn Ticks ab, vier Ticks sind also
-    # frueh genug: selbst die schwaechste Spinne haette 160 Ticks, bevor es eng wird.
+    # Das Gesundheitsnetz der Gegnerinsel laeuft nur jeden vierten Tick, versetzt zum Schutt. Ersticken
+    # zieht ein Leben je zehn Ticks ab, vier Ticks sind also frueh genug: selbst die schwaechste Spinne
+    # haette 160 Ticks, bevor es eng wird.
     f"execute if score #m4 nw.tmp2 matches 2 if score #status nw.status matches 1 run function {NS}:schutz/wall",
 ])
 # Sicherheitsnetz gegen den Erstickungstod im Gang (Luis 11.09.2026). Der Marsch schiebt seit v0.56 nur
@@ -3414,27 +3416,27 @@ fn("schutz/tick", [
 # Kasten-Selektoren testen die HITBOX, nicht den Mittelpunkt (siehe Nachtwache Technik), deshalb trifft
 # x=-2,dx=1 genau die, die in den linken Wandblock hineinragen. Sie werden zurueck in die Gasse geschoben,
 # ein Viertelblock je Tick, statt dort zu ersticken. "at @s" ist Pflicht, sonst misst ~ vom Weltnullpunkt.
+# Reicht von z 9 bis 62: Gang, Brueckenkopf und Steg haben die Waende bei x +-2. Ab z 63 ist die Insel
+# innen offen, dort wuerde dasselbe Netz Gegner auf freiem Boden seitlich schieben.
 fn("schutz/gasse", [
-    f"execute as @e[tag=nw.welle,x=-2,y={BODEN_Y+1},z={Z1},dx=1,dy={WAND_OBEN-BODEN_Y},dz={GEGNER_Z-GEGNER_RADIUS+2-Z1}] at @s run tp @s ~0.25 ~ ~",
-    f"execute as @e[tag=nw.welle,x=2,y={BODEN_Y+1},z={Z1},dx=1,dy={WAND_OBEN-BODEN_Y},dz={GEGNER_Z-GEGNER_RADIUS+2-Z1}] at @s run tp @s ~-0.25 ~ ~",
+    f"execute as @e[tag=nw.welle,x=-2,y={BODEN_Y+1},z={Z1},dx=1,dy={WAND_OBEN-BODEN_Y},dz={GEGNER_Z-GEGNER_RADIUS+1-Z1}] at @s run tp @s ~0.25 ~ ~",
+    f"execute as @e[tag=nw.welle,x=2,y={BODEN_Y+1},z={Z1},dx=1,dy={WAND_OBEN-BODEN_Y},dz={GEGNER_Z-GEGNER_RADIUS+1-Z1}] at @s run tp @s ~-0.25 ~ ~",
 ])
 # Dasselbe Netz fuer die Gegnerinsel. Dort liegt es nicht am Marsch, sondern am Gedraengel: in Nacht 10
 # stehen ueber 40 Gegner auf einer Insel mit Radius 11, und Vanilla schiebt Mobs dabei in Bloecke hinein.
-# Anders als im Gang ist hier nicht eine bestimmte Wand schuld (der erste Tote lag weder im Randwall noch
-# an einem Baum), deshalb wird gar nicht erst nach Geometrie gefragt: steckt der Kopf eines Wellengegners
-# in irgendetwas Festem, wird er zur Inselmitte geschoben. Auf der Gegnerinsel darf ohnehin nichts
-# abgebaut werden, ein Gegner hat dort also in keinem Block etwas verloren. Ausgenommen sind Seelenfeuer
-# und Feuer (die gehoeren zur Insel und ersticken niemanden) sowie die Torgasse (x -1..1, z 60..63),
-# sonst schoebe das Netz den Marsch zum Tor zurueck.
-# Auf der Gegnerinsel wird nicht nach Geometrie gefragt, sondern das Symptom gemessen: verliert ein
-# Wellengegner dort Leben, wird er zur Inselmitte geschoben. Zwei Fassungen davor sind gescheitert,
-# weil Ersticken nach der HITBOX geht, nicht nach dem Mittelpunkt. Erst wurde nur der Block am
-# Mittelpunkt geprueft: die Testspinne stand auf x -3,2, also in Block -4 (Luft), und erstickte
-# trotzdem, weil ihre 1,4 breite Hitbox bis ins Shroomlight auf Block -3 reichte. Dann die vier Ecken
-# der Hitbox: auch daneben, denn bei 1,4 Breite liegt der toetende Block zwischen den Ecken. Ueber die
-# Gesundheit ist es exakt und kostet drei Befehle je Gegner, und es faengt zugleich das Seelenfeuer ab,
-# in dem sonst ab und zu einer verbrannte. Auf der Gegnerinsel gibt es keinen erlaubten Schaden.
-fn("schutz/wall_weg", [f"execute facing 0.5 ~ {GZ+0.5} run tp @s ^ ^ ^0.8"])
+# Hier wird nicht nach Geometrie gefragt, sondern das Symptom gemessen: verliert ein Wellengegner dort
+# Leben, wird er ins Innere geschoben. Zwei Geometriefassungen davor sind gescheitert, weil Ersticken
+# nach der HITBOX geht, nicht nach dem Mittelpunkt. Erst wurde nur der Block am Mittelpunkt geprueft:
+# die Testspinne stand auf x -3,2, also in Block -4 (Luft), und erstickte trotzdem, weil ihre 1,4 breite
+# Hitbox bis ins Shroomlight auf Block -3 reichte. Dann die vier Ecken der Hitbox: auch daneben, denn bei
+# 1,4 Breite liegt der toetende Block zwischen den Ecken. Ueber die Gesundheit ist es exakt und kostet
+# drei Befehle je Gegner. Auf der Gegnerinsel gibt es keinen erlaubten Schaden.
+# Zielpunkt ist NICHT die Inselmitte: dort brennt das Seelenfeuer (0, 64, 72), ein brennender Gegner
+# waere genau hineingeschoben worden (Review 11.09.2026). Stattdessen ein Punkt vier Bloecke vor der
+# Mitte Richtung Tor, frei von Feuer und Baeumen: wer am Tor zerdrueckt wird, geht damit vom Tor weg,
+# wer im Randwall steckt, nach innen.
+WALL_ZIEL_Z = GZ - 4 + 0.5
+fn("schutz/wall_weg", [f"execute facing 0.5 ~ {WALL_ZIEL_Z} run tp @s ^ ^ ^0.8"])
 fn("schutz/wall", [
     # Die Torgasse ist NICHT ausgenommen. Bei den Geometriefassungen musste sie es sein, sonst haetten
     # sie den Marsch zum Tor zurueckgedrueckt; dieses Netz schiebt nur bei Schaden, und dort erstickte
