@@ -19,7 +19,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 102                   # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 103                   # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 # ----------------------------------------------------------------------------
@@ -2187,7 +2187,22 @@ GLUECK_KISTEN = [
     (3,  "Orange Crate", "gold"),
     (1,  "Black Crate",  "dark_purple"),
 ]
-# Inhalt je Truhe: (Item, min, max, Gewicht). Aus jedem Topf wird gezogen, drei Zuege je Truhe.
+# Inhalt der Gluecksrad-Truhen seit v0.64 (Luis 08.11.2026, drei Runden im Chat): eigener Satz statt
+# der Generator-Kisten. Obsidian gibt es NUR hier, je seltener die Farbe, desto hoeher Chance und Menge
+# ("man braucht ja nur 12 fuer ein Portal"). Dazu immer 1 bis 4 Erfahrungsflaschen und selten ein
+# Eisengolem-Ei. Source Focus wie das Golem-Ei, Fraggle und Bogi je mit der halben Chance.
+# obsidian = (Chance %, min, max); golem, focus, fraggle, bogi = Chance in Zehntausendstel.
+GLUECK_INHALT = [
+    {"obsidian": (10, 1, 1),   "golem": 100,   "focus": 100,   "fraggle": 50,   "bogi": 50},     # grau
+    {"obsidian": (20, 1, 2),   "golem": 250,   "focus": 250,   "fraggle": 125,  "bogi": 125},    # gruen
+    {"obsidian": (35, 1, 2),   "golem": 500,   "focus": 500,   "fraggle": 250,  "bogi": 250},    # blau
+    {"obsidian": (50, 2, 4),   "golem": 1000,  "focus": 1000,  "fraggle": 500,  "bogi": 500},    # lila
+    {"obsidian": (70, 3, 5),   "golem": 2000,  "focus": 2000,  "fraggle": 1000, "bogi": 1000},   # gelb
+    {"obsidian": (90, 4, 8),   "golem": 5000,  "focus": 5000,  "fraggle": 2500, "bogi": 2500},   # orange
+    {"obsidian": (100, 8, 12), "golem": 10000, "focus": 10000, "fraggle": 5000, "bogi": 5000},   # schwarz
+]
+GLUECK_XP = (1, 4)                      # Erfahrungsflaschen je Truhe, immer
+GLUECK_WERK = (0, 5, -10)               # Arbeitsfass tief unter der Insel (geladener Chunk), dort wird die Truhe gepackt
 GLUECK_FELDER = 9                       # Breite des Laufbands
 # Bremskurve: Bild -> Ticks bis zum naechsten. Laeuft rund vier Sekunden und wird spuerbar langsamer.
 GLUECK_TAKT = [1] * 14 + [2] * 6 + [3] * 4 + [4, 5, 6, 8, 10, 13, 16]
@@ -2228,9 +2243,24 @@ for _st, (_gew, _name, _farbe) in enumerate(GLUECK_KISTEN, 1):
     # Generator-Kiste: neuer Inhalt, ein Fach je Item
     w(f"{NS}/loot_table/kiste/stufe{_st}.json", kiste_tabelle(_st, _name, _farbe, [
         {"type": "minecraft:loot_table", "value": f"{NS}:kiste/item{_st}_{_i}"} for _i in range(len(KISTE_INHALT[_st]))]))
-    # Gluecksrad-Truhe: eigener Satz (Luis 08.11.2026, P1 A). Bis zum eigenen Inhalt die alten Toepfe.
+    # Gluecksrad-Truhe: eigener Satz (Luis 08.11.2026, P1 A und P2), siehe GLUECK_INHALT
+    _gi = GLUECK_INHALT[_st - 1]
     w(f"{NS}/loot_table/glueck/stufe{_st}.json", kiste_tabelle(_st, _name, _farbe, [
-        {"type": "minecraft:loot_table", "value": f"{NS}:kiste/topf_{_kat}{_st}"} for _kat in KISTE_FAECHER[_st]]))
+        {"type": "minecraft:loot_table", "value": f"{NS}:glueck/obsidian{_st}"},
+        {"type": "minecraft:loot_table", "value": f"{NS}:glueck/xp"},
+        {"type": "minecraft:loot_table", "value": f"{NS}:glueck/golem{_st}"}]))
+    _oc, _omn, _omx = _gi["obsidian"]
+    w(f"{NS}/loot_table/glueck/obsidian{_st}.json", {"pools": [{"rolls": 1, "entries": [
+        {"type": "minecraft:item", "name": "minecraft:obsidian", "weight": _oc,
+         "functions": ([{"function": "minecraft:set_count", "count": {"min": _omn, "max": _omx}}] if _omx > 1 else [])}]
+        + ([{"type": "minecraft:empty", "weight": 100 - _oc}] if _oc < 100 else [])}]})
+    _gc = _gi["golem"]
+    w(f"{NS}/loot_table/glueck/golem{_st}.json", {"pools": [{"rolls": 1, "entries": [
+        {"type": "minecraft:item", "name": "minecraft:iron_golem_spawn_egg", "weight": _gc}]
+        + ([{"type": "minecraft:empty", "weight": 10000 - _gc}] if _gc < 10000 else [])}]})
+w(f"{NS}/loot_table/glueck/xp.json", {"pools": [{"rolls": 1, "entries": [
+    {"type": "minecraft:item", "name": "minecraft:experience_bottle",
+     "functions": [{"function": "minecraft:set_count", "count": {"min": GLUECK_XP[0], "max": GLUECK_XP[1]}}]}]}]})
 
 # ----------------------------------------------------------------------------
 # Nether und End: erst ab einer Quellstufe, und der Nether nie nachts (Luis 10.09.2026)
@@ -2339,12 +2369,16 @@ fn("glueck/ende", [
 ] + [f"execute if score @s nw.glz matches {st} run function {NS}:glueck/ende_{st}" for st in range(1, 8)] + [
     "scoreboard players set @s nw.glz 0",
 ])
+# v0.64: Die Truhe wird in einem Arbeitsfass unter der Insel gepackt. Die Beutetabelle legt Obsidian,
+# Flaschen und Golem-Ei hinein; Focus, Fraggle und Bogi sind eigene Items mit Komponenten und entstehen
+# wie im Laden, sie werden per item replace ins Fass gelegt und von dort in die Truhe gehaengt (feste
+# Faecher 24 bis 26). Danach liegt die fertige Truhe als Item vor dem Spieler und wird sofort aufgehoben.
 for _st, (_gew, _name, _farbe) in enumerate(GLUECK_KISTEN, 1):
     laut = _st >= 6
     fn(f"glueck/ende_{_st}", [
         f"title @a title {glueck_band(0, _st)}",
         f"title @a subtitle " + J([txt(_name, _farbe, bold=True)]),
-        f"loot give @s loot {NS}:glueck/stufe{_st}",         # die Truhe bekommt nur, wer den Key hatte (eigener Satz seit v0.61)
+        f"function {NS}:glueck/packen_{_st}",                # die Truhe bekommt nur, wer den Key hatte (eigener Satz seit v0.64)
         "playsound minecraft:entity.player.levelup master @a ~ ~ ~ 1 1",
         f"playsound minecraft:block.note_block.bell master @a ~ ~ ~ 1 {1.4 if laut else 1.0}",
         "playsound minecraft:entity.ender_dragon.growl hostile @a ~ ~ ~ 0.6 1.4" if laut else None,
@@ -3025,6 +3059,49 @@ for r in angebot:
         f"execute if score #r nw.tmp2 matches 1 run function {NS}:sammler/spruch/kauf",
     ])
 fn("sammler/geben", ["$give @s $(item) $(n)"])
+def _glueck_packen_bauen():
+    """Erst nach item_spec aufrufbar (Focus und Fraggle kommen von dort)."""
+    _wx, _wy, _wz = GLUECK_WERK
+    _W = f"{_wx} {_wy} {_wz}"
+    def _glueck_extra(fach, item_befehl):
+        return [
+            item_befehl,
+            f'data modify block {_W} Items[{{Slot:0b}}].components."minecraft:container" append value {{slot:{fach},item:{{id:"minecraft:stone",count:1}}}}',
+            f'data modify block {_W} Items[{{Slot:0b}}].components."minecraft:container"[-1].item.id set from block {_W} Items[{{Slot:1b}}].id',
+            f'data modify block {_W} Items[{{Slot:0b}}].components."minecraft:container"[-1].item.components set from block {_W} Items[{{Slot:1b}}].components',
+            f"item replace block {_W} container.1 with minecraft:air",
+        ]
+    _fid, _fcomp, _ = item_spec("FOCUS")
+    _zid, _zcomp, _ = item_spec("ZWERG")
+    fn("glueck/extra_focus", _glueck_extra(24, f"item replace block {_W} container.1 with {_fid}[{_fcomp}]"))
+    fn("glueck/extra_fraggle", _glueck_extra(25, f"item replace block {_W} container.1 with {_zid}[{_zcomp}]"))
+    fn("glueck/extra_bogi", [
+        # Bogis heissen der Reihe nach Tombo, Svenjo, Harzo ... wie beim Kauf im Laden
+        "scoreboard players add #bogi_nr nw.status 1",
+        f"execute unless score #bogi_nr nw.status matches 1..{len(BOGI_NAMEN)} run scoreboard players set #bogi_nr nw.status 1",
+        *[f"execute if score #bogi_nr nw.status matches {_n} run function {NS}:glueck/extra_bogi_{_n}" for _n in range(1, len(BOGI_NAMEN) + 1)],
+    ])
+    for _n in range(1, len(BOGI_NAMEN) + 1):
+        fn(f"glueck/extra_bogi_{_n}", _glueck_extra(26, f"item replace block {_W} container.1 with {bogi_item(None, _n)}"))
+    fn("glueck/auswerfen", ["$summon minecraft:item ~ ~0.5 ~ {Item:$(gl),PickupDelay:0s}"])
+    for _st in range(1, 8):
+        _gi = GLUECK_INHALT[_st - 1]
+        fn(f"glueck/packen_{_st}", [
+            f"setblock {_W} minecraft:barrel",
+            f"loot replace block {_W} container.0 loot {NS}:glueck/stufe{_st}",
+            *[z for _art, _fn in (("focus", "extra_focus"), ("fraggle", "extra_fraggle"), ("bogi", "extra_bogi"))
+              for z in (f"execute store result score #gx nw.tmp run random value 1..10000",
+                        f"execute if score #gx nw.tmp matches ..{_gi[_art]} run function {NS}:glueck/{_fn}",
+                        f"execute if score #gx nw.tmp matches ..{_gi[_art]} run tellraw @a " +
+                        J([{"selector": "@s", "color": "white"}, txt(" finds ", "gray"),
+                           txt({"focus": "a Source Focus", "fraggle": "Fraggle", "bogi": "a Bogi"}[_art], "gold", bold=True),
+                           txt(" in the crate!", "gray")]))],
+            f"data modify storage nachtwache:tmp gl set from block {_W} Items[{{Slot:0b}}]",
+            "data remove storage nachtwache:tmp gl.Slot",
+            f"setblock {_W} minecraft:air",
+            f"execute at @s run function {NS}:glueck/auswerfen with storage nachtwache:tmp",
+        ])
+_glueck_packen_bauen()
 
 # Verkaufen: Fass am Tresen, alle 5 Ticks (die Lieferrampe ist seit v0.13 raus, Luis: wird nicht benutzt)
 # Preis je Gegenstand als eigene Funktion preis/<item>: Fach lesen, Namensraum abschneiden, Funktion mit dem Namen aufrufen.
