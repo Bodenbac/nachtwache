@@ -139,3 +139,4 @@ id,stufe,name,preis,max,item,kat,pos
 325,6,Ward Armor Trim,1000,1,ward_armor_trim_smithing_template,MINERALS,24
 326,6,Wayfinder Armor Trim,1000,1,wayfinder_armor_trim_smithing_template,MINERALS,25
 327,6,Wild Armor Trim,1000,1,wild_armor_trim_smithing_template,MINERALS,26
+333,1,Firework Rocket,20,64,RAKETE,UTIL,

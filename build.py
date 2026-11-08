@@ -10,7 +10,7 @@ from pathlib import Path
 import rp_build          # Tabellen der Upgrade-Station (ENCH, ENCH_TYPEN, ENCH_STREIT), v0.45
 
 HERE = Path(__file__).resolve().parent
-COIN = "\u25cf"                         # Muenz-Symbol im UI (● wird vom Ressourcenpaket durch eine Muenze ersetzt)
+COIN = "\u25cf"                         # Muenz-Symbol im UI (â— wird vom Ressourcenpaket durch eine Muenze ersetzt)
 RESSOURCENPAKET = True                 # eigene Item-Symbole (item_model) fuer Watch Bell und Kits, braucht out/nachtwache-rp.zip beim Client
 TAB = HERE / "tabellen"
 OUT = HERE / "out" / "nachtwache"
@@ -19,7 +19,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 99                    # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 100                   # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 # ----------------------------------------------------------------------------
@@ -44,7 +44,7 @@ PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110
 # ----------------------------------------------------------------------------
 BALANCE_V060 = True
 V060_COIN_FAKTOR = 2 if BALANCE_V060 else 1
-V060_GEN_KISTE = 0.5                 # Prozent Stufenkiste aus dem Generator
+V060_GEN_KISTE = 0.2                 # Prozent Stufenkiste aus dem Generator (v0.61: 0,2 statt 0,5, Luis 08.11.2026)
 V060_GEN_EXP = 1.0                   # Prozent Erfahrungsflasche aus dem Generator
 V060_KISTE_ESSEN_MAX = 2             # so viel Nahrung liegt hoechstens in einem Kistenfach
 V060_NEUE_ANGEBOTE = {"330", "331", "332"}   # ids in angebot.csv, die nur mit v0.60 im Laden stehen
@@ -240,6 +240,25 @@ KISTE_FAECHER = {
 }
 KISTE_CHANCE = 0.5                      # Prozent, mit der der Quell eine Kiste seiner Stufe ausgibt
 
+# v0.61: Neuer Inhalt der GENERATOR-Kisten (Luis 08.11.2026, Liste im Discord, Zahlen von Claude
+# vorgeschlagen und von Luis freigegeben). Statt Toepfen mit Gewichten hat jedes Item seinen eigenen
+# Wurf: (Item, min, max, Chance in Prozent). So liegt jedes Item hoechstens einmal in der Kiste, und
+# die Chance faellt von links nach rechts. Weg sind damit Schwamm, Beacon, Sculk, Sattel, Elytra,
+# Netherstern, Obsidian und alle Bloecke (Hobo: "sinnlose Drops raus"). Das Totem gibt es nur noch
+# auf Stufe 7 und hoechstens eins (Luis: "weniger Totems"). Essen bleibt auf 1 bis 2 gedeckelt.
+# Die alten KISTE_TOEPFE fuellen weiter die Gluecksrad-Truhen, bis die ihren eigenen Satz bekommen.
+KISTE_INHALT = {
+    1: [("coal", 6, 11, 100), ("apple", 1, 2, 60), ("experience_bottle", 2, 4, 35)],
+    2: [("bread", 1, 2, 100), ("copper_ingot", 6, 11, 60), ("experience_bottle", 4, 6, 35)],
+    3: [("cooked_beef", 1, 2, 100), ("experience_bottle", 6, 11, 60), ("iron_ingot", 6, 11, 35)],
+    4: [("cooked_beef", 1, 2, 100), ("experience_bottle", 8, 12, 60), ("iron_ingot", 8, 12, 35), ("diamond", 1, 1, 20)],
+    5: [("experience_bottle", 16, 22, 100), ("golden_apple", 1, 1, 60), ("diamond", 1, 2, 35)],
+    6: [("experience_bottle", 20, 28, 100), ("enchanted_golden_apple", 1, 1, 60), ("diamond", 2, 4, 35),
+        ("netherite_scrap", 1, 2, 20)],
+    7: [("experience_bottle", 24, 32, 100), ("enchanted_golden_apple", 1, 1, 60), ("diamond", 3, 6, 35),
+        ("netherite_ingot", 1, 1, 20), ("totem_of_undying", 1, 1, 10)],
+}
+
 # Seit v0.60 ist die Kiste eine Shulkerkiste in der Stufenfarbe (Luis 11.09.2026). Eine Truhe laesst
 # sich nicht einfaerben, die Shulkerkiste bringt ihre Farbe von Haus aus mit, und die sechzehn
 # Vanilla-Farben decken die sieben Stufen genau ab. Im Inventar bleibt das eigene Symbol aus
@@ -277,7 +296,7 @@ WUT_TICKS = 200                        # 10 s: so lange greift ein getroffener G
 TRUHE = (2, 64, 2)                     # alte Starttruhe, nur noch fuer die Migration
 
 # Uhr: die Spielzeit laeuft mit ZAEHLER/NENNER Zeiteinheiten je Tick (Akkumulator, dadurch fluessig). Tag = 13500 Einheiten.
-TAG_ZAEHLER, TAG_NENNER = 45, 32       # 1,40625 je Tick -> Tag genau 8 Minuten (Luis, 07.09.2026)
+TAG_ZAEHLER, TAG_NENNER = 9, 4         # 2,25 je Tick -> Tag genau 5 Minuten (Luis 08.11.2026, vorher 45/32 = 8 Minuten)
 NACHT_ZAEHLER, NACHT_NENNER = 5, 7     # 0,714 je Tick -> Nacht bis 23000 in ca. 11,7 Minuten, dann steht die Uhr, bis alle Gegner tot sind
 NACHT_START, TAG_START = 13000, 23500  # Uhrzeiten fuer Strasse auf / Strasse weg
 
@@ -352,6 +371,9 @@ SONDERITEMS = {
     "TRANK_HEILUNG":   ("minecraft:potion", 1, '[potion_contents={potion:"minecraft:strong_healing"}]'),
     "TRANK_STAERKE":   ("minecraft:potion", 1, '[potion_contents={potion:"minecraft:strength"}]'),
     "TRANK_NACHTSICHT":("minecraft:potion", 1, '[potion_contents={potion:"minecraft:long_night_vision"}]'),
+    # v0.61 (Hobo): Raketen fuer die Elytra. Ohne Schwarzpulver (keine Creeper, keine Mobdrops) lassen
+    # sie sich nicht bauen. Flugdauer 1 wie eine Rakete aus einem Schwarzpulver.
+    "RAKETE":          ("minecraft:firework_rocket", 1, '[fireworks={flight_duration:1}]'),
 }
 BUECHER = [  # (Verzauberung, [Stufen], Name, [Preise]) fuer den Reiter Books: Hoechststufe und eine darunter
     ("SHARPNESS", [4, 5], "Sharpness", [9000, 15000]), ("PROTECTION", [3, 4], "Protection", [6000, 14000]),
@@ -1467,7 +1489,7 @@ w(f"{NS}/loot_table/belohnung.json", {"pools": [{"rolls": 1, "entries": [
 # ----------------------------------------------------------------------------
 # Anzeige (Seitenleiste)
 # ----------------------------------------------------------------------------
-# Icons als Schriftzeichen aus dem Ressourcenpaket (icons.py): Muenze ●, Stufenscheiben, Mond, Zombie, Totenkopf.
+# Icons als Schriftzeichen aus dem Ressourcenpaket (icons.py): Muenze â—, Stufenscheiben, Mond, Zombie, Totenkopf.
 import icons
 def icon(name):
     return {"text": icons.ZEICHEN[name] + " ", "color": "white"}
@@ -1560,7 +1582,7 @@ BOGI_TAKT = 60                          # Ticks je Schuss auf Stufe 0 (3 s)
 # (Schluessel, Name, Symbol, Maxstufe, Preis je Stufe, Wirkungstext je Stufe)
 BOGI_UPGRADES = [
     ("sp",  "Draw speed", "minecraft:feather",        4, 400, lambda n: f"one shot every {(BOGI_TAKT - 10 * n) / 20:.1f} s"),
-    ("st",  "Power",      "minecraft:iron_sword",     4, 500, lambda n: f"{4 + 2 * n} damage per arrow"),
+    ("st",  "Power",      "minecraft:iron_sword",     4, 500, lambda n: f"{bogi_schaden(n)} damage per arrow"),
     ("mu",  "Multishot",  "minecraft:crossbow",       2, 2000, lambda n: f"{1 + n} target(s) per shot"),
     ("fl",  "Flame",      "minecraft:blaze_powder",   1, 1500, lambda n: "sets the target on fire" if n else "no fire"),
     ("inf", "Infinity",   "minecraft:end_crystal",    1, 4000, lambda n: "arrows are not used up" if n else "one arrow per shot"),
@@ -1573,7 +1595,7 @@ BOGI_SLOT = {"sp": 8, "st": 7, "mu": 6, "fl": 5, "inf": 4, "kb": 3, "rg": 2}   #
 BOGI_PFEIL_SLOTS = [0, 1]
 BOGI_LAGER = 9                          # nur die erste Reihe ist offen, der Rest ist gesperrt
 def bogi_takt(n): return BOGI_TAKT - 10 * n
-def bogi_schaden(n): return 4 + 2 * n
+def bogi_schaden(n): return 4 + n        # v0.61: 4 + 1 je Stufe statt 4 + 2, Hoechstwert 8 statt 12 (Hobo: "Bogi nerfen")
 def bogi_reichweite(n): return 10 + 4 * n
 
 def bogi_item(werte=None, nr=0, inv=None):
@@ -1667,8 +1689,7 @@ schuss = [
     "scoreboard players operation #bmu nw.tmp2 = @s nw.b_mu",
     "scoreboard players operation #bfl nw.tmp2 = @s nw.b_fl",
     "scoreboard players operation #bkb nw.tmp2 = @s nw.b_kb",
-    "scoreboard players operation #bdmg nw.tmp2 = @s nw.b_st",
-    "scoreboard players operation #bdmg nw.tmp2 *= #2 nw.const",
+    "scoreboard players operation #bdmg nw.tmp2 = @s nw.b_st",     # Schaden = 4 + Stufe (bogi_schaden, v0.61)
     "scoreboard players add #bdmg nw.tmp2 4",
     # Pfeil im ersten belegten Fach? Ohne Pfeil kein Schuss.
     "scoreboard players set #bpf nw.tmp2 -1",
@@ -1701,11 +1722,18 @@ fn("bogi/treffer", [
     "execute store result storage nachtwache:tmp dmg int 1 run scoreboard players get #bdmg nw.tmp2",
     f"function {NS}:bogi/schaden with storage nachtwache:tmp",
     "execute if score #bfl nw.tmp2 matches 1 run data modify entity @s Fire set value 100s",
-    "execute if score #bkb nw.tmp2 matches 1.. facing entity @s feet run tp @s ^ ^ ^0.8",
-    "execute if score #bkb nw.tmp2 matches 2 facing entity @s feet run tp @s ^ ^ ^0.8",
+    # Rueckstoss (v0.61 repariert). Vorher stand hier "facing entity @s feet run tp @s ^ ^ ^0.8": die
+    # Position war noch Bogi, also landete das Ziel 0,8 Bloecke VOR Bogi, er hat die Gegner zu sich
+    # gezogen (Hobo: "Gegner anziehen"). Jetzt zeigt die Richtung von Bogi zum Ziel, gerechnet wird ab
+    # dem Ziel, und geschoben wird nur, wenn Fuss und Kopf dort frei sind (tp kennt keine Kollision).
+    f"execute if score #bkb nw.tmp2 matches 1.. facing entity @s feet positioned as @s run function {NS}:bogi/stoss",
+    f"execute if score #bkb nw.tmp2 matches 2 facing entity @s feet positioned as @s run function {NS}:bogi/stoss",
     "playsound minecraft:entity.arrow.hit_player player @a[distance=..16] ~ ~ ~ 0.5 1.4",
 ])
 fn("bogi/schaden", ["$damage @s $(dmg) minecraft:arrow"])
+fn("bogi/stoss", [
+    "execute positioned ^ ^ ^0.8 if block ~ ~ ~ #minecraft:air if block ~ ~1 ~ #minecraft:air run tp @s ~ ~ ~",
+])
 fn("bogi/zielen", [
     "tp @e[type=item_display,tag=nw.bogi_k,distance=..0.6] ~ ~ ~ ~ 0",
     "tp @e[type=item_display,tag=nw.bogi_a,distance=..0.6] ~ ~ ~ ~ 0",
@@ -2144,16 +2172,33 @@ for _kat, _stufen in KISTE_TOEPFE.items():
              {"type": "minecraft:item", "name": f"minecraft:{it}", "weight": g,
               "functions": ([{"function": "minecraft:set_count", "count": {"min": mn, "max": mx}}] if mx > 1 else [])})
             for it, mn, mx, g in _eintraege]}]})
-for _st, (_gew, _name, _farbe) in enumerate(GLUECK_KISTEN, 1):
+# v0.61: ein Wurf je Item fuer die Generator-Kisten (KISTE_INHALT). Chance als Gewicht gegen einen
+# leeren Zug, beide auf 100 gerechnet.
+for _st, _liste in KISTE_INHALT.items():
+    for _i, (it, mn, mx, ch) in enumerate(_liste):
+        _eintr = [{"type": "minecraft:item", "name": f"minecraft:{it}", "weight": ch,
+                   "functions": ([{"function": "minecraft:set_count", "count": {"min": mn, "max": mx}}] if mx > 1 else [])}]
+        if ch < 100:
+            _eintr.append({"type": "minecraft:empty", "weight": 100 - ch})
+        w(f"{NS}/loot_table/kiste/item{_st}_{_i}.json", {"pools": [{"rolls": 1, "entries": _eintr}]})
+
+def kiste_tabelle(_st, _name, _farbe, inhalt):
     _modell = f'"minecraft:item_model": "nachtwache:crate_{_st}", ' if RESSOURCENPAKET else ""
-    w(f"{NS}/loot_table/kiste/stufe{_st}.json", {"pools": [{"rolls": 1, "entries": [{
+    return {"pools": [{"rolls": 1, "entries": [{
         "type": "minecraft:item", "name": KISTE_ITEM[_st - 1], "functions": [
             {"function": "minecraft:set_components", "components": json.loads(
                 "{" + _modell + '"minecraft:custom_data": {"nw_crate": %d}, ' % _st
                 + '"minecraft:custom_name": {"text": "%s", "color": "%s", "italic": false}}' % (_name, _farbe))},
-            {"function": "minecraft:set_contents", "component": "container", "entries": [
-                {"type": "minecraft:loot_table", "value": f"{NS}:kiste/topf_{_kat}{_st}"} for _kat in KISTE_FAECHER[_st]]},
-        ]}]}]})
+            {"function": "minecraft:set_contents", "component": "container", "entries": inhalt},
+        ]}]}]}
+
+for _st, (_gew, _name, _farbe) in enumerate(GLUECK_KISTEN, 1):
+    # Generator-Kiste: neuer Inhalt, ein Fach je Item
+    w(f"{NS}/loot_table/kiste/stufe{_st}.json", kiste_tabelle(_st, _name, _farbe, [
+        {"type": "minecraft:loot_table", "value": f"{NS}:kiste/item{_st}_{_i}"} for _i in range(len(KISTE_INHALT[_st]))]))
+    # Gluecksrad-Truhe: eigener Satz (Luis 08.11.2026, P1 A). Bis zum eigenen Inhalt die alten Toepfe.
+    w(f"{NS}/loot_table/glueck/stufe{_st}.json", kiste_tabelle(_st, _name, _farbe, [
+        {"type": "minecraft:loot_table", "value": f"{NS}:kiste/topf_{_kat}{_st}"} for _kat in KISTE_FAECHER[_st]]))
 
 # ----------------------------------------------------------------------------
 # Nether und End: erst ab einer Quellstufe, und der Nether nie nachts (Luis 10.09.2026)
@@ -2267,7 +2312,7 @@ for _st, (_gew, _name, _farbe) in enumerate(GLUECK_KISTEN, 1):
     fn(f"glueck/ende_{_st}", [
         f"title @a title {glueck_band(0, _st)}",
         f"title @a subtitle " + J([txt(_name, _farbe, bold=True)]),
-        f"loot give @s loot {NS}:kiste/stufe{_st}",          # die Truhe bekommt nur, wer den Key hatte
+        f"loot give @s loot {NS}:glueck/stufe{_st}",         # die Truhe bekommt nur, wer den Key hatte (eigener Satz seit v0.61)
         "playsound minecraft:entity.player.levelup master @a ~ ~ ~ 1 1",
         f"playsound minecraft:block.note_block.bell master @a ~ ~ ~ 1 {1.4 if laut else 1.0}",
         "playsound minecraft:entity.ender_dragon.growl hostile @a ~ ~ ~ 0.6 1.4" if laut else None,
@@ -2343,7 +2388,7 @@ fn("focus/sekunde", [
     "execute if score #focus nw.upgrade matches 1.. run bossbar set nw:focus players @a",
     f"execute if score #focus nw.upgrade matches 0 run function {NS}:focus/ende",
     # Sicherheitsnetz: ein Rest unter der Null kann nur aus einer alten Fassung stammen, in der die
-    # Laufzeit nicht auf glatten 20ern lag. -1 ist der reguläre Aus-Wert und bleibt unberuehrt.
+    # Laufzeit nicht auf glatten 20ern lag. -1 ist der regulÃ¤re Aus-Wert und bleibt unberuehrt.
     f"execute if score #focus nw.upgrade matches ..-2 run function {NS}:focus/ende",
 ])
 fn("focus/ende", [
@@ -2817,8 +2862,8 @@ fn("sammler/tresen", [
     f"execute unless block {KAUF_A[0]} {KAUF_A[1]} {KAUF_A[2]} minecraft:chest run setblock {KAUF_A[0]} {KAUF_A[1]} {KAUF_A[2]} minecraft:chest[facing=south,type=right]",
     f"execute unless block {KAUF_B[0]} {KAUF_B[1]} {KAUF_B[2]} minecraft:chest run setblock {KAUF_B[0]} {KAUF_B[1]} {KAUF_B[2]} minecraft:chest[facing=south,type=left]",
     f"execute unless block {VERKAUF[0]} {VERKAUF[1]} {VERKAUF[2]} minecraft:barrel run setblock {VERKAUF[0]} {VERKAUF[1]} {VERKAUF[2]} minecraft:barrel[facing=up]",
-    f"data merge block {KAUF_A[0]} {KAUF_A[1]} {KAUF_A[2]} {{CustomName:[{{text:\"BUY   \",color:\"dark_red\"}},{{text:\"● \",color:\"white\"}},{{score:{{name:\"#konto\",objective:\"nw.konto\"}},color:\"gold\"}}]}}",
-    f"data merge block {KAUF_B[0]} {KAUF_B[1]} {KAUF_B[2]} {{CustomName:[{{text:\"BUY   \",color:\"dark_red\"}},{{text:\"● \",color:\"white\"}},{{score:{{name:\"#konto\",objective:\"nw.konto\"}},color:\"gold\"}}]}}",
+    f"data merge block {KAUF_A[0]} {KAUF_A[1]} {KAUF_A[2]} {{CustomName:[{{text:\"BUY   \",color:\"dark_red\"}},{{text:\"â— \",color:\"white\"}},{{score:{{name:\"#konto\",objective:\"nw.konto\"}},color:\"gold\"}}]}}",
+    f"data merge block {KAUF_B[0]} {KAUF_B[1]} {KAUF_B[2]} {{CustomName:[{{text:\"BUY   \",color:\"dark_red\"}},{{text:\"â— \",color:\"white\"}},{{score:{{name:\"#konto\",objective:\"nw.konto\"}},color:\"gold\"}}]}}",
     f"data merge block {VERKAUF[0]} {VERKAUF[1]} {VERKAUF[2]} {{CustomName:[{{text:\"SELL   \",color:\"dark_red\"}},{{text:\"put goods here\",color:\"gray\"}}]}}",
 ])
 
