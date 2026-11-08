@@ -392,24 +392,28 @@ PLATTE_FARBEN = {"aus": ((74, 64, 92), (38, 32, 50)),
 # kurz -> (Anzeigename, Zeichen aus buecher.ZEICHEN, Hoechststufe, Grundpreis, Mindest-Quellstufe)
 # Preis der Stufe n = Grundpreis * n (Luis 10.09.2026).
 # ----------------------------------------------------------------------------
+# Preise mit v0.60 auf 31,25 Prozent gesenkt (Luis 11.09.2026: Schaerfe und Schutz sollen 250 in der
+# Grundstufe kosten, 800 waren es vorher). Derselbe Faktor liegt auf allen anderen, danach auf volle
+# 25 gerundet, damit die Verhaeltnisse untereinander bleiben. Die vierte Zahl ist der Grundpreis, eine
+# Stufe kostet Grundpreis mal Stufe. Alte Werte in Klammern.
 ENCH = {
-    "sharpness":       ("Sharpness",       "funke",       5, 800,  1),
-    "protection":      ("Protection",      "schild",      4, 800,  1),
-    "efficiency":      ("Efficiency",      "tempo",       5, 500,  1),
-    "power":           ("Power",           "stern",       5, 500,  1),
-    "feather_falling": ("Feather Falling", "feder",       4, 600,  1),
-    "fortune":         ("Fortune",         "edelstein",   3, 1200, 1),
-    "looting":         ("Looting",         "muenze",      3, 800,  1),
-    "unbreaking":      ("Unbreaking",      "amboss",      3, 500,  1),
-    "thorns":          ("Thorns",          "dornen",      3, 700,  1),
-    "sweeping_edge":   ("Sweeping Edge",   "bogenhieb",   3, 500,  1),
-    "fire_aspect":     ("Fire Aspect",     "flamme",      2, 1000, 1),
-    "knockback":       ("Knockback",       "stoss",       2, 400,  1),
-    "punch":           ("Punch",           "doppelstoss", 2, 400,  1),
-    "silk_touch":      ("Silk Touch",      "seide",       1, 1500, 3),
-    "flame":           ("Flame",           "flamme",      1, 1500, 3),
-    "infinity":        ("Infinity",        "unendlich",   1, 1500, 4),
-    "mending":         ("Mending",         "plus",        1, 1500, 5),
+    "sharpness":       ("Sharpness",       "funke",       5, 250, 1),   # 800
+    "protection":      ("Protection",      "schild",      4, 250, 1),   # 800
+    "efficiency":      ("Efficiency",      "tempo",       5, 150, 1),   # 500
+    "power":           ("Power",           "stern",       5, 150, 1),   # 500
+    "feather_falling": ("Feather Falling", "feder",       4, 200, 1),   # 600
+    "fortune":         ("Fortune",         "edelstein",   3, 375, 1),   # 1200
+    "looting":         ("Looting",         "muenze",      3, 250, 1),   # 800
+    "unbreaking":      ("Unbreaking",      "amboss",      3, 150, 1),   # 500
+    "thorns":          ("Thorns",          "dornen",      3, 225, 1),   # 700
+    "sweeping_edge":   ("Sweeping Edge",   "bogenhieb",   3, 150, 1),   # 500
+    "fire_aspect":     ("Fire Aspect",     "flamme",      2, 325, 1),   # 1000
+    "knockback":       ("Knockback",       "stoss",       2, 125, 1),   # 400
+    "punch":           ("Punch",           "doppelstoss", 2, 125, 1),   # 400
+    "silk_touch":      ("Silk Touch",      "seide",       1, 475, 3),   # 1500
+    "flame":           ("Flame",           "flamme",      1, 475, 3),   # 1500
+    "infinity":        ("Infinity",        "unendlich",   1, 475, 4),   # 1500
+    "mending":         ("Mending",         "plus",        1, 475, 5),   # 1500
 }
 # Was auf welches Teil passt, in Anzeigereihenfolge: wichtigstes links, Mending immer rechts (Luis 10.09.2026)
 ENCH_TYPEN = [

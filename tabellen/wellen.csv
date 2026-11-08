@@ -4,9 +4,12 @@
 # takt 1 = jede Nacht einer mehr, takt 5 = alle fuenf Naechte einer mehr.
 # Die Welle waechst bis WELLE_MAX_NACHT in build.py (35), danach bleibt sie stehen.
 # Mob-Typen sind in build.py (MOBS) definiert. Keine Creeper (Luis, 07.09.2026).
+# Neu gesetzt am 11.09.2026 von Luis. Die Zombies tragen die Welle, alles andere kommt
+# nach und nach dazu. Die Verdopplung der ersten vier Naechte aus v0.60 ist damit hinfaellig.
 mob,ab,start,zuwachs,takt
-zombie,1,4,2,1
-skeleton,3,2,1,1
-spider,3,2,1,1
-zombie_baby,5,1,1,5
-enderman,10,1,1,5
+zombie,1,4,1,1
+spider,2,1,1,2
+skeleton,3,1,1,3
+zombie_baby,7,1,1,5
+enderman,9,1,1,7
+witch,11,1,1,10

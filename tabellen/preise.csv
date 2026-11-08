@@ -67,6 +67,18 @@ copper_ore,Copper Ore,4
 raw_copper,Raw Copper,3
 copper_ingot,Copper Ingot,10
 copper_block,Copper Block,50
+# Kupferausruestung (1.21.9). Werkzeug und Ruestung werden sonst nie angekauft, ein fester
+# Wert hier hebt diese Sperre auf. Gerechnet wie im Laden: Stueckzahl mal Kupferbarren (20)
+# mal 1,1, davon die Haelfte, also derselbe Schluessel wie bei Eisen und Diamant.
+copper_sword,Copper Sword,22
+copper_pickaxe,Copper Pickaxe,33
+copper_axe,Copper Axe,33
+copper_shovel,Copper Shovel,11
+copper_hoe,Copper Hoe,22
+copper_helmet,Copper Helmet,55
+copper_chestplate,Copper Chestplate,88
+copper_leggings,Copper Leggings,77
+copper_boots,Copper Boots,44
 iron_ore,Iron Ore,15
 raw_iron,Raw Iron,12
 iron_ingot,Iron Ingot,25

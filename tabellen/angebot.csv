@@ -6,15 +6,18 @@
 # ENCH (Reiter Enchanting) steht bewusst nicht hier: die Upgrade-Station baut ihre Knoepfe selbst
 # aus rp_build.ENCH. Die 28 Verzauberungsbuecher sind mit v0.45 entfallen (Luis, 10.09.2026).
 id,stufe,name,preis,max,item,kat,pos
-1,1,Dirt,2,64,dirt,BLOCKS,
-2,1,Cobblestone,2,64,cobblestone,BLOCKS,
-3,1,Stone,3,64,stone,BLOCKS,
+1,1,Dirt,10,64,dirt,BLOCKS,
+2,1,Cobblestone,10,64,cobblestone,BLOCKS,
+3,1,Stone,12,64,stone,BLOCKS,
 4,1,Sand,10,64,sand,BLOCKS,
 5,1,Gravel,10,64,gravel,BLOCKS,
 6,1,Oak Log,50,64,oak_log,BLOCKS,
 7,1,Oak Planks,15,64,oak_planks,BLOCKS,
 12,1,Bread,50,64,bread,FOOD,
 13,1,Apple,30,64,apple,FOOD,
+330,1,Wheat Seeds,500,16,wheat_seeds,FOOD,
+331,1,Carrot,800,16,carrot,FOOD,
+332,1,Potato,800,16,potato,FOOD,
 15,1,Water Bucket,500,1,water_bucket,UTIL,
 16,1,Lava Bucket,500,1,lava_bucket,UTIL,
 141,1,Bone,35,64,bone,MOB,
@@ -76,10 +79,10 @@ id,stufe,name,preis,max,item,kat,pos
 205,1,Leather Chestplate,106,1,leather_chestplate,TOOLS,6
 206,1,Leather Leggings,92,1,leather_leggings,TOOLS,7
 207,1,Leather Boots,52,1,leather_boots,TOOLS,8
-208,1,Stone Sword,30,1,stone_sword,TOOLS,9
-209,1,Stone Pickaxe,30,1,stone_pickaxe,TOOLS,10
-210,1,Stone Axe,30,1,stone_axe,TOOLS,11
-211,1,Stone Shovel,20,1,stone_shovel,TOOLS,12
+208,1,Stone Sword,40,1,stone_sword,TOOLS,9
+209,1,Stone Pickaxe,55,1,stone_pickaxe,TOOLS,10
+210,1,Stone Axe,55,1,stone_axe,TOOLS,11
+211,1,Stone Shovel,30,1,stone_shovel,TOOLS,12
 212,1,Chainmail Helmet,200,1,chainmail_helmet,TOOLS,14
 213,1,Chainmail Chestplate,320,1,chainmail_chestplate,TOOLS,15
 214,1,Chainmail Leggings,280,1,chainmail_leggings,TOOLS,16

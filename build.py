@@ -19,8 +19,49 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 94                    # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 99                    # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
+
+# ----------------------------------------------------------------------------
+# BALANCE v0.60 (Luis 11.09.2026): der Umbau haengt komplett an EINEM Schalter.
+# BALANCE_V060 = False dreht alles davon auf den Stand v0.59 zurueck, ein Build genuegt:
+#   1. Geld je Abbau doppelt (Stufe 1 gibt 2, Stufe 5 gibt 10)
+#   2. Gegner lassen nichts mehr fallen, nur noch Erfahrung
+#   3. Der Generator gibt keine Rohstoffe mehr, nur noch die Kiste (0,5 %) und eine
+#      Erfahrungsflasche (1 %)
+#   4. Nahrung in den Kisten auf 1 bis 2 Stueck je Fach gedeckelt
+#   5. Drei neue Posten im Laden (Samen 500, Karotte und Kartoffel je 800)
+#   6. Die drei Seelenfeuer auf der Gegnerinsel sind weg
+#   7. Erde und Kopfstein kosten 10 statt 2, Stein zieht auf 12 mit
+#   9. Nacht 1 bis 4 bringen doppelt so viele normale Zombies
+#  10. Stufenkisten sind Shulker in der Stufenfarbe, Ankauf fest 50
+#   8. Skelette treffen nur noch Spieler: ihre Pfeile weichen Gegnern aus, und alle
+#      Wellengegner stehen im selben Team, greifen sich also nie gegenseitig an
+# Die Stufenfarbe des Generators haengt NICHT hier dran, sie hat ihren eigenen Schalter
+# GEN_STUFENFARBE weiter unten.
+# Die Tabellen in tabellen/ bleiben dabei unangetastet, quell.csv wird nur nicht mehr
+# ausgewertet. Der Rollback ist damit eine Zeile und kein Rueckbau.
+# ----------------------------------------------------------------------------
+BALANCE_V060 = True
+V060_COIN_FAKTOR = 2 if BALANCE_V060 else 1
+V060_GEN_KISTE = 0.5                 # Prozent Stufenkiste aus dem Generator
+V060_GEN_EXP = 1.0                   # Prozent Erfahrungsflasche aus dem Generator
+V060_KISTE_ESSEN_MAX = 2             # so viel Nahrung liegt hoechstens in einem Kistenfach
+V060_NEUE_ANGEBOTE = {"330", "331", "332"}   # ids in angebot.csv, die nur mit v0.60 im Laden stehen
+# Preise, die v0.60 angehoben hat. In angebot.csv steht der neue Wert, hier der alte fuer den Rollback.
+V060_PREIS_ALT = {"1": 2, "2": 2, "3": 3,    # Dirt und Cobblestone standen bei 2, Stone bei 3
+                  "208": 30, "209": 30, "210": 30, "211": 20}   # Steinwerkzeug zieht mit dem Kopfstein mit
+# Kisten sind seit v0.60 Shulker in der Stufenfarbe. Der Sammler zahlt fuer JEDE Shulkerkiste
+# denselben festen Wert, sonst waere die leere Kiste mehr wert als ihr Inhalt: abgeleitet lagen
+# sie bei rund 1000 Coins, weil zwei Shulkermuscheln darin stecken. Gilt fuer alle Farben, sonst
+# waere Umfaerben die Luecke.
+V060_SHULKER_WERT = 50
+# Gegner ohne Beute: diese Vanilla-Beutetabellen werden vom Datapack leer ueberschrieben.
+# Erfahrung haengt nicht an der Tabelle und bleibt. Die Gamerule doMobLoot waere falsch,
+# sie nimmt in Java auch die Erfahrung mit. Die Liste ist genau der Bestand aus MOBS plus
+# der Warden aus dem Finale. Nutztiere, Ertrunkene, Ghasts und der Rest behalten ihre Beute.
+V060_LEERE_BEUTE = ["zombie", "husk", "skeleton", "spider", "cave_spider", "creeper", "enderman",
+                    "witch", "wither_skeleton", "pillager", "ravager", "warden"]
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
 ZWERG_TAKT = 300                        # Ticks je Schlag auf Stufe 0 (15 s)
@@ -116,13 +157,15 @@ def zwerg_item(lvl, bp=0, inv=None):
 QUELL = (0, 64, -7)                    # Start-Generator, mittig auf der Insel
 # Sieben Stufen des Quells: (Block, Farbe, Abbauten bis zur naechsten Stufe, Splitter je Abbau, Mob-Chance, Mob)
 # Alle Bloecke brauchen eine Spitzhacke, um schnell zu gehen (Haerte 1.5 bis 1.8), Drops werden weggeraeumt.
+# Abbauten je Stufe seit dem 11.09.2026 in 250er-Schritten (Luis): 500, 750, 1000, 1250, 1500, 1750.
+# Vorher waren es 500, 1000, 1500, 2000, 3000, 4000, zusammen 12000 statt jetzt 6750.
 STUFEN = [
     ("minecraft:tuff",             "Grau",    500,  1, 0.02, "zombie"),
-    ("minecraft:green_concrete",   "Gruen",   1000, 2, 0.025, "zombie"),
-    ("minecraft:blue_concrete",    "Blau",    1500, 3, 0.03, "skeleton"),
-    ("minecraft:budding_amethyst", "Lila",    2000, 4, 0.035, "spider"),
-    ("minecraft:yellow_concrete",  "Gelb",    3000, 5, 0.04, "witch"),
-    ("minecraft:orange_concrete",  "Orange",  4000, 6, 0.045, "wither_skeleton"),
+    ("minecraft:green_concrete",   "Gruen",   750,  2, 0.025, "zombie"),
+    ("minecraft:blue_concrete",    "Blau",    1000, 3, 0.03, "skeleton"),
+    ("minecraft:budding_amethyst", "Lila",    1250, 4, 0.035, "spider"),
+    ("minecraft:yellow_concrete",  "Gelb",    1500, 5, 0.04, "witch"),
+    ("minecraft:orange_concrete",  "Orange",  1750, 6, 0.045, "wither_skeleton"),
     ("minecraft:black_concrete",   "Schwarz", 0,    8, 0.05, "wither_skeleton"),
 ]
 ANZ_STUFEN = len(STUFEN)
@@ -131,7 +174,7 @@ PHASEN_GRENZEN = []            # kumulierte Abbauten, ab denen Stufe 2..7 beginn
 _summe = 0
 for _b, _f, _n, _s, _c, _m in STUFEN[:-1]:
     _summe += _n; PHASEN_GRENZEN.append(_summe)
-SPLITTER_PRO_ABBAU = {i + 1: st[3] for i, st in enumerate(STUFEN)}
+SPLITTER_PRO_ABBAU = {i + 1: st[3] * V060_COIN_FAKTOR for i, st in enumerate(STUFEN)}   # v0.60: Faktor 2
 # Inhalt der Kisten, seit v0.53 nach Kategorien und je Stufe eigen (Luis 10.09.2026: pro Stufe eine
 # eigene Kiste, Inhalt gewuerfelt, wird nach oben mehr und besser). Vier Toepfe: Erz, Essen,
 # wertvolle Bloecke, Besonderes. Eintrag = (Item, min, max, Gewicht).
@@ -140,7 +183,7 @@ KISTE_TOEPFE = {
     1: [("coal", 8, 16, 3), ("raw_copper", 6, 12, 3), ("raw_iron", 3, 6, 2)],
     2: [("coal", 16, 24, 2), ("raw_iron", 8, 14, 3), ("copper_ingot", 8, 16, 3)],
     3: [("iron_ingot", 8, 16, 3), ("gold_ingot", 4, 8, 3), ("lapis_lazuli", 12, 24, 2), ("redstone", 16, 32, 2)],
-    4: [("iron_ingot", 16, 24, 3), ("gold_ingot", 8, 16, 3), ("diamond", 1, 2, 2)],
+    4: [("iron_ingot", 11, 17, 3), ("gold_ingot", 6, 11, 3)],   # Stufe 4: Mengen minus 30 %, Diamant hat einen eigenen Topf
     5: [("diamond", 3, 5, 3), ("emerald", 6, 10, 3), ("gold_ingot", 24, 32, 2)],
     6: [("diamond", 6, 10, 3), ("emerald", 12, 20, 3), ("netherite_scrap", 1, 2, 2)],
     7: [("diamond", 8, 12, 3), ("emerald", 16, 32, 2), ("netherite_ingot", 1, 1, 2)],
@@ -158,32 +201,52 @@ KISTE_TOEPFE = {
     1: [("oak_log", 8, 16, 3), ("cobblestone", 32, 48, 2), ("sand", 16, 32, 2)],
     2: [("oak_log", 16, 24, 3), ("stone", 32, 48, 2), ("gravel", 24, 32, 2)],
     3: [("obsidian", 2, 4, 3), ("magma_block", 8, 16, 2), ("honeycomb", 8, 16, 2)],
-    4: [("obsidian", 4, 8, 3), ("sea_lantern", 8, 16, 2), ("honeycomb", 16, 24, 2)],
+    4: [("obsidian", 3, 6, 3), ("sea_lantern", 6, 11, 2), ("honeycomb", 11, 17, 2)],
     5: [("obsidian", 8, 12, 3), ("sea_lantern", 16, 24, 2), ("sponge", 2, 4, 2)],
     6: [("obsidian", 12, 20, 3), ("sponge", 4, 8, 2), ("sculk_sensor", 2, 4, 2)],
     7: [("obsidian", 24, 32, 3), ("sponge", 8, 16, 2), ("sculk_sensor", 4, 8, 2)],
+ },
+ # Der Diamant der Stufe 4 haengt nicht mehr im Erztopf, sonst kaeme er aus beiden Erzfaechern und
+ # koennte doppelt liegen. Eigener Topf mit genau einem Stueck und einem leeren Gegenstueck:
+ # 50 Prozent der Kisten haben einen Diamanten, mehr als einen nie (Luis 11.09.2026).
+ "dia": {
+    4: [("diamond", 1, 1, 1), ("-", 0, 0, 1)],
  },
  "spezial": {
     1: [("arrow", 16, 32, 3), ("string", 8, 16, 2), ("bone", 8, 16, 2)],
     2: [("arrow", 32, 48, 3), ("slime_ball", 6, 12, 2), ("name_tag", 1, 1, 1)],
     3: [("experience_bottle", 8, 16, 3), ("ender_pearl", 2, 4, 2), ("name_tag", 1, 1, 2)],
-    4: [("experience_bottle", 16, 24, 3), ("saddle", 1, 1, 2), ("iron_golem_spawn_egg", 1, 1, 1)],
+    4: [("experience_bottle", 11, 17, 3), ("saddle", 1, 1, 2), ("iron_golem_spawn_egg", 1, 1, 1)],
     5: [("experience_bottle", 24, 32, 3), ("ender_pearl", 8, 12, 2), ("totem_of_undying", 1, 1, 2)],
     6: [("totem_of_undying", 1, 2, 3), ("shulker_shell", 2, 4, 2), ("heart_of_the_sea", 1, 1, 2), ("trident", 1, 1, 1)],
     7: [("totem_of_undying", 2, 3, 3), ("nether_star", 1, 1, 2), ("elytra", 1, 1, 1), ("beacon", 1, 1, 1)],
  },
 }
+# v0.60: Nahrung soll knapp sein. In einem Essensfach liegen nur noch 1 bis 2 Stueck,
+# die Sorten und ihre Gewichte bleiben wie sie waren (Luis 11.09.2026).
+if BALANCE_V060:
+    KISTE_TOEPFE["essen"] = {_st: [(_it, 1, V060_KISTE_ESSEN_MAX, _gw) for _it, _a, _b, _gw in _liste]
+                             for _st, _liste in KISTE_TOEPFE["essen"].items()}
+
 # Welche Toepfe eine Kiste fuellt. Die Zahl der Faecher waechst mit der Stufe.
 KISTE_FAECHER = {
     1: ["erz", "essen", "block"],
     2: ["erz", "essen", "block"],
     3: ["erz", "essen", "block", "spezial"],
-    4: ["erz", "erz", "essen", "block"],
+    4: ["erz", "erz", "essen", "block", "dia"],
     5: ["erz", "erz", "essen", "block", "spezial", "spezial"],
     6: ["erz", "erz", "essen", "block", "spezial", "spezial"],
     7: ["erz", "erz", "essen", "block", "spezial", "spezial"],
 }
 KISTE_CHANCE = 0.5                      # Prozent, mit der der Quell eine Kiste seiner Stufe ausgibt
+
+# Seit v0.60 ist die Kiste eine Shulkerkiste in der Stufenfarbe (Luis 11.09.2026). Eine Truhe laesst
+# sich nicht einfaerben, die Shulkerkiste bringt ihre Farbe von Haus aus mit, und die sechzehn
+# Vanilla-Farben decken die sieben Stufen genau ab. Im Inventar bleibt das eigene Symbol aus
+# kiste_icons.py, hingestellt ist sie farbig. Der vorherige Versuch mit einer Truhe und farbigen
+# Platten drumherum ist raus, Luis: "das mit der kiste ist super haesslich".
+KISTE_SHULKER = ["light_gray", "green", "blue", "purple", "yellow", "orange", "black"]
+KISTE_ITEM = [f"minecraft:{_f}_shulker_box" for _f in KISTE_SHULKER]
 
 QUELL_MOBS = False                       # Luis 07.09.2026: kein Mob aus dem Quell, die Wellen reichen
 MOB_CHANCE = {i + 1: (st[4] if QUELL_MOBS else 0.0) for i, st in enumerate(STUFEN)}
@@ -340,6 +403,9 @@ MOBS = {
 }
 # "attributes" doppelt bei brutalo: den ersten Eintrag aus _mob entfernen
 MOBS["brutalo"] = (MOBS["brutalo"][0], MOBS["brutalo"][1].replace('attributes:[{id:"minecraft:follow_range",base:100d}],', '', 1))
+# v0.60: kein Drop heisst auch keine Ausruestung. Bogen, Schwert und Steinschwert standen auf 5 Prozent.
+if BALANCE_V060:
+    MOBS = {_k: (_e, _n.replace("0.05f", "0.0f")) for _k, (_e, _n) in MOBS.items()}
 
 # ----------------------------------------------------------------------------
 # Hilfen
@@ -437,12 +503,21 @@ load = [f"scoreboard objectives add {o} {c}" for o, c in OBJEKTIVE]
 load += [
     # Team nur fuer die Umrissfarbe: wer gerade am Beacon channelt, leuchtet rot (v0.39)
     "team add nw_chan", 'team modify nw_chan color red', "team modify nw_chan seeFriendlyInvisibles false",
+    # v0.60: alle Wellengegner stehen im selben Team. Minecraft laesst Mobs eines Teams einander nicht
+    # mehr als Ziel waehlen, auch nicht nach einem Treffer. Damit geht kein Zombie mehr auf ein Skelett
+    # los, das ihn getroffen hat. Beide Teams ohne friendlyFire, damit auch das Channeln nichts daran
+    # aendert. Farbe dark_purple, weil die Bossnamen so gefaerbt sind und die Teamfarbe den Namen
+    # ueberschreibt (Luis 11.09.2026).
+    "team add nw_gegner", "team modify nw_gegner color dark_purple",
+    "team modify nw_gegner friendlyFire false", "team modify nw_gegner seeFriendlyInvisibles false",
+    "team modify nw_chan friendlyFire false",
     "scoreboard objectives modify nw.anzeige numberformat blank",
     'scoreboard objectives modify nw.anzeige displayname {"text":"NIGHTWATCH","color":"dark_red","bold":true}',
     "scoreboard objectives setdisplay sidebar nw.anzeige",
     "bossbar add nw:welle \"Night\"", "bossbar set nw:welle color red", "bossbar set nw:welle style notched_10", "bossbar set nw:welle visible false",
     "bossbar add nw:uhr \"Day\"", "bossbar set nw:uhr color green", "bossbar set nw:uhr style notched_6", "bossbar set nw:uhr max 13500",
     "bossbar add nw:boss \"Boss\"", "bossbar set nw:boss color purple", "bossbar set nw:boss style progress", "bossbar set nw:boss visible false",
+    "bossbar add nw:focus \"Source Focus\"", "bossbar set nw:focus color pink", "bossbar set nw:focus style progress", "bossbar set nw:focus visible false",
 ]
 for k in [-1, 2, 3, 4, 5, 6, 7, 10, 16, 20, 100, 200, 250, 360, 1000, 2000, 6000]:
     load.append(f"scoreboard players set #{k} nw.const {k}")
@@ -472,6 +547,12 @@ fn("migration", [
     f"function {NS}:strasse/entfernen", f"function {NS}:welt/gegnerinsel",
     *einmalig([f"fill -1 {BODEN_Y} 6 1 {BODEN_Y} 8 minecraft:polished_deepslate"]),
     f"execute unless score #phase nw.phase matches 1.. run scoreboard players set #phase nw.phase 1",
+    # Die Stufe aus dem Abbauzaehler nachziehen. Der Wechsel selbst haengt an einer Gleichheit
+    # (#abbau trifft die Grenze genau), verschieben sich die Grenzen, passt die Stufe sonst nicht
+    # mehr zum Zaehler und bleibt stehen. Hier wird sie einmal je Migration geradegezogen
+    # (Luis 11.09.2026, Umstellung auf 250er-Schritte).
+    *[f"execute if score #abbau nw.abbau matches {g}.. run scoreboard players set #phase nw.phase {i + 2}"
+      for i, g in enumerate(PHASEN_GRENZEN)],
     *einmalig([f"setblock {QUELL[0]} {QUELL[1]} {QUELL[2]} minecraft:air"]),   # loescht eingelegte Items, deshalb nur einmal
     f"function {NS}:quell/setzen",
     *einmalig(['kill @e[type=item,x=-2,y=62,z=-2,dx=4,dy=4,dz=4,nbt={Item:{id:"minecraft:budding_amethyst"}}]']),
@@ -519,6 +600,10 @@ fn("migration", [
     "kill @e[tag=nw.herz]", "kill @e[tag=nw.herz_text]",
     # v0.15: Generatoren sind jetzt sichtbar, die alten grossen Farbwuerfel weg (werden klein neu gesetzt)
     *einmalig(["kill @e[type=block_display,tag=nw.gen_block]"]),
+    # v0.60: die Drops haben sich geaendert, also die Uebersicht in jedem Generator neu schreiben,
+    # und die Stufenfarbe gibt es wieder, also einmal ueber alle Generatoren
+    f"execute as @e[type=marker,tag=nw.gen] at @s run function {NS}:gen/anzeige",
+    f"execute as @e[type=marker,tag=nw.gen] at @s run function {NS}:gen/farbe",
     "execute as @e[tag=nw.welle] run attribute @s minecraft:follow_range base set 128",
     f"spawnpoint @a {SPAWN[0]} {SPAWN[1]} {SPAWN[2]}", f"setworldspawn {SPAWN[0]} {SPAWN[1]} {SPAWN[2]}",
     *einmalig(["tellraw @a " + J([txt("[Nightwatch] The island has been rebuilt: longer, the beacon at the far end, the stall off to the side.", "yellow")])]),
@@ -666,9 +751,14 @@ geg += kreis_fills(0, GZ, GR - 2, BODEN_Y - 6, BODEN_Y - 4, "minecraft:deepslate
 geg += kreis_fills(0, GZ, GR - 5, BODEN_Y - 8, BODEN_Y - 7, "minecraft:deepslate")
 geg += kreis_fills(0, GZ, 3, BODEN_Y, BODEN_Y, "minecraft:soul_soil")
 geg += [
-    f"setblock 0 {BODEN_Y+1} {GZ} minecraft:soul_fire",
-    f"setblock 4 {BODEN_Y} {GZ+3} minecraft:soul_soil", f"setblock 4 {BODEN_Y+1} {GZ+3} minecraft:soul_fire",
-    f"setblock -5 {BODEN_Y} {GZ-2} minecraft:soul_soil", f"setblock -5 {BODEN_Y+1} {GZ-2} minecraft:soul_fire",
+    # v0.60 (Luis 11.09.2026): die drei Seelenfeuer sind raus. Der Seelensand darunter bleibt liegen,
+    # damit die Insel ihren Boden behaelt. Alte Welten raeumt welt/gegnerinsel bei der Migration ab,
+    # die Funktion setzt den Bereich ueber dem Boden ohnehin erst auf Luft und baut dann neu.
+    *([] if BALANCE_V060 else [f"setblock 0 {BODEN_Y+1} {GZ} minecraft:soul_fire"]),
+    f"setblock 4 {BODEN_Y} {GZ+3} minecraft:soul_soil",
+    *([] if BALANCE_V060 else [f"setblock 4 {BODEN_Y+1} {GZ+3} minecraft:soul_fire"]),
+    f"setblock -5 {BODEN_Y} {GZ-2} minecraft:soul_soil",
+    *([] if BALANCE_V060 else [f"setblock -5 {BODEN_Y+1} {GZ-2} minecraft:soul_fire"]),
     f"fill -3 {BODEN_Y} {GZ+5} -1 {BODEN_Y} {GZ+7} minecraft:netherrack", f"fill 5 {BODEN_Y} {GZ-6} 7 {BODEN_Y} {GZ-4} minecraft:netherrack",
     f"fill -7 {BODEN_Y} {GZ+1} -5 {BODEN_Y} {GZ+3} minecraft:soul_sand",
     # tote Baeume
@@ -1232,6 +1322,7 @@ fn("tick", [
     f"execute as @a[scores={{nw.endlos=1..}}] run function {NS}:nacht/endlos_an",
     f"execute as @a[scores={{nw.tode=1..}}] run function {NS}:spieler/tod",
     f"function {NS}:gegner/tick",
+    f"function {NS}:gegner/pfeil_tick",
     f"function {NS}:schutz/tick",
     f"function {NS}:zwerg/tick",
     f"function {NS}:bogi/tick",
@@ -1320,7 +1411,23 @@ def phasen_von(s):
     if "-" in s:
         a, b = s.split("-"); return range(int(a), int(b) + 1)
     return [int(s)]
+# v0.60: Der Generator gibt keine Rohstoffe mehr. Uebrig bleiben die Stufenkiste und eine
+# Erfahrungsflasche, alle uebrigen Wuerfe sind leer. Das Geld je Abbau kommt aus
+# SPLITTER_PRO_ABBAU und haengt nicht an dieser Tabelle. Gewichte auf 1000 gerechnet, damit
+# 0,5 und 1 Prozent ganzzahlig aufgehen (Luis 11.09.2026).
+def quell_tabelle_v060(p):
+    kiste = round(1000 * V060_GEN_KISTE / 100)
+    exp = round(1000 * V060_GEN_EXP / 100)
+    return [
+        {"type": "minecraft:loot_table", "value": f"{NS}:kiste/stufe{p}", "weight": kiste},
+        {"type": "minecraft:item", "name": "minecraft:experience_bottle", "weight": exp},
+        {"type": "minecraft:empty", "weight": 1000 - kiste - exp},
+    ]
+
 for p in range(1, ANZ_STUFEN + 1):
+    if BALANCE_V060:
+        w(f"{NS}/loot_table/quell/phase{p}.json", {"pools": [{"rolls": 1, "entries": quell_tabelle_v060(p)}]})
+        continue
     entries = []
     for r in rows:
         if p not in phasen_von(r["phasen"]):
@@ -1337,6 +1444,13 @@ for p in range(1, ANZ_STUFEN + 1):
     _kiste = max(1, round(_rest * KISTE_CHANCE / (100 - KISTE_CHANCE)))
     entries.append({"type": "minecraft:loot_table", "value": f"{NS}:kiste/stufe{p}", "weight": _kiste})
     w(f"{NS}/loot_table/quell/phase{p}.json", {"pools": [{"rolls": 1, "entries": entries}]})
+
+# v0.60: Gegner lassen nichts mehr fallen. Sauberster Weg dafuer ist, ihre Vanilla-Beutetabellen
+# aus dem Datapack heraus leer zu ueberschreiben. Die Erfahrung haengt nicht an der Tabelle und
+# bleibt unveraendert. Ohne den Schalter werden die Dateien gar nicht erst geschrieben.
+if BALANCE_V060:
+    for _e in V060_LEERE_BEUTE:
+        w(f"minecraft/loot_table/entities/{_e}.json", {"type": "minecraft:entity", "pools": []})
 
 # Belohnung bei komplett getoeteter Welle ab Nacht 10
 w(f"{NS}/loot_table/belohnung.json", {"pools": [{"rolls": 1, "entries": [
@@ -1423,7 +1537,16 @@ sx, sy, sz = SAMMLER_POS
 # falls die fehlt nur preise.csv
 preise = read_csv("preise_abgeleitet.csv") if (TAB / "preise_abgeleitet.csv").exists() else read_csv("preise.csv")
 preise = [r for r in preise if int(r["wert"]) >= 1]
+if BALANCE_V060:                         # jede Shulkerkiste zum festen Preis, siehe V060_SHULKER_WERT
+    for _r in preise:
+        if _r["item"].endswith("shulker_box"):
+            _r["wert"] = str(V060_SHULKER_WERT)
 angebot = read_csv("angebot.csv")
+if not BALANCE_V060:                     # Samen, Karotte und Kartoffel sind Zugaenge aus v0.60
+    angebot = [_r for _r in angebot if _r["id"] not in V060_NEUE_ANGEBOTE]
+    for _r in angebot:                   # ... und Erde und Kopfstein kosteten vorher 2
+        if _r["id"] in V060_PREIS_ALT:
+            _r["preis"] = str(V060_PREIS_ALT[_r["id"]])
 sprueche = read_csv("sprueche.csv")
 
 
@@ -1782,6 +1905,10 @@ GEN_TAKE_KNOPF = ('minecraft:ender_eye[' + knopf_modell("gen_take") + 'custom_da
 fn("gen/tick", [
     f"execute as @e[type=marker,tag=nw.gen_neu] at @s run function {NS}:gen/neu",
     f"execute as @e[type=marker,tag=nw.gen] at @s run function {NS}:gen/einer",
+    # Sicherheitsnetz fuer die Stufenfarbe (Luis 11.09.2026: "geh sicher dass beides verschwindet"):
+    # ein Farbteil ohne Generator darunter wird weggeraeumt, egal wie der Generator verschwunden ist.
+    "execute as @e[type=block_display,tag=nw.gen_block] at @s "
+    "unless entity @e[type=marker,tag=nw.gen,distance=..1] unless entity @e[type=marker,tag=nw.gen_neu,distance=..1] run kill @s",
 ])
 fn("gen/neu", [
     "tag @s remove nw.gen_neu",
@@ -1803,14 +1930,50 @@ fn("gen/aufbauen", [
     f"function {NS}:gen/farbe",
     f"function {NS}:gen/anzeige",
 ])
-# Das sichtbare Aussehen: ein block_display in der Farbe der Stufe
-# Der Generator ist ein sichtbares Fass in Steinoptik. Der kleine Stufenkristall obendrauf ist seit v0.18
-# raus (Luis 08.09.2026: stoert optisch und blieb beim Umstellen in der Luft haengen). gen/farbe raeumt nur
-# noch alte Displays weg, damit auch Reste aus aelteren Fassungen verschwinden.
-fn("gen/farbe", ["kill @e[type=block_display,tag=nw.gen_block,distance=..2.5]"])
+# Das sichtbare Aussehen. Der Generator ist ein Fass, darueber liegt ein block_display, das den ganzen
+# Block in der Stufenfarbe zeigt (Luis 11.09.2026, nach Sockelring und Kristall: "mach es wieder so
+# dass es farbig ist und dann sieht man halt keine abrisse"). Der Preis dafuer ist bekannt und
+# akzeptiert: das Display deckt das Fass komplett ab, also sind beim Abbauen keine Risse zu sehen.
+# Das Display haengt als Entity GENAU auf dem Marker des Generators, also auf Abstand 0. Damit greift
+# jedes kill mit Radius, und nichts kann stehen bleiben, wenn der Generator weiterzieht. Der Radius
+# bleibt eng (0,6), weil zwei Generatoren direkt nebeneinander stehen koennen.
+# brightness fest, weil das Entity im Fassblock steckt: dort ist der Lichtwert 0 und das Modell waere
+# schwarz (dieselbe Falle wie bei Fraggles Displays, v0.9.7).
+GEN_STUFENFARBE = True                 # False: Generator bleibt grau wie in v0.59
+# Etwas groesser als der Block, damit die Flaechen nicht mit dem Fass darunter flimmern. 0,02 reicht
+# dafuer. Das Aufblasen auf 0,05 war ein Irrweg: das Flackern kam nicht vom Abstand, sondern von der
+# kill-Zeile in schutz/sekunde (siehe dort).
+GEN_HUELLE = "translation:[-0.52f,-0.52f,-0.52f],scale:[1.04f,1.04f,1.04f]"
+# Der Formstand steckt als zweites Kennzeichen im Display. Aendert sich die Form, bekommt er eine
+# neue Nummer, und gen/einer tauscht bestehende Displays von selbst aus. Ohne das bleiben die alten
+# Huellen in der Welt stehen, weil gen/farbe nur bei Stufenwechsel und Migration laeuft. Genau daran
+# hat der erste Versuch gegen das Flackern nicht gewirkt (Luis 11.09.2026: "flackert immernoch").
+GEN_FORM = "nw.genform5"
+def gen_display(block, form):
+    return (f'summon minecraft:block_display ~ ~ ~ {{Tags:["nw.gen_block","{GEN_FORM}"],block_state:{{Name:"{block}"}},'
+            f'brightness:{{sky:15,block:15}},transformation:{{left_rotation:[0f,0f,0f,1f],'
+            f'right_rotation:[0f,0f,0f,1f],{form}}}}}')
+_farbe = ["kill @e[type=block_display,tag=nw.gen_block,distance=..0.6]"]
+if GEN_STUFENFARBE:
+    for _p, _st in enumerate(STUFEN, start=1):
+        _farbe.append(f"execute if score #phase nw.phase matches {_p} run " + gen_display(_st[0], GEN_HUELLE))
+fn("gen/farbe", _farbe)
 
 # Uebersicht im Fass: die Drops der aktuellen Stufe mit Wahrscheinlichkeit, unten rechts der Mitnehmen-Knopf
 def gen_uebersicht_zeilen(p):
+    if BALANCE_V060:
+        # v0.60: es gibt nur noch vier Zeilen zu zeigen, das Geld zuerst.
+        def zeile(iid, name, oben, unten, extra=""):
+            return (f'{iid}[{extra}custom_data={{nw_gen_show:1b}},custom_name={{text:"{name}",color:"white",italic:false}},'
+                    f'lore=[[{{text:"{oben}",color:"gold",italic:false}}],{{text:"{unten}",color:"gray",italic:false}}]]')
+        _modell = f'item_model="nachtwache:crate_{p}",' if RESSOURCENPAKET else ""
+        return [
+            zeile("minecraft:gold_nugget", "Coins", f"+{SPLITTER_PRO_ABBAU[p]} per block", "every block pays"),
+            zeile(KISTE_ITEM[p - 1], "Crate", f"{V060_GEN_KISTE:.2f} %", f"a tier {p} crate", _modell),
+            zeile("minecraft:experience_bottle", "Bottle o' Enchanting", f"{V060_GEN_EXP:.2f} %", "1 per block"),
+            zeile("minecraft:paper", "Nothing else", f"{100 - V060_GEN_KISTE - V060_GEN_EXP:.2f} %",
+                  "the generator gives no blocks any more"),
+        ]
     eintraege = []
     for r in rows:                                   # rows = quell.csv
         if p not in phasen_von(r["phasen"]): continue
@@ -1857,6 +2020,14 @@ fn("gen/einer", [
     f"execute unless items block ~ ~ ~ container.{GEN_SLOT_TAKE} *[custom_data~{{nw_gen_take:1b}}] run function {NS}:gen/mitnehmen",
     f"execute if score #m20 nw.tmp matches 5 run function {NS}:gen/fremd",
     f"execute if score #m20 nw.tmp matches 7 run function {NS}:gen/anzeige",
+    # Farbteile fehlen (neu gesetzt, Nachbar hat sie mit weggeraeumt, Welt neu geladen)? einmal je Sekunde nachziehen
+    f"execute if score #m20 nw.tmp matches 3 unless entity @e[type=block_display,tag=nw.gen_block,distance=..0.6] run function {NS}:gen/farbe",
+    # ... und ein Farbteil aus einer aelteren Form ebenso austauschen
+    f"execute if score #m20 nw.tmp matches 3 if entity @e[type=block_display,tag=nw.gen_block,tag=!{GEN_FORM},distance=..0.6] run function {NS}:gen/farbe",
+    # Liegen zwei Huellen uebereinander, flimmern sie gegeneinander. Einmal je Sekunde zaehlen und
+    # notfalls neu setzen, gen/farbe raeumt vorher ohnehin alles weg (Luis 11.09.2026).
+    "execute store result score #genh nw.tmp2 if entity @e[type=block_display,tag=nw.gen_block,distance=..0.6]",
+    f"execute if score #m20 nw.tmp matches 3 if score #genh nw.tmp2 matches 2.. run function {NS}:gen/farbe",
 ])
 gen_abgebaut = [
     'kill @e[type=item,distance=..2.5,nbt={Item:{id:"minecraft:barrel"}}]',
@@ -1895,7 +2066,7 @@ fn("gen/mitnehmen", [
     f"execute if score #phase nw.phase matches 5 as @p[distance=..8] run give @s {gen_item(5)}",
     f"execute if score #phase nw.phase matches 6 as @p[distance=..8] run give @s {gen_item(6)}",
     f"execute if score #phase nw.phase matches 7 as @p[distance=..8] run give @s {gen_item(7)}",
-    "kill @e[type=block_display,tag=nw.gen_block,distance=..1.2]",
+    "kill @e[type=block_display,tag=nw.gen_block,distance=..0.6]",
     "setblock ~ ~ ~ minecraft:air",
     'kill @e[type=item,distance=..2.5,nbt={Item:{id:"minecraft:barrel"}}]',
     "playsound minecraft:entity.item.pickup player @p[distance=..8] ~ ~ ~ 1 0.8",
@@ -1908,11 +2079,22 @@ fn("gen/mitnehmen", [
 # ----------------------------------------------------------------------------
 MODELL_FOCUS = 'item_model="nachtwache:focus",' if RESSOURCENPAKET else ""
 MODELL_DECOY = 'item_model="nachtwache:decoy",' if RESSOURCENPAKET else ""
-FOCUS_TICKS = 12000                     # 10 Minuten
+# Source Focus, neu gesetzt am 11.09.2026 (Luis): der Preis haengt an der Quellstufe und die
+# Laufzeit wird bei jedem Einsatz gewuerfelt. Ein Kauf ist damit eine Wette, nicht mehr eine
+# feste Rechnung. Ein Zaehler in der Bossleiste zeigt beiden Spielern, wie lange er noch laeuft.
+FOCUS_PREIS_PRO_STUFE = 500             # Stufe 3 kostet also 1500
+# Gewuerfelt wird in SEKUNDEN, nicht in Ticks. Der Sekundentakt zieht 20 Ticks je Durchlauf ab,
+# eine Laufzeit ohne glatte 20er springt an der Null vorbei ins Minus, und die Abfrage auf genau 0
+# greift dann nie: der Zaehler bleibt auf 0s stehen und die Leiste verschwindet nicht
+# (Luis 11.09.2026: "verschwindet nur nicht bei 0").
+FOCUS_MIN_S = 10
+FOCUS_MAX_S = 180
 DECOY_HP = 60                           # rund 20 Treffer
 LORE_LEBEN_L = ['{text:"Repairs the beacon by one heart.",color:"gray",italic:false}',
                 '{text:"Buy before the wave, not during it.",color:"gray",italic:false}']
-LORE_FOCUS_L = ['{text:"Right-click: the Source pays double for 10 minutes.",color:"gray",italic:false}',
+LORE_FOCUS_L = ['{text:"Right-click: the Source pays double.",color:"gray",italic:false}',
+                '{text:"How long is a gamble: 10 to 180 seconds.",color:"gray",italic:false}',
+                '{text:"Price goes up with the Source tier.",color:"dark_gray",italic:false}',
                 '{text:"Burns up when used.",color:"gray",italic:false}']
 LORE_DECOY_L = ['{text:"Right-click: puts up a decoy where you stand.",color:"gray",italic:false}',
                 '{text:"Enemies go for it instead of you until it breaks.",color:"gray",italic:false}']
@@ -1955,16 +2137,20 @@ GLUECK_BILDER = len(GLUECK_TAKT)
 # gibt die Kiste seiner eigenen Stufe aus (v0.53). Dadurch gibt es nur ein Kistensystem.
 for _kat, _stufen in KISTE_TOEPFE.items():
     for _st, _eintraege in _stufen.items():
+        # "-" als Item heisst: dieser Zug bleibt leer. So laesst sich eine Chance unter 100 Prozent
+        # bauen, ohne dafuer ein Fach zu opfern.
         w(f"{NS}/loot_table/kiste/topf_{_kat}{_st}.json", {"pools": [{"rolls": 1, "entries": [
-            {"type": "minecraft:item", "name": f"minecraft:{it}", "weight": g,
-             "functions": ([{"function": "minecraft:set_count", "count": {"min": mn, "max": mx}}] if mx > 1 else [])}
+            ({"type": "minecraft:empty", "weight": g} if it == "-" else
+             {"type": "minecraft:item", "name": f"minecraft:{it}", "weight": g,
+              "functions": ([{"function": "minecraft:set_count", "count": {"min": mn, "max": mx}}] if mx > 1 else [])})
             for it, mn, mx, g in _eintraege]}]})
 for _st, (_gew, _name, _farbe) in enumerate(GLUECK_KISTEN, 1):
     _modell = f'"minecraft:item_model": "nachtwache:crate_{_st}", ' if RESSOURCENPAKET else ""
     w(f"{NS}/loot_table/kiste/stufe{_st}.json", {"pools": [{"rolls": 1, "entries": [{
-        "type": "minecraft:item", "name": "minecraft:chest", "functions": [
+        "type": "minecraft:item", "name": KISTE_ITEM[_st - 1], "functions": [
             {"function": "minecraft:set_components", "components": json.loads(
-                "{" + _modell + '"minecraft:custom_name": {"text": "%s", "color": "%s", "italic": false}}' % (_name, _farbe))},
+                "{" + _modell + '"minecraft:custom_data": {"nw_crate": %d}, ' % _st
+                + '"minecraft:custom_name": {"text": "%s", "color": "%s", "italic": false}}' % (_name, _farbe))},
             {"function": "minecraft:set_contents", "component": "container", "entries": [
                 {"type": "minecraft:loot_table", "value": f"{NS}:kiste/topf_{_kat}{_st}"} for _kat in KISTE_FAECHER[_st]]},
         ]}]}]})
@@ -2035,24 +2221,31 @@ def glueck_band(offset, mitte=None):
             teile.append(icon(f"tier{st}"))
     return J(teile)
 
+# Das Rad laeuft seit v0.60 fuer ALLE sichtbar (Luis 11.09.2026): das Laufband, der Ton und das
+# Ergebnis gehen an @a, nur die Truhe bekommt der, der den Key eingeloest hat. Zwei Raeder
+# gleichzeitig gehen nicht, sie wuerden sich gegenseitig den Titel ueberschreiben. Wer waehrend
+# eines laufenden Rades einen Key benutzt, bekommt ihn deshalb zurueck.
 fn("glueck/start", [
     f"advancement revoke @s only {NS}:key_benutzt",
-    "execute if score @s nw.gl matches 1.. run return run tellraw @s " + J([txt("The wheel is still turning.", "gray", italic=True)]),
+    f"execute if entity @a[scores={{nw.gl=1..}}] run return run function {NS}:glueck/besetzt",
     "execute store result score @s nw.glr run random value 1..100",
 ] + [f"execute if score @s nw.glr matches {lo}..{hi} run scoreboard players set @s nw.glz {st}"
      for st, lo, hi in [(st, sum(_GEWICHTE[:st - 1]) + 1, sum(_GEWICHTE[:st])) for st in range(1, 8)]] + [
     f"scoreboard players set @s nw.gl {GLUECK_BILDER}",
     "scoreboard players set @s nw.glw 0",
-    "title @s times 0 40 6",
-    "playsound minecraft:block.note_block.bit master @s ~ ~ ~ 1 0.6",
-    "tellraw @s " + J([txt("The Collector spins the wheel.", "gold", italic=True)]),
+    "title @a times 0 40 6",
+    # Der Untertitel steht einmal und bleibt unter jedem Bild stehen, so weiss der andere Spieler,
+    # wer gerade dreht. Am Ende ueberschreibt ihn der Name der Truhe.
+    "title @a subtitle " + J([{"selector": "@s", "color": "white"}, txt(" spins the wheel", "gray")]),
+    "playsound minecraft:block.note_block.bit master @a ~ ~ ~ 1 0.6",
+    "tellraw @a " + J([{"selector": "@s", "color": "white"}, txt(" turns a key. The Collector spins the wheel.", "gold", italic=True)]),
 ])
 # Ein Bild je Halt des Bandes. Die Tonhoehe steigt zum Ende hin, das macht die Bremse hoerbar.
 for _f in range(1, GLUECK_BILDER):
     _p = 0.7 + 0.9 * (GLUECK_BILDER - _f) / GLUECK_BILDER
     fn(f"glueck/bild_{_f}", [
-        f"title @s title {glueck_band(_f)}",
-        f"playsound minecraft:block.note_block.hat master @s ~ ~ ~ 0.7 {_p:.2f}",
+        f"title @a title {glueck_band(_f)}",
+        f"playsound minecraft:block.note_block.hat master @a ~ ~ ~ 0.7 {_p:.2f}",
     ])
 schritt = ["execute if score @s nw.glw matches 1.. run return run scoreboard players remove @s nw.glw 1",
            "scoreboard players remove @s nw.gl 1",
@@ -2065,23 +2258,25 @@ fn("glueck/tick", [f"execute as @a[scores={{nw.gl=1..}}] at @s run function {NS}
 # Ende: die gewonnene Truhe, Ton und Ansage. Ab Orange hoert es die ganze Insel.
 fn("glueck/ende", [
     "scoreboard players set @s nw.gl 0", "scoreboard players set @s nw.glw 0",
-    "title @s times 0 60 10",
+    "title @a times 0 60 10",
 ] + [f"execute if score @s nw.glz matches {st} run function {NS}:glueck/ende_{st}" for st in range(1, 8)] + [
     "scoreboard players set @s nw.glz 0",
 ])
 for _st, (_gew, _name, _farbe) in enumerate(GLUECK_KISTEN, 1):
     laut = _st >= 6
     fn(f"glueck/ende_{_st}", [
-        f"title @s title {glueck_band(0, _st)}",
-        f"title @s subtitle " + J([txt(_name, _farbe, bold=True)]),
-        f"loot give @s loot {NS}:kiste/stufe{_st}",
-        "playsound minecraft:entity.player.levelup master @s ~ ~ ~ 1 1",
-        f"playsound minecraft:block.note_block.bell master @s ~ ~ ~ 1 {1.4 if laut else 1.0}",
+        f"title @a title {glueck_band(0, _st)}",
+        f"title @a subtitle " + J([txt(_name, _farbe, bold=True)]),
+        f"loot give @s loot {NS}:kiste/stufe{_st}",          # die Truhe bekommt nur, wer den Key hatte
+        "playsound minecraft:entity.player.levelup master @a ~ ~ ~ 1 1",
+        f"playsound minecraft:block.note_block.bell master @a ~ ~ ~ 1 {1.4 if laut else 1.0}",
         "playsound minecraft:entity.ender_dragon.growl hostile @a ~ ~ ~ 0.6 1.4" if laut else None,
         "tellraw @a " + J([{"selector": "@s", "color": "white"}, txt(" opened a ", "gray"), txt(_name, _farbe, bold=True),
                            txt("!" if laut else ".", "gray")]),
     ])
 
+# Wird erst weiter unten gefuellt, item_spec steht dort. Der Key ist nicht verloren, wenn jemand
+# ihn waehrend eines laufenden Rades benutzt.
 fn("sammler/zu_wenig_level", [
     "tellraw @s " + J([txt("[The Collector] ", "dark_red"), txt(f"Come back with {KEY_LEVEL} levels of experience.", "gray")]),
     "playsound minecraft:entity.villager.no neutral @s ~ ~ ~ 1 1",
@@ -2115,18 +2310,45 @@ fn("skull/opfer", [
 
 fn("focus/start", [
     f"advancement revoke @s only {NS}:focus_benutzt",
-    f"scoreboard players set #focus nw.upgrade {FOCUS_TICKS}",
-    "tellraw @a " + J([txt("The Source glows. Double coins for ten minutes.", "light_purple")]),
+    # Laufzeit wuerfeln. Laeuft schon einer, wird die neue Zeit draufgelegt statt ueberschrieben,
+    # sonst koennte ein zweiter Focus die Restzeit verkuerzen.
+    f"execute store result score #froll nw.tmp2 run random value {FOCUS_MIN_S}..{FOCUS_MAX_S}",
+    "scoreboard players operation #froll nw.tmp2 *= #20 nw.const",
+    "execute if score #focus nw.upgrade matches 1.. run scoreboard players operation #froll nw.tmp2 += #focus nw.upgrade",
+    "scoreboard players operation #focus nw.upgrade = #froll nw.tmp2",
+    "execute store result bossbar nw:focus max run scoreboard players get #focus nw.upgrade",
+    "bossbar set nw:focus players @a",
+    "bossbar set nw:focus visible true",
+    f"function {NS}:focus/leiste",
+    "tellraw @a " + J([txt("The Source glows. Double coins for ", "light_purple"),
+                       {"score": {"name": "#fsek", "objective": "nw.tmp2"}, "color": "white"},
+                       txt(" seconds.", "light_purple")]),
     "playsound minecraft:block.beacon.activate master @a ~ ~ ~ 1 1.4",
     "execute at @a run particle minecraft:witch ~ ~1 ~ 0.6 1 0.6 0.1 30",
 ])
+# Bossleiste nachziehen. Der Name einer Bossleiste wird beim Setzen aufgeloest, ein Score darin
+# wuerde also einfrieren. Deshalb die Sekunden ueber ein Makro einsetzen.
+fn("focus/leiste", [
+    "scoreboard players operation #fsek nw.tmp2 = #focus nw.upgrade",
+    "scoreboard players operation #fsek nw.tmp2 /= #20 nw.const",
+    "execute store result bossbar nw:focus value run scoreboard players get #focus nw.upgrade",
+    "execute store result storage nachtwache:tmp s int 1 run scoreboard players get #fsek nw.tmp2",
+    f"function {NS}:focus/leiste_name with storage nachtwache:tmp",
+])
+fn("focus/leiste_name", ['$bossbar set nw:focus name [{"text":"Source Focus  ","color":"light_purple"},{"text":"$(s)s","color":"white"}]'])
 fn("focus/sekunde", [
     "execute if score #focus nw.upgrade matches 1.. run scoreboard players remove #focus nw.upgrade 20",
     f"execute if score #focus nw.upgrade matches 1.. run particle minecraft:end_rod {QUELL[0]+0.5} {QUELL[1]+1.2} {QUELL[2]+0.5} 0.3 0.2 0.3 0.01 3",
+    f"execute if score #focus nw.upgrade matches 1.. run function {NS}:focus/leiste",
+    "execute if score #focus nw.upgrade matches 1.. run bossbar set nw:focus players @a",
     f"execute if score #focus nw.upgrade matches 0 run function {NS}:focus/ende",
+    # Sicherheitsnetz: ein Rest unter der Null kann nur aus einer alten Fassung stammen, in der die
+    # Laufzeit nicht auf glatten 20ern lag. -1 ist der reguläre Aus-Wert und bleibt unberuehrt.
+    f"execute if score #focus nw.upgrade matches ..-2 run function {NS}:focus/ende",
 ])
 fn("focus/ende", [
     "scoreboard players set #focus nw.upgrade -1",
+    "bossbar set nw:focus visible false",
     "tellraw @a " + J([txt("The Source dims again.", "gray", italic=True)]),
 ])
 
@@ -2185,6 +2407,14 @@ LORE_LATERNE = "[" + ",".join(LORE_LATERNE_L) + "]"
 LORE_KONTRAKT = "[" + ",".join(LORE_KONTRAKT_L) + "]"
 
 
+def _key_zurueck():
+    iid, comp, _ = item_spec("KEY")
+    fn("glueck/besetzt", [
+        f"give @s {iid}[{comp}]",
+        "tellraw @s " + J([txt("[The Collector] ", "dark_red"), txt("The wheel is still turning. Here, keep your key.", "gray")]),
+        "playsound minecraft:entity.villager.no neutral @s ~ ~ ~ 1 1",
+    ])
+
 def item_spec(spec):
     """Angebots-Item -> (id, components-string ohne Klammern oder '', count) fuer das echte Item."""
     if spec in SONDERITEMS:
@@ -2230,10 +2460,13 @@ def item_spec(spec):
         return "minecraft:chest", MODELL_KIT + 'container=[%s],custom_name={text:"Kit",color:"gold",italic:false},lore=[{text:"Place the chest and empty it",color:"gray",italic:false}]' % inhalt, 1
     return f"minecraft:{spec}", "", 1
 
-def menue_item(r):
-    """Symbol in der Kaufen-Truhe: das Item selbst, mit Preis in der Beschreibung und Marker in custom_data."""
+def menue_item(r, phase=1):
+    """Symbol in der Kaufen-Truhe: das Item selbst, mit Preis in der Beschreibung und Marker in custom_data.
+    phase: der Source Focus kostet 500 je Quellstufe, sein Preis steht deshalb je Reiterseite anders da."""
     iid, comp, _ = item_spec(r["item"])
     preis, mx, name = int(r["preis"]), int(r["max"]), r["name"]
+    if r["item"] == "FOCUS":
+        preis = FOCUS_PREIS_PRO_STUFE * phase
     lore = [f'[{{text:"Price: {preis} ",color:"gold",italic:false}},{{text:"{COIN}",color:"white",italic:false}}]',
             f'{{text:"Click: buy 1",color:"gray",italic:false}}']
     if r["item"] == "KEY":      # zahlt in Spielerleveln, nicht in Coins (v0.50)
@@ -2249,6 +2482,8 @@ def menue_item(r):
         lore = LORE_FOCUS_L + lore
     if r["item"] == "DECOY":
         lore = LORE_DECOY_L + lore
+    if r["item"] == "SKULL":
+        lore = LORE_SKULL_L + lore
     if mx > 1:
         lore.append(f'[{{text:"Shift-click: buy {mx} for {preis * mx} ",color:"gray",italic:false}},{{text:"{COIN}",color:"white",italic:false}}]')
     comps = [f'custom_data={{nw_menu:{int(r["id"])}}}', f'custom_name={{text:"{name}",color:"white",italic:false}}', "lore=[" + ",".join(lore) + "]"]
@@ -2274,6 +2509,8 @@ def menue_item(r):
         comps.insert(0, MODELL_FOCUS[:-1])
     elif r["item"] == "DECOY" and MODELL_DECOY:
         comps.insert(0, MODELL_DECOY[:-1])
+    elif r["item"] == "SKULL" and MODELL_SKULL:      # fehlte, der Laden zeigte die nackte Echoscherbe
+        comps.insert(0, MODELL_SKULL[:-1])
     elif r["item"].startswith("SET:") and MODELL_KIT:
         comps.insert(0, MODELL_KIT[:-1])
     return f"{iid}[{','.join(comps)}]"
@@ -2550,7 +2787,7 @@ for p in range(1, ANZ_STUFEN + 1):
             belegt[slot] = reiter_item(ridx, name, iid, ridx == idx)
         for i, r in enumerate(rows[:PLATZ_PRO_REITER]):
             if r is not None:
-                belegt[REITER_SLOTS + i] = menue_item(r)
+                belegt[REITER_SLOTS + i] = menue_item(r, p)
         # Im Reiter der Station bleiben Einlegeslot und Knopfreihe unangetastet, sonst wuerde der
         # Neuaufbau nach jedem Kauf das eingelegte Teil loeschen (v0.45).
         tabu = {ENCH_SLOT, *ENCH_KNOPF} if idx == ENCH_IDX else set()
@@ -2676,7 +2913,12 @@ for r in angebot:
         f"scoreboard players set #anz nw.tmp 1",
         f"execute if items entity @s container.* {pred} run scoreboard players set #anz nw.tmp {mx}",   # Shift-Klick: im Inventar statt am Cursor
         f"clear @s {pred}",
-        f"scoreboard players set #preis nw.tmp {preis}",
+        *([f"scoreboard players set #preis nw.tmp {preis}"] if r["item"] != "FOCUS" else [
+            # Source Focus: 500 je Quellstufe, in Stufe 3 also 1500 (Luis 11.09.2026)
+            "scoreboard players operation #preis nw.tmp = #phase nw.phase",
+            f"scoreboard players set #fpreis nw.tmp2 {FOCUS_PREIS_PRO_STUFE}",
+            "scoreboard players operation #preis nw.tmp *= #fpreis nw.tmp2",
+        ]),
         "scoreboard players operation #preis nw.tmp *= #anz nw.tmp",
         f"execute if score #konto nw.konto < #preis nw.tmp run tellraw @s {J([txt('[The Collector] ', 'dark_red'), txt('Not enough coins. ', 'gray'), {'score': {'name': '#preis', 'objective': 'nw.tmp'}, 'color': 'gold'}, txt(' needed, ', 'gray'), {'score': {'name': '#konto', 'objective': 'nw.konto'}, 'color': 'gold'}, txt(' on the account.', 'gray')])}",
         "execute if score #konto nw.konto < #preis nw.tmp run playsound minecraft:entity.villager.no neutral @s ~ ~ ~ 1 1",
@@ -2845,6 +3087,10 @@ fn("uhr/pause_leiste", [
 wellen = [(r["mob"], int(r["ab"]), int(r["start"]), int(r["zuwachs"]), int(r["takt"])) for r in read_csv("wellen.csv")]
 varianten = [(r["variante"], int(r["ab"]), int(r["prozent"])) for r in read_csv("varianten.csv")]
 
+# Fruehe Naechte anheben, ohne die Kurve in wellen.csv anzufassen: Sorte -> (bis einschliesslich
+# Nacht, Faktor). Steht seit dem 11.09.2026 leer, weil Luis die Welle danach neu gesetzt hat und die
+# Zahlen jetzt direkt in wellen.csv stehen. Der Haken bleibt als Werkzeug erhalten.
+WELLE_FRUEH = {}
 SPAWN_GEGNER = (0.5, 64, GEGNER_Z - 4.5)   # Spawnpunkt der Wellen: vor dem Seelenfeuer in der Inselmitte, sonst brennen alle (Boss-Bug Nacht 10)
 def summon_mob(key, extra_tags=(), pos=SPAWN_GEGNER):
     """Ein Gegner der Welle. nw.a_<sorte> ist das Kennzeichen fuer das Kopfgeld: alle Zombievarianten
@@ -2879,6 +3125,11 @@ for mob, ab, start, zuwachs, takt in wellen:
         f"scoreboard players set #k nw.tmp2 {zuwachs}",
         "scoreboard players operation #c nw.tmp2 *= #k nw.tmp2",
         f"scoreboard players add #c nw.tmp2 {start}",
+        # Fruehe Naechte: feste Verdopplung der Sorte, siehe WELLE_FRUEH
+        (f"execute if score #wn nw.tmp2 matches ..{WELLE_FRUEH[mob][0]} run scoreboard players set #k nw.tmp2 {WELLE_FRUEH[mob][1]}"
+         if mob in WELLE_FRUEH else None),
+        (f"execute if score #wn nw.tmp2 matches ..{WELLE_FRUEH[mob][0]} run scoreboard players operation #c nw.tmp2 *= #k nw.tmp2"
+         if mob in WELLE_FRUEH else None),
         # Bounty Contract: Welle groesser. Der Kontrakt wird erst nach allen Sorten auf 2 gesetzt.
         f"execute if score #kontrakt nw.upgrade matches 1.. run scoreboard players set #k nw.tmp2 {KONTRAKT_PROZENT}",
         "execute if score #kontrakt nw.upgrade matches 1.. run scoreboard players operation #c nw.tmp2 *= #k nw.tmp2",
@@ -2946,6 +3197,7 @@ for n, (key, name, hp, ability, trupp) in BOSSE.items():
         begleitung.append(f"spreadplayers 0 {GEGNER_Z} 2 {GEGNER_RADIUS - 2} false @e[tag=nw.neu]")
         begleitung.append("tag @e[tag=nw.neu] remove nw.neu")
     fn(f"nacht/boss_{n}", [
+        f"scoreboard players set #bossart nw.boss {n}",
         boss_summon(key, name, hp, ability),
         *begleitung,
         f'bossbar set nw:boss name {J([txt(name, "dark_purple", bold=True)])}',
@@ -3038,6 +3290,15 @@ fn("nacht/schlafen", [
     f"tellraw @a {J([txt('You sleep. The night passes.', 'gray', italic=True)])}",
 ])
 
+# Feste Zugabe je Boss, zusaetzlich zur gewuerfelten Bossbeute. Der Boss der Nacht 5 laesst immer
+# ein bis zwei Diamanten fallen (Luis 11.09.2026): Nacht 5 ist der Punkt, an dem Diamantwerkzeug
+# in Reichweite kommen soll, und der Wurf allein hat das nicht zuverlaessig geliefert.
+BOSS_EXTRA = {5: ("minecraft:diamond", 1, 2)}
+for _n, (_it, _mn, _mx) in BOSS_EXTRA.items():
+    w(f"{NS}/loot_table/bossbeute_{_n}.json", {"pools": [{"rolls": 1, "entries": [
+        {"type": "minecraft:item", "name": _it,
+         "functions": [{"function": "minecraft:set_count", "count": {"min": _mn, "max": _mx}}]}]}]})
+
 # Boss-Tick, Finale, Sieg, Endlos
 w(f"{NS}/loot_table/bossbeute.json", {"pools": [{"rolls": 1, "entries": [
     {"type": "minecraft:item", "name": "minecraft:saddle", "weight": 3},
@@ -3109,6 +3370,10 @@ fn("nacht/boss_tot", [
     f"execute if score #finale nw.status matches 1 run return run function {NS}:nacht/sieg",
     f"tellraw @a {J([txt('The boss is dead. ', 'dark_purple'), txt(f'+{KOPFGELD_BOSS} ', 'gray'), coin(), txt(' and something from his pocket.', 'gray')])}",
     f"loot give @a loot {NS}:bossbeute",
+    *[f"execute if score #bossart nw.boss matches {_n} run loot give @a loot {NS}:bossbeute_{_n}" for _n in BOSS_EXTRA],
+    *[f"execute if score #bossart nw.boss matches {_n} run tellraw @a "
+      + J([txt("He was carrying diamonds.", "aqua", italic=True)]) for _n in BOSS_EXTRA],
+    "scoreboard players set #bossart nw.boss 0",
     "playsound minecraft:ui.toast.challenge_complete master @a ~ ~ ~ 1 0.8",
 ])
 fn("nacht/sieg", [
@@ -3224,7 +3489,7 @@ fn("gegner/einer", [
     # (Luis 09.09.2026). Die Farbe kommt vom Team, das Leuchten vom Effekt.
     "execute if score @s nw.chan matches 1.. run team join nw_chan @s",
     "execute if score @s nw.chan matches 1.. run effect give @s minecraft:glowing 2 0 true",
-    "execute if score @s nw.chan matches ..0 run team leave @s",
+    "execute if score @s nw.chan matches ..0 run team join nw_gegner @s",
     "execute if score @s nw.chan matches ..0 run effect clear @s minecraft:glowing",
     # Channeln heisst stillstehen. Ohne das hier wuerde die Blockade-Erkennung nach vier Sekunden
     # anspringen und der Gegner finge an, den Eisensockel wegzugraben.
@@ -3418,6 +3683,31 @@ fn("gegner/graben", [
     "playsound minecraft:entity.zombie.break_wooden_door hostile @a ~ ~ ~ 0.6 0.6",
     f"scoreboard players set @s nw.still {STILL_TICKS - 20}",
 ])
+# Skelettpfeile gehen den eigenen Leuten aus dem Weg (Luis 11.09.2026: "skelette treffen nur uns").
+# Vanilla kann einen Pfeil nicht fuer das eine Ziel scharf und fuer das andere harmlos machen, deshalb
+# faengt der Pfeil den Treffer gar nicht erst: steht ein Wellengegner im Weg, springt er dahinter.
+# Die tick-Funktionen laufen VOR der Bewegung der Entities, der Sprung kommt also noch vor dem Aufschlag.
+# Erkannt wird ein Mobpfeil an seiner ersten Tick-Position: neben einem Wellengegner und ohne Spieler in
+# der Naehe. Bogi und der Marksman schiessen keine echten Pfeile, sondern setzen Schaden per Befehl,
+# ihre Schuesse sind davon also nicht betroffen. Ist ein Spieler dicht dran, bleibt der Pfeil liegen wie
+# er ist, sonst koennte er ueber den Spieler hinwegspringen.
+fn("gegner/pfeil_tick", [
+    f"execute as @e[type=arrow,tag=!nw.pfeil] at @s run function {NS}:gegner/pfeil_neu",
+    f"execute as @e[type=arrow,tag=nw.mobpfeil] at @s run function {NS}:gegner/pfeil_frei",
+])
+fn("gegner/pfeil_neu", [
+    "tag @s add nw.pfeil",
+    "execute if entity @e[tag=nw.welle,distance=..3] unless entity @a[distance=..5] run tag @s add nw.mobpfeil",
+])
+fn("gegner/pfeil_frei", [
+    # steckt schon irgendwo: nichts tun. Beide Schreibweisen, je nach Spielstand heisst das Feld anders.
+    "execute if data entity @s {inGround:1b} run return 0",
+    "execute if data entity @s {in_ground:1b} run return 0",
+    "execute unless entity @e[tag=nw.welle,distance=..2.2] run return 0",
+    "execute if entity @a[distance=..3] run return 0",
+    "tp @s ^ ^ ^2.6",
+])
+
 fn("gegner/klopfen", [
     "execute if score #m20 nw.tmp matches 0 run playsound minecraft:entity.zombie.attack_wooden_door hostile @a ~ ~ ~ 1 0.7",
 ])
@@ -3518,7 +3808,11 @@ fn("schutz/sekunde", [
     f"function {NS}:beacon/aufbauen",
     f"function {NS}:beacon/anzeige",
     f"function {NS}:decoy/sekunde",
-    "kill @e[type=block_display,tag=nw.gen_block]",
+    # Hier stand bis v0.60 "kill @e[type=block_display,tag=nw.gen_block]". Das war das Aufraeumen der
+    # alten Stufenkristalle aus v0.18 und lief jede Sekunde ueber die ganze Welt. Seit der Generator
+    # seine Farbe wieder ueber ein Display zeigt, hat diese Zeile es jede Sekunde geloescht, und das
+    # Nachsetzen aus gen/einer war das Flackern (Luis 11.09.2026). Aufgeraeumt wird jetzt gezielt:
+    # gen/tick toetet nur Displays, zu denen kein Generator gehoert.
     f"function {NS}:gegner/enderman_wut",
     # Sammler fehlt laenger als 5 s (nicht nur beim Start, wenn die Entities noch nicht geladen sind)? Dann neu.
     "execute if entity @e[tag=nw.villager] run scoreboard players set #fehlt nw.tmp2 0",
@@ -3588,6 +3882,12 @@ reset_ja = [
     "scoreboard players set #reset_frist nw.status 0",
     "tellraw @a " + J([txt("[Nightwatch] Resetting the world. This takes a moment.", "red")]),
     "gamemode survival @a", "clear @a", "experience set @a 0 points", "experience set @a 0 levels", "effect clear @a",
+    # Volle Herzen und voller Hunger nach dem Reset (Luis 11.09.2026). Ueber /data geht das bei
+    # Spielern nicht, Minecraft laesst sie nicht veraendern. Instant Health heilt sofort auf, und
+    # Saettigung fuellt Hungerbalken und Saettigung in einem Zug. Beide mit hoher Stufe und einer
+    # Sekunde Dauer, danach sind sie von selbst wieder weg.
+    "effect give @a minecraft:instant_health 1 20 true",
+    "effect give @a minecraft:saturation 1 20 true",
     "kill @e[type=item]", "kill @e[type=!player]",
     f"tp @a {SPAWN[0]} {SPAWN[1] + 2} {SPAWN[2]}", f"spawnpoint @a {SPAWN[0]} {SPAWN[1]} {SPAWN[2]}",
     f"forceload add {RESET_X[0]} {RESET_Z[0]} {RESET_X[1]} {RESET_Z[1]}",
@@ -3690,6 +3990,8 @@ for i, g in enumerate(PHASEN_GRENZEN):
 admin_phase.append(f"function {NS}:anzeige/aktualisieren")
 fn("admin/phase", admin_phase)
 
+_key_zurueck()      # braucht item_spec, deshalb erst hier
+
 # ----------------------------------------------------------------------------
 # Schreiben
 # ----------------------------------------------------------------------------
@@ -3714,3 +4016,4 @@ try:
     rp_build.build(OUT.parent)
 except ImportError as e:
     print("Ressourcenpaket nicht gebaut (Pillow fehlt?):", e)
+

@@ -257,18 +257,27 @@ cooked_porkchop,Cooked Porkchop,40,basis
 cooked_rabbit,Cooked Rabbit,20,basis
 cooked_salmon,Cooked Salmon,15,basis
 cookie,Cookie,2,rezept
+copper_axe,Copper Axe,33,basis
 copper_bars,Copper Bars,5,rezept
 copper_block,Block of Copper,50,basis
+copper_boots,Copper Boots,44,basis
 copper_bulb,Copper Bulb,60,rezept
 copper_chain,Copper Chain,16,rezept
 copper_chest,Copper Chest,118,rezept
+copper_chestplate,Copper Chestplate,88,basis
 copper_door,Copper Door,22,rezept
 copper_grate,Copper Grate,13,rezept
+copper_helmet,Copper Helmet,55,basis
+copper_hoe,Copper Hoe,22,basis
 copper_ingot,Copper Ingot,10,basis
 copper_lantern,Copper Lantern,22,rezept
+copper_leggings,Copper Leggings,77,basis
 copper_nugget,Copper Nugget,2,rezept
 copper_ore,Copper Ore,4,basis
+copper_pickaxe,Copper Pickaxe,33,basis
+copper_shovel,Copper Shovel,11,basis
 copper_spear,Copper Spear,16,rezept
+copper_sword,Copper Sword,22,basis
 copper_torch,Copper Torch,4,rezept
 copper_trapdoor,Copper Trapdoor,44,rezept
 cornflower,Cornflower,2,muster
