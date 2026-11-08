@@ -7,10 +7,11 @@ oder hier oben im Abschnitt EINSTELLUNGEN.
 """
 import csv, json, math, os, shutil, zipfile
 from pathlib import Path
+import re
 import rp_build          # Tabellen der Upgrade-Station (ENCH, ENCH_TYPEN, ENCH_STREIT), v0.45
 
 HERE = Path(__file__).resolve().parent
-COIN = "\u25cf"                         # Muenz-Symbol im UI (â— wird vom Ressourcenpaket durch eine Muenze ersetzt)
+COIN = "\u25cf"                         # Muenz-Symbol im UI (● wird vom Ressourcenpaket durch eine Muenze ersetzt)
 RESSOURCENPAKET = True                 # eigene Item-Symbole (item_model) fuer Watch Bell und Kits, braucht out/nachtwache-rp.zip beim Client
 TAB = HERE / "tabellen"
 OUT = HERE / "out" / "nachtwache"
@@ -19,7 +20,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 104                   # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 105                   # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 # ----------------------------------------------------------------------------
@@ -293,6 +294,11 @@ def stand_pos(dx, y, dz):
 KAUF_A = stand_pos(-1, LADEN[1], 0)    # Truhenhaelfte mit den Feldern 0..26 (oben im Fenster) -> type=right
 KAUF_B = stand_pos(0, LADEN[1], 0)     # Truhenhaelfte mit den Feldern 27..53 (unten)
 VERKAUF = stand_pos(1, LADEN[1], 0)    # Fass
+# v0.66 (Luis 08.11.2026): jeder Spieler hat seinen eigenen Laden. Zweite Kauftruhe rechts neben dem
+# Fass, vollstaendige Kopie inklusive Upgrade-Station (Option A2). Laden 1 | Fass | Laden 2.
+KAUF_A2 = stand_pos(2, LADEN[1], 0)    # Laden 2, obere Haelfte (type=right)
+KAUF_B2 = stand_pos(3, LADEN[1], 0)    # Laden 2, untere Haelfte
+STAND_RECHTS = 4                       # rechte Seitenwand des Stands (alte Bauweise dx), vorher 2
 _sp = stand_pos(0, LADEN[1], -1)       # Block direkt hinter der mittleren Truhenhaelfte, Wand im Ruecken
 SAMMLER_POS = (_sp[0] + 0.5, _sp[1], _sp[2] + 0.5)
 SAMMLER_YAW = -90                      # schaut nach Osten (+x), also zum Kunden (vorher 0 = Sueden)
@@ -578,6 +584,8 @@ fn("migration", [
     *einmalig(["kill @e[tag=nw.kasse]", "fill -4 64 -6 -3 65 -5 minecraft:air", "fill -1 64 -5 1 64 -5 minecraft:air"]),
     # v0.63: alten Stand (Front nach Sueden) einmal abbauen, welt/stand setzt danach den gedrehten
     f"execute if score #alt nw.status matches ..{STAND_ALT_BIS} run function {NS}:welt/stand_alt_weg",
+    # v0.66: der Stand wird breiter, die rechte Laterne der v0.63-Fassung haengt sonst ueber dem Tresen
+    "execute if score #alt nw.status matches ..104 run setblock %d 67 %d minecraft:air" % (stand_pos(2, 0, 0)[0], stand_pos(2, 0, 0)[2]),
     f"function {NS}:welt/stand", f"function {NS}:sammler/erscheinen",
     f"function {NS}:strasse/entfernen", f"function {NS}:welt/gegnerinsel",
     *einmalig([f"fill -1 {BODEN_Y} 6 1 {BODEN_Y} 8 minecraft:polished_deepslate"]),
@@ -713,31 +721,32 @@ def _sfill(dx1, y1, dz1, dx2, y2, dz2, block):
 def _ssetblock(dx, y, dz, block, pruef):
     return f"execute unless block {_sp(dx, y, dz)} {pruef} run setblock {_sp(dx, y, dz)} {block}"
 # Bauplan wie bisher in der alten Bauweise (Front +z), stand_pos dreht ihn an den Inselrand (v0.63).
+_R = STAND_RECHTS
 stand = [
-    _sfill(-2, BODEN_Y, -2, 2, BODEN_Y, 0, "minecraft:polished_deepslate"),        # Boden
-    _sfill(-2, 64, -2, 2, 65, -2, "minecraft:deepslate_bricks"),                    # Rueckwand (am Inselrand)
+    _sfill(-2, BODEN_Y, -2, _R, BODEN_Y, 0, "minecraft:polished_deepslate"),       # Boden
+    _sfill(-2, 64, -2, _R, 65, -2, "minecraft:deepslate_bricks"),                   # Rueckwand (am Inselrand)
     _sfill(-2, 64, -1, -2, 65, 0, "minecraft:deepslate_bricks"),                    # Seite links
-    _sfill(2, 64, -1, 2, 65, 0, "minecraft:deepslate_bricks"),                      # Seite rechts
-    _sfill(-1, 64, -1, 1, 65, -1, "minecraft:air"),                                 # ein Block Platz fuer den Sammler
-    _sfill(-1, 65, 0, 1, 65, 0, "minecraft:air"),                                   # Front ueber dem Tresen offen
+    _sfill(_R, 64, -1, _R, 65, 0, "minecraft:deepslate_bricks"),                    # Seite rechts
+    _sfill(-1, 64, -1, _R - 1, 65, -1, "minecraft:air"),                            # ein Block Platz fuer den Sammler
+    _sfill(-1, 65, 0, _R - 1, 65, 0, "minecraft:air"),                              # Front ueber dem Tresen offen
     # Dach aus Halbstufen, aber unter den beiden Laternen ein ganzer Block. Auf der Halbstufe
     # schwebten sie einen halben Block ueber dem Dach (Luis 09.09.2026). Die Fuellung laesst die
     # beiden Ecken aus, sonst wuerde sie den ganzen Block jeden zweiten Tick wieder ersetzen und
     # die Laterne als Item abwerfen.
-    _sfill(-2, 66, -2, 2, 66, -1, "minecraft:crimson_slab[type=bottom]"),
-    _sfill(-1, 66, 0, 1, 66, 0, "minecraft:crimson_slab[type=bottom]"),
+    _sfill(-2, 66, -2, _R, 66, -1, "minecraft:crimson_slab[type=bottom]"),
+    _sfill(-1, 66, 0, _R - 1, 66, 0, "minecraft:crimson_slab[type=bottom]"),
     _ssetblock(-2, 66, 0, "minecraft:crimson_planks", "minecraft:crimson_planks"),
-    _ssetblock(2, 66, 0, "minecraft:crimson_planks", "minecraft:crimson_planks"),
+    _ssetblock(_R, 66, 0, "minecraft:crimson_planks", "minecraft:crimson_planks"),
     _ssetblock(-2, 67, 0, "minecraft:soul_lantern", "minecraft:soul_lantern"),
-    _ssetblock(2, 67, 0, "minecraft:soul_lantern", "minecraft:soul_lantern"),
+    _ssetblock(_R, 67, 0, "minecraft:soul_lantern", "minecraft:soul_lantern"),
     _ssetblock(-2, 65, 1, f'minecraft:crimson_wall_sign[facing={TRESEN_FACING}]{{front_text:{{messages:["",{{text:"THE",color:"dark_red"}},{{text:"COLLECTOR",color:"dark_red"}},""]}}}}',
                "minecraft:crimson_wall_sign"),
-    f"function {NS}:sammler/tresen",
+    f"function {NS}:sammler/tresen", f"function {NS}:sammler2/tresen",
 ]
 # Der ganze Stand ist unzerstoerbar: was abgeschlagen wird, ist zwei Ticks spaeter wieder da und das Item verschwindet
-_kx = min(stand_pos(dx, 0, dz)[0] for dx in (-2, 2) for dz in (-2, 1))
-_kz = min(stand_pos(dx, 0, dz)[2] for dx in (-2, 2) for dz in (-2, 1))
-stand += [f'kill @e[type=item,x={_kx},y={BODEN_Y-1},z={_kz},dx=4,dy=6,dz=5,nbt={{Item:{{id:"{b}"}}}}]' for b in SCHUTT]
+_kx = min(stand_pos(dx, 0, dz)[0] for dx in (-2, _R) for dz in (-2, 1))
+_kz = min(stand_pos(dx, 0, dz)[2] for dx in (-2, _R) for dz in (-2, 1))
+stand += [f'kill @e[type=item,x={_kx},y={BODEN_Y-1},z={_kz},dx=4,dy=6,dz={_R + 3},nbt={{Item:{{id:"{b}"}}}}]' for b in SCHUTT]
 fn("welt/stand", stand)
 
 # v0.63: der alte Stand (Front nach Sueden, x -8..-4, z -12..-10) wird einmal abgebaut, bevor welt/stand
@@ -1364,7 +1373,7 @@ fn("tick", [
     f"execute unless score #init nw.status matches 1 run return 0",
     f"function {NS}:uhr/tick",
     f"function {NS}:sammler/interaktion",
-    f"function {NS}:sammler/kauf_tick",
+    f"function {NS}:sammler/kauf_tick", f"function {NS}:sammler2/kauf_tick",
     "scoreboard players operation #m5 nw.tmp = #tick nw.tick", "scoreboard players operation #m5 nw.tmp %= #5 nw.const",
     f"execute if score #m5 nw.tmp matches 0 run function {NS}:sammler/minions",
     f"execute if score #m5 nw.tmp matches 0 run function {NS}:sammler/verkauf",
@@ -1372,6 +1381,8 @@ fn("tick", [
     # deshalb ueber Abwesenheit (v0.45).
     f"execute if score #m5 nw.tmp matches 0 unless entity @a[x={KAUF_A[0]},y={KAUF_A[1]},z={KAUF_A[2]},distance=..8] "
     f"run function {NS}:sammler/ench/zurueck",
+    f"execute if score #m5 nw.tmp matches 0 unless entity @a[x={KAUF_A2[0]},y={KAUF_A2[1]},z={KAUF_A2[2]},distance=..8] "
+    f"run function {NS}:sammler2/ench/zurueck",
     f"execute as @a[scores={{nw.hilfe=1..}}] run function {NS}:hilfe",
     f"execute as @a[scores={{nw.endlos=1..}}] run function {NS}:nacht/endlos_an",
     f"execute as @a[scores={{nw.tode=1..}}] run function {NS}:spieler/tod",
@@ -1455,7 +1466,7 @@ fn("quell/phase_wechsel", [
     f"execute as @e[type=marker,tag=nw.gen] at @s run function {NS}:gen/farbe",
     f"execute as @e[type=marker,tag=nw.gen] at @s run function {NS}:gen/anzeige",
     "playsound minecraft:block.beacon.power_select master @a ~ ~ ~ 1 0.5",
-    f"function {NS}:sammler/kaufmenue",
+    f"function {NS}:sammler/kaufmenue", f"function {NS}:sammler2/kaufmenue",
     f"function {NS}:sammler/spruch/phase",
 ])
 
@@ -1521,7 +1532,7 @@ w(f"{NS}/loot_table/belohnung.json", {"pools": [{"rolls": 1, "entries": [
 # ----------------------------------------------------------------------------
 # Anzeige (Seitenleiste)
 # ----------------------------------------------------------------------------
-# Icons als Schriftzeichen aus dem Ressourcenpaket (icons.py): Muenze â—, Stufenscheiben, Mond, Zombie, Totenkopf.
+# Icons als Schriftzeichen aus dem Ressourcenpaket (icons.py): Muenze ●, Stufenscheiben, Mond, Zombie, Totenkopf.
 import icons
 def icon(name):
     return {"text": icons.ZEICHEN[name] + " ", "color": "white"}
@@ -2454,7 +2465,7 @@ fn("focus/sekunde", [
     "execute if score #focus nw.upgrade matches 1.. run bossbar set nw:focus players @a",
     f"execute if score #focus nw.upgrade matches 0 run function {NS}:focus/ende",
     # Sicherheitsnetz: ein Rest unter der Null kann nur aus einer alten Fassung stammen, in der die
-    # Laufzeit nicht auf glatten 20ern lag. -1 ist der regulÃ¤re Aus-Wert und bleibt unberuehrt.
+    # Laufzeit nicht auf glatten 20ern lag. -1 ist der reguläre Aus-Wert und bleibt unberuehrt.
     f"execute if score #focus nw.upgrade matches ..-2 run function {NS}:focus/ende",
 ])
 fn("focus/ende", [
@@ -2503,6 +2514,8 @@ fn("decoy/zerbricht", [
 REITER_SLOTS = 9           # oberste Reihe: Reiter (Starter, Tier 2..7, Books)
 PLATZ_PRO_REITER = 45      # fuenf Reihen Ware je Reiter
 
+# >>> LADEN-ABSCHNITT (v0.66: wird fuer Laden 2 ein zweites Mal ausgefuehrt, siehe unten)
+_LADEN_VORHER = set(files)
 def kauf_block(slot):
     return (KAUF_A if slot < 27 else KAUF_B), slot % 27
 
@@ -2928,8 +2941,8 @@ fn("sammler/tresen", [
     f"execute unless block {KAUF_A[0]} {KAUF_A[1]} {KAUF_A[2]} minecraft:chest run setblock {KAUF_A[0]} {KAUF_A[1]} {KAUF_A[2]} minecraft:chest[facing={TRESEN_FACING},type=right]",
     f"execute unless block {KAUF_B[0]} {KAUF_B[1]} {KAUF_B[2]} minecraft:chest run setblock {KAUF_B[0]} {KAUF_B[1]} {KAUF_B[2]} minecraft:chest[facing={TRESEN_FACING},type=left]",
     f"execute unless block {VERKAUF[0]} {VERKAUF[1]} {VERKAUF[2]} minecraft:barrel run setblock {VERKAUF[0]} {VERKAUF[1]} {VERKAUF[2]} minecraft:barrel[facing=up]",
-    f"data merge block {KAUF_A[0]} {KAUF_A[1]} {KAUF_A[2]} {{CustomName:[{{text:\"BUY   \",color:\"dark_red\"}},{{text:\"â— \",color:\"white\"}},{{score:{{name:\"#konto\",objective:\"nw.konto\"}},color:\"gold\"}}]}}",
-    f"data merge block {KAUF_B[0]} {KAUF_B[1]} {KAUF_B[2]} {{CustomName:[{{text:\"BUY   \",color:\"dark_red\"}},{{text:\"â— \",color:\"white\"}},{{score:{{name:\"#konto\",objective:\"nw.konto\"}},color:\"gold\"}}]}}",
+    f"data merge block {KAUF_A[0]} {KAUF_A[1]} {KAUF_A[2]} {{CustomName:[{{text:\"BUY   \",color:\"dark_red\"}},{{text:\"● \",color:\"white\"}},{{score:{{name:\"#konto\",objective:\"nw.konto\"}},color:\"gold\"}}]}}",
+    f"data merge block {KAUF_B[0]} {KAUF_B[1]} {KAUF_B[2]} {{CustomName:[{{text:\"BUY   \",color:\"dark_red\"}},{{text:\"● \",color:\"white\"}},{{score:{{name:\"#konto\",objective:\"nw.konto\"}},color:\"gold\"}}]}}",
     f"data merge block {VERKAUF[0]} {VERKAUF[1]} {VERKAUF[2]} {{CustomName:[{{text:\"SELL   \",color:\"dark_red\"}},{{text:\"put goods here\",color:\"gray\"}}]}}",
 ])
 
@@ -2938,6 +2951,7 @@ fn("sammler/erscheinen", [
     f'summon minecraft:zombie_villager {sx} {sy} {sz} {{Tags:["nw.villager"],NoAI:1b,Silent:1b,Invulnerable:1b,PersistenceRequired:1b,NoGravity:1b,CustomName:{{text:"The Collector",color:"dark_red"}},CustomNameVisible:1b,VillagerData:{{profession:"minecraft:nitwit",level:1,type:"minecraft:swamp"}},Offers:{{Recipes:[]}},IsBaby:0b,Rotation:[{SAMMLER_YAW}f,0f]}}',
     f'summon minecraft:interaction {sx} {sy} {sz} {{Tags:["nw.sammler"],width:1.6f,height:2.4f}}',
     f"function {NS}:sammler/tresen", f"function {NS}:sammler/kaufmenue",
+    f"function {NS}:sammler2/tresen", f"function {NS}:sammler2/kaufmenue",
 ])
 
 # Klick auf den Sammler selbst: Hinweis
@@ -2948,7 +2962,7 @@ fn("sammler/interaktion", [
     f"execute if score #glocke nw.upgrade matches 0 if score #m20 nw.tmp matches 7 as @a if items entity @s container.* minecraft:bell[custom_data~{{nw_glocke:1b}}] run function {NS}:sammler/glocke_an",
 ])
 fn("sammler/hinweis", [
-    "tellraw @s " + J([txt("[The Collector] ", "dark_red"), txt("The chest on the left: buy. Click for one, shift-click for a stack. The barrel on the right: sell, put goods in, coins go to the account. I do not take tools.", "gray")]),
+    "tellraw @s " + J([txt("[The Collector] ", "dark_red"), txt("Two chests to buy from, one for each of you, the account is shared. Click for one, shift-click for a stack. The barrel between them: sell, put goods in, coins go to the account.", "gray")]),
     f"tellraw @s {J([coin(), txt(' Coins: ', 'gold'), {'score': {'name': '#konto', 'objective': 'nw.konto'}, 'color': 'yellow'}])}",
 ])
 fn("sammler/glocke_an", [
@@ -3058,6 +3072,30 @@ for r in angebot:
         "execute store result score #r nw.tmp2 run random value 1..4",
         f"execute if score #r nw.tmp2 matches 1 run function {NS}:sammler/spruch/kauf",
     ])
+# <<< LADEN-ABSCHNITT
+# v0.66 (Luis 08.11.2026, Option A2): Laden 2 ist eine vollstaendige Kopie von Laden 1, inklusive
+# Upgrade-Station. Statt den ganzen Abschnitt umzubauen, wird sein Quelltext ein zweites Mal
+# ausgefuehrt, mit KAUF_A/KAUF_B auf der zweiten Truhe. Jede Funktion, die der erste Durchlauf hier
+# angelegt hat, heisst im zweiten "sammler2/..." statt "sammler/...", Verweise darauf werden
+# mitgezogen, und der aktive Reiter steht in #seite2 statt #seite. Funktionen ausserhalb des
+# Abschnitts (Preise, geben, Spruch) bleiben gemeinsam. Konto und Angebot sind gemeinsam.
+_LADEN_NAMEN = {k[len(f"{NS}/function/"):-len(".mcfunction")] for k in set(files) - _LADEN_VORHER
+                if k.startswith(f"{NS}/function/")}
+def _laden2_name(n):
+    return ("sammler2" + n[len("sammler"):]) if n.startswith("sammler/") else "laden2/" + n
+_LADEN2_RE = re.compile(NS + r":([a-z0-9_/.]+)")
+def _laden2_zeile(z):
+    if z is None:
+        return None
+    z = _LADEN2_RE.sub(lambda m: f"{NS}:{_laden2_name(m.group(1))}" if m.group(1) in _LADEN_NAMEN else m.group(0), z)
+    return z.replace("#seite nw.status", "#seite2 nw.status")
+def _laden2_fn(name, lines):
+    fn(_laden2_name(name) if name in _LADEN_NAMEN else name, [_laden2_zeile(z) for z in lines])
+_quelle = open(__file__, encoding="utf-8").read()
+_abschnitt = _quelle[_quelle.index("# >>> LADEN-ABSCHNITT"):_quelle.index("# <<< LADEN-ABSCHNITT")]
+_g2 = dict(globals())
+_g2.update({"KAUF_A": KAUF_A2, "KAUF_B": KAUF_B2, "fn": _laden2_fn})
+exec(compile(_abschnitt, "build.py:laden2", "exec"), _g2)
 fn("sammler/geben", ["$give @s $(item) $(n)"])
 def _glueck_packen_bauen():
     """Erst nach item_spec aufrufbar (Focus und Fraggle kommen von dort)."""
