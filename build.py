@@ -19,7 +19,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 101                   # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 102                   # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 # ----------------------------------------------------------------------------
@@ -283,10 +283,20 @@ STRASSENMUND = (0.5, 64, 6.5)          # wohin festhaengende oder gefallene Gegn
 BODEN_Y = 63                           # Oberkante Boden, gelaufen wird auf 64
 
 LADEN = (-6, 64, -10)                  # Mitte des Tresens; der Laden steht seitlich, nicht im Weg Bruecke -> Beacon
-KAUF_A = (LADEN[0] - 1, LADEN[1], LADEN[2])   # Truhenhaelfte mit den Feldern 0..26 (oben im Fenster) -> type=right bei facing=south
-KAUF_B = (LADEN[0], LADEN[1], LADEN[2])       # Truhenhaelfte mit den Feldern 27..53 (unten)
-VERKAUF = (LADEN[0] + 1, LADEN[1], LADEN[2])  # Fass
-SAMMLER_POS = (LADEN[0] + 0.5, LADEN[1], LADEN[2] - 0.5)   # direkt hinter der rechten Truhenhaelfte, Wand im Ruecken
+# v0.63 (Luis 08.11.2026): der Stand ist um 90 Grad gedreht. Er schaut nicht mehr zur Gegnerinsel (+z),
+# sondern quer zur Insel nach Osten (+x), mit dem Ruecken ganz am linken Inselrand (x -8). Alle Teile
+# des Stands werden ueber stand_pos() aus der alten Bauweise (Front +z) umgerechnet: alter Versatz
+# (dx, dz) zur Tresenmitte wird zu (+dz, -dx). Die Tresenmitte selbst bleibt auf (-6, 64, -10).
+def stand_pos(dx, y, dz):
+    """Versatz in der alten Bauweise (Front nach +z, dx nach Osten) -> Weltkoordinaten des gedrehten Stands."""
+    return (LADEN[0] + dz, y, LADEN[2] - dx)
+KAUF_A = stand_pos(-1, LADEN[1], 0)    # Truhenhaelfte mit den Feldern 0..26 (oben im Fenster) -> type=right
+KAUF_B = stand_pos(0, LADEN[1], 0)     # Truhenhaelfte mit den Feldern 27..53 (unten)
+VERKAUF = stand_pos(1, LADEN[1], 0)    # Fass
+_sp = stand_pos(0, LADEN[1], -1)       # Block direkt hinter der mittleren Truhenhaelfte, Wand im Ruecken
+SAMMLER_POS = (_sp[0] + 0.5, _sp[1], _sp[2] + 0.5)
+SAMMLER_YAW = -90                      # schaut nach Osten (+x), also zum Kunden (vorher 0 = Sueden)
+TRESEN_FACING = "east"
 SPAWN = (0, 64, -10)
 BEACON = (0, 64, -17)                  # roter Beacon: 25 Bloecke vom Brueckenende, am hinteren Ende der Insel
 LEBEN_START, LEBEN_MAX, LEBEN_PREIS = 10, 20, 1500
@@ -558,6 +568,7 @@ fn("load", load)
 #   liefen bis v0.40 bei JEDEM Sprung mit und haben dabei jedes Mal Fraggles Rucksack auf 0 Reihen gesetzt,
 #   den Inhalt ab Fach 5 geloescht (faellt heraus, Insel-Kill raeumt ihn weg) und Fach 0..4 verdoppelt.
 #   Sie laufen nur noch, wenn die Welt aelter als MIGRATION_ALT ist. #alt = Stand der Welt vor dem Sprung.
+STAND_ALT_BIS = 101                     # v0.63: Welten bis v0.62 (PACK_VERSION 101) bauen den alten Stand einmal ab
 MIGRATION_ALT = 75                       # v0.40; Welten ab diesem Stand brauchen die alten Umbauten nicht mehr
 def einmalig(zeilen):
     return [f"execute if score #alt nw.status matches ..{MIGRATION_ALT - 1} run {z}" for z in zeilen]
@@ -565,6 +576,8 @@ fn("migration", [
     "scoreboard players operation #alt nw.status = #version nw.status",
     f"scoreboard players set #version nw.status {PACK_VERSION}", "scoreboard players set #migrieren nw.status 0",
     *einmalig(["kill @e[tag=nw.kasse]", "fill -4 64 -6 -3 65 -5 minecraft:air", "fill -1 64 -5 1 64 -5 minecraft:air"]),
+    # v0.63: alten Stand (Front nach Sueden) einmal abbauen, welt/stand setzt danach den gedrehten
+    f"execute if score #alt nw.status matches ..{STAND_ALT_BIS} run function {NS}:welt/stand_alt_weg",
     f"function {NS}:welt/stand", f"function {NS}:sammler/erscheinen",
     f"function {NS}:strasse/entfernen", f"function {NS}:welt/gegnerinsel",
     *einmalig([f"fill -1 {BODEN_Y} 6 1 {BODEN_Y} 8 minecraft:polished_deepslate"]),
@@ -693,30 +706,49 @@ fn("welt/startinsel", start)
 LX, LY, LZ = LADEN
 SCHUTT = ('minecraft:polished_deepslate', 'minecraft:deepslate_bricks', 'minecraft:crimson_slab', 'minecraft:crimson_planks',
           'minecraft:soul_lantern', 'minecraft:crimson_wall_sign', 'minecraft:chest', 'minecraft:barrel')
+def _sp(dx, y, dz):
+    x, y, z = stand_pos(dx, y, dz); return f"{x} {y} {z}"
+def _sfill(dx1, y1, dz1, dx2, y2, dz2, block):
+    return f"fill {_sp(dx1, y1, dz1)} {_sp(dx2, y2, dz2)} {block}"
+def _ssetblock(dx, y, dz, block, pruef):
+    return f"execute unless block {_sp(dx, y, dz)} {pruef} run setblock {_sp(dx, y, dz)} {block}"
+# Bauplan wie bisher in der alten Bauweise (Front +z), stand_pos dreht ihn an den Inselrand (v0.63).
 stand = [
-    f"fill {LX-2} {BODEN_Y} {LZ-2} {LX+2} {BODEN_Y} {LZ} minecraft:polished_deepslate",          # Boden
-    f"fill {LX-2} 64 {LZ-2} {LX+2} 65 {LZ-2} minecraft:deepslate_bricks",                        # Rueckwand
-    f"fill {LX-2} 64 {LZ-1} {LX-2} 65 {LZ} minecraft:deepslate_bricks",                          # Seite links
-    f"fill {LX+2} 64 {LZ-1} {LX+2} 65 {LZ} minecraft:deepslate_bricks",                          # Seite rechts
-    f"fill {LX-1} 64 {LZ-1} {LX+1} 65 {LZ-1} minecraft:air",                                     # ein Block Platz fuer den Sammler
-    f"fill {LX-1} 65 {LZ} {LX+1} 65 {LZ} minecraft:air",                                         # Front ueber dem Tresen offen
+    _sfill(-2, BODEN_Y, -2, 2, BODEN_Y, 0, "minecraft:polished_deepslate"),        # Boden
+    _sfill(-2, 64, -2, 2, 65, -2, "minecraft:deepslate_bricks"),                    # Rueckwand (am Inselrand)
+    _sfill(-2, 64, -1, -2, 65, 0, "minecraft:deepslate_bricks"),                    # Seite links
+    _sfill(2, 64, -1, 2, 65, 0, "minecraft:deepslate_bricks"),                      # Seite rechts
+    _sfill(-1, 64, -1, 1, 65, -1, "minecraft:air"),                                 # ein Block Platz fuer den Sammler
+    _sfill(-1, 65, 0, 1, 65, 0, "minecraft:air"),                                   # Front ueber dem Tresen offen
     # Dach aus Halbstufen, aber unter den beiden Laternen ein ganzer Block. Auf der Halbstufe
     # schwebten sie einen halben Block ueber dem Dach (Luis 09.09.2026). Die Fuellung laesst die
     # beiden Ecken aus, sonst wuerde sie den ganzen Block jeden zweiten Tick wieder ersetzen und
     # die Laterne als Item abwerfen.
-    f"fill {LX-2} 66 {LZ-2} {LX+2} 66 {LZ-1} minecraft:crimson_slab[type=bottom]",
-    f"fill {LX-1} 66 {LZ} {LX+1} 66 {LZ} minecraft:crimson_slab[type=bottom]",
-    f"execute unless block {LX-2} 66 {LZ} minecraft:crimson_planks run setblock {LX-2} 66 {LZ} minecraft:crimson_planks",
-    f"execute unless block {LX+2} 66 {LZ} minecraft:crimson_planks run setblock {LX+2} 66 {LZ} minecraft:crimson_planks",
-    f"execute unless block {LX-2} 67 {LZ} minecraft:soul_lantern run setblock {LX-2} 67 {LZ} minecraft:soul_lantern",
-    f"execute unless block {LX+2} 67 {LZ} minecraft:soul_lantern run setblock {LX+2} 67 {LZ} minecraft:soul_lantern",
-    f'execute unless block {LX-2} 65 {LZ+1} minecraft:crimson_wall_sign run setblock {LX-2} 65 {LZ+1} '
-    f'minecraft:crimson_wall_sign[facing=south]{{front_text:{{messages:["",{{text:"THE",color:"dark_red"}},{{text:"COLLECTOR",color:"dark_red"}},""]}}}}',
+    _sfill(-2, 66, -2, 2, 66, -1, "minecraft:crimson_slab[type=bottom]"),
+    _sfill(-1, 66, 0, 1, 66, 0, "minecraft:crimson_slab[type=bottom]"),
+    _ssetblock(-2, 66, 0, "minecraft:crimson_planks", "minecraft:crimson_planks"),
+    _ssetblock(2, 66, 0, "minecraft:crimson_planks", "minecraft:crimson_planks"),
+    _ssetblock(-2, 67, 0, "minecraft:soul_lantern", "minecraft:soul_lantern"),
+    _ssetblock(2, 67, 0, "minecraft:soul_lantern", "minecraft:soul_lantern"),
+    _ssetblock(-2, 65, 1, f'minecraft:crimson_wall_sign[facing={TRESEN_FACING}]{{front_text:{{messages:["",{{text:"THE",color:"dark_red"}},{{text:"COLLECTOR",color:"dark_red"}},""]}}}}',
+               "minecraft:crimson_wall_sign"),
     f"function {NS}:sammler/tresen",
 ]
 # Der ganze Stand ist unzerstoerbar: was abgeschlagen wird, ist zwei Ticks spaeter wieder da und das Item verschwindet
-stand += [f'kill @e[type=item,x={LX-2},y={BODEN_Y-1},z={LZ-2},dx=5,dy=6,dz=4,nbt={{Item:{{id:"{b}"}}}}]' for b in SCHUTT]
+_kx = min(stand_pos(dx, 0, dz)[0] for dx in (-2, 2) for dz in (-2, 1))
+_kz = min(stand_pos(dx, 0, dz)[2] for dx in (-2, 2) for dz in (-2, 1))
+stand += [f'kill @e[type=item,x={_kx},y={BODEN_Y-1},z={_kz},dx=4,dy=6,dz=5,nbt={{Item:{{id:"{b}"}}}}]' for b in SCHUTT]
 fn("welt/stand", stand)
+
+# v0.63: der alte Stand (Front nach Sueden, x -8..-4, z -12..-10) wird einmal abgebaut, bevor welt/stand
+# den gedrehten setzt. Erst Schild und Laternen (haengen an Traegern), dann der Rest, dann der Boden
+# zurueck auf Gras. Nur fuer Welten vor v0.63 (PACK_VERSION 102).
+fn("welt/stand_alt_weg", [
+    "setblock -8 65 -9 minecraft:air", "setblock -8 67 -10 minecraft:air", "setblock -4 67 -10 minecraft:air",
+    "fill -8 64 -12 -4 67 -10 minecraft:air",
+    "fill -8 63 -12 -4 63 -10 minecraft:grass_block replace minecraft:polished_deepslate",
+    'kill @e[type=item,x=-9,y=62,z=-13,dx=6,dy=7,dz=5]',
+])
 
 # Der Gang ist seit v0.36 fuenf Bloecke hoch statt drei (Luis: "mach einfach 2 bloecke groesser dann
 # passt zu 100% alles durch"). Drei reichten rechnerisch fuer Endermen (2,9 hoch), an den Boegen
@@ -2859,8 +2891,8 @@ fn("sammler/kaufmenue", kaufmenue)
 
 # Tresen (Truhen und Fass nur setzen, wenn sie fehlen, sonst waere der Inhalt weg)
 fn("sammler/tresen", [
-    f"execute unless block {KAUF_A[0]} {KAUF_A[1]} {KAUF_A[2]} minecraft:chest run setblock {KAUF_A[0]} {KAUF_A[1]} {KAUF_A[2]} minecraft:chest[facing=south,type=right]",
-    f"execute unless block {KAUF_B[0]} {KAUF_B[1]} {KAUF_B[2]} minecraft:chest run setblock {KAUF_B[0]} {KAUF_B[1]} {KAUF_B[2]} minecraft:chest[facing=south,type=left]",
+    f"execute unless block {KAUF_A[0]} {KAUF_A[1]} {KAUF_A[2]} minecraft:chest run setblock {KAUF_A[0]} {KAUF_A[1]} {KAUF_A[2]} minecraft:chest[facing={TRESEN_FACING},type=right]",
+    f"execute unless block {KAUF_B[0]} {KAUF_B[1]} {KAUF_B[2]} minecraft:chest run setblock {KAUF_B[0]} {KAUF_B[1]} {KAUF_B[2]} minecraft:chest[facing={TRESEN_FACING},type=left]",
     f"execute unless block {VERKAUF[0]} {VERKAUF[1]} {VERKAUF[2]} minecraft:barrel run setblock {VERKAUF[0]} {VERKAUF[1]} {VERKAUF[2]} minecraft:barrel[facing=up]",
     f"data merge block {KAUF_A[0]} {KAUF_A[1]} {KAUF_A[2]} {{CustomName:[{{text:\"BUY   \",color:\"dark_red\"}},{{text:\"â— \",color:\"white\"}},{{score:{{name:\"#konto\",objective:\"nw.konto\"}},color:\"gold\"}}]}}",
     f"data merge block {KAUF_B[0]} {KAUF_B[1]} {KAUF_B[2]} {{CustomName:[{{text:\"BUY   \",color:\"dark_red\"}},{{text:\"â— \",color:\"white\"}},{{score:{{name:\"#konto\",objective:\"nw.konto\"}},color:\"gold\"}}]}}",
@@ -2869,7 +2901,7 @@ fn("sammler/tresen", [
 
 fn("sammler/erscheinen", [
     "kill @e[tag=nw.villager]", "kill @e[tag=nw.sammler]", "kill @e[tag=nw.kasse]",
-    f'summon minecraft:zombie_villager {sx} {sy} {sz} {{Tags:["nw.villager"],NoAI:1b,Silent:1b,Invulnerable:1b,PersistenceRequired:1b,NoGravity:1b,CustomName:{{text:"The Collector",color:"dark_red"}},CustomNameVisible:1b,VillagerData:{{profession:"minecraft:nitwit",level:1,type:"minecraft:swamp"}},Offers:{{Recipes:[]}},IsBaby:0b,Rotation:[0f,0f]}}',
+    f'summon minecraft:zombie_villager {sx} {sy} {sz} {{Tags:["nw.villager"],NoAI:1b,Silent:1b,Invulnerable:1b,PersistenceRequired:1b,NoGravity:1b,CustomName:{{text:"The Collector",color:"dark_red"}},CustomNameVisible:1b,VillagerData:{{profession:"minecraft:nitwit",level:1,type:"minecraft:swamp"}},Offers:{{Recipes:[]}},IsBaby:0b,Rotation:[{SAMMLER_YAW}f,0f]}}',
     f'summon minecraft:interaction {sx} {sy} {sz} {{Tags:["nw.sammler"],width:1.6f,height:2.4f}}',
     f"function {NS}:sammler/tresen", f"function {NS}:sammler/kaufmenue",
 ])
