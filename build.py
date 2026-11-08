@@ -20,7 +20,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 105                   # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 106                   # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 # ----------------------------------------------------------------------------
@@ -389,6 +389,12 @@ SONDERITEMS = {
     "TRANK_NACHTSICHT":("minecraft:potion", 1, '[potion_contents={potion:"minecraft:long_night_vision"}]'),
     # v0.61 (Hobo): Raketen fuer die Elytra. Ohne Schwarzpulver (keine Creeper, keine Mobdrops) lassen
     # sie sich nicht bauen. Flugdauer 1 wie eine Rakete aus einem Schwarzpulver.
+    # v0.67 (Luis 08.11.2026): Brauen gibt es nicht, wichtige Traenke fertig im Laden
+    "TRANK_TEMPO":     ("minecraft:potion", 1, '[potion_contents={potion:"minecraft:strong_swiftness"}]'),
+    "TRANK_FALLEN":    ("minecraft:potion", 1, '[potion_contents={potion:"minecraft:long_slow_falling"}]'),
+    "TRANK_REGEN":     ("minecraft:potion", 1, '[potion_contents={potion:"minecraft:strong_regeneration"}]'),
+    "TRANK_FEUER":     ("minecraft:potion", 1, '[potion_contents={potion:"minecraft:long_fire_resistance"}]'),
+    "TRANK_STAERKE2":  ("minecraft:potion", 1, '[potion_contents={potion:"minecraft:strong_strength"}]'),
     "RAKETE":          ("minecraft:firework_rocket", 1, '[fireworks={flight_duration:1}]'),
 }
 BUECHER = [  # (Verzauberung, [Stufen], Name, [Preise]) fuer den Reiter Books: Hoechststufe und eine darunter
