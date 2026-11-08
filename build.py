@@ -19,7 +19,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 100                   # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 101                   # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 # ----------------------------------------------------------------------------
@@ -3740,18 +3740,46 @@ fn("gegner/pfeil_tick", [
     f"execute as @e[type=arrow,tag=!nw.pfeil] at @s run function {NS}:gegner/pfeil_neu",
     f"execute as @e[type=arrow,tag=nw.mobpfeil] at @s run function {NS}:gegner/pfeil_frei",
 ])
+# v0.62 (Luis 08.11.2026: "Skelett soll andere Mobs nicht mehr treffen, Pfeile fliegen durch sie durch"):
+# Bis v0.61 galt der Sprung nur, solange KEIN Spieler in der Naehe war, im Gedraenge am Spieler trafen
+# die Pfeile also weiter. Jetzt (1) wird ein Mobpfeil am Schuetzen erkannt (execute on owner), nicht mehr
+# an der Lage; Spielerpfeile bleiben dadurch sicher unberuehrt, auch wenn ein Spieler mitten in der Welle
+# schiesst. (2) Gesprungen wird immer, wenn ein Wellengegner im Weg ist, ausser ein Spieler steht genau auf
+# der Sprungstrecke: dann trifft der Pfeil ihn ohnehin zuerst, und ueber ihn hinweg darf er nicht.
 fn("gegner/pfeil_neu", [
     "tag @s add nw.pfeil",
-    "execute if entity @e[tag=nw.welle,distance=..3] unless entity @a[distance=..5] run tag @s add nw.mobpfeil",
+    "scoreboard players set #own nw.tmp 0",
+    "execute store success score #own nw.tmp on owner if entity @s[tag=nw.welle]",
+    # Zweiter Weg, falls der Besitzer nicht aufloesbar ist (am Testserver lieferte "on owner" bei
+    # beschworenen Pfeilen nichts): ein Mobpfeil startet im ersten Tick auf Augenhoehe seines Schuetzen,
+    # also hoechstens 2 Bloecke von dessen Fuessen, und ein Spielerpfeil neben einem Spieler.
+    "execute if score #own nw.tmp matches 0 if entity @e[tag=nw.welle,distance=..2] unless entity @a[distance=..2] run scoreboard players set #own nw.tmp 1",
+    "execute if score #own nw.tmp matches 1 run tag @s add nw.mobpfeil",
 ])
 fn("gegner/pfeil_frei", [
     # steckt schon irgendwo: nichts tun. Beide Schreibweisen, je nach Spielstand heisst das Feld anders.
     "execute if data entity @s {inGround:1b} run return 0",
     "execute if data entity @s {in_ground:1b} run return 0",
-    "execute unless entity @e[tag=nw.welle,distance=..2.2] run return 0",
-    "execute if entity @a[distance=..3] run return 0",
-    "tp @s ^ ^ ^2.6",
+    "execute unless entity @e[tag=nw.welle,distance=..5] run return 0",
+    # Die naechsten 3 Bloecke der Flugbahn in halben Schritten abtasten (ein Pfeil fliegt bis zu rund
+    # 3 Bloecke je Tick). Getestet wird die Hitbox selbst (Wuerfel um den Punkt, dx=0), nicht der Abstand
+    # zu den Fuessen: mit "distance=..2.2" kam ein schneller Pfeil am Test vorbei und traf trotzdem.
+    "scoreboard players set #pj nw.tmp 0",
+    *[f"execute if score #pj nw.tmp matches 0 positioned ^ ^ ^{k * 0.5} positioned ~-0.5 ~-0.5 ~-0.5 "
+      f"if entity @e[tag=nw.welle,dx=0,dy=0,dz=0] run scoreboard players set #pj nw.tmp {k}" for k in range(1, 7)],
+    "execute if score #pj nw.tmp matches 0 run return 0",
+    # Landepunkt 1,8 hinter dem ersten Treffpunkt (der Wuerfeltest greift bis 0,8 vor der Mitte, die
+    # Hitbox endet 0,3 dahinter, und Pfeile treffen eine um 0,3 aufgeblasene Hitbox). Steht ein Spieler auf der Strecke bis dorthin, wird nicht gesprungen:
+    # ueber einen Spieler hinweg darf der Pfeil nie.
+    *[f"execute if score #pj nw.tmp matches {k} run return run function {NS}:gegner/pfeil_sprung_{k}" for k in range(1, 7)],
 ])
+for _k in range(1, 7):
+    _land = _k * 0.5 + 1.8
+    _pruef = [round(0.5 * i, 1) for i in range(1, int(_land / 0.5) + 1)] + [_land]
+    fn(f"gegner/pfeil_sprung_{_k}", [
+        *[f"execute positioned ^ ^ ^{d} positioned ~-0.5 ~-0.5 ~-0.5 if entity @a[dx=0,dy=0,dz=0] run return 0" for d in _pruef],
+        f"tp @s ^ ^ ^{_land}",
+    ])
 
 fn("gegner/klopfen", [
     "execute if score #m20 nw.tmp matches 0 run playsound minecraft:entity.zombie.attack_wooden_door hostile @a ~ ~ ~ 1 0.7",
@@ -3763,6 +3791,10 @@ AM_MUND = f"x={STRASSENMUND[0]},y={STRASSENMUND[1]},z={STRASSENMUND[2]},distance
 # Neu (Luis 08.09.2026): Wer auf der Bruecke oder der Gegnerinsel abstuerzt, kommt dorthin zurueck und nicht
 # als Geschenk auf die Spielerinsel. Nur wer auf der eigenen Insel abstuerzt, taucht beim Spieler auf.
 fn("gegner/festgefahren", [
+    # v0.62 (Luis 08.11.2026): Bosse kommen nach einem Absturz immer zum Spieler, egal wo sie fallen.
+    # Der Marksman haelt Abstand und steht dafuer gern am Brueckenkopf, er landete deshalb fast immer
+    # wieder auf der Gegnerinsel, und die Bossnacht wurde zur Wartezeit.
+    f"execute if entity @s[tag=nw.boss] if entity @a run return run function {NS}:gegner/zum_spieler",
     f"execute if score @s nw.pz matches {Z1}.. run return run function {NS}:gegner/zurueck_gegnerinsel",
     f"execute if entity @a run return run function {NS}:gegner/zum_spieler",
     f"function {NS}:gegner/zurueck_gegnerinsel",
