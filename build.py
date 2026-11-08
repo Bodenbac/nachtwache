@@ -19,7 +19,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 103                   # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 104                   # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 # ----------------------------------------------------------------------------
@@ -3108,17 +3108,97 @@ _glueck_packen_bauen()
 for r in preise:
     fn(f"preis/{r['item']}", [f"scoreboard players set #w nw.tmp2 {int(r['wert'])}"])
 fn("sammler/preis", ["$function nachtwache:preis/$(id)"])
+
+# v0.65 (Luis 08.11.2026): Benutztes Werkzeug und Ruestung bringen nur noch so viel, wie Haltbarkeit
+# uebrig ist, streng linear und aufgerundet. Der Schaden steht im Item (minecraft:damage), die volle
+# Haltbarkeit nicht, solange sie nicht veraendert wurde: deshalb diese Tabelle mit den Vanilla-Werten,
+# am Testserver gegen das Praedikat damage~{durability:N} geprueft.
+HALTBAR = {}
+for _mat, _werkzeug in (("wooden", 59), ("stone", 131), ("copper", 190), ("iron", 250), ("golden", 32),
+                        ("diamond", 1561), ("netherite", 2031)):
+    for _t in ("sword", "pickaxe", "axe", "shovel", "hoe"):
+        HALTBAR[f"{_mat}_{_t}"] = _werkzeug
+for _mat, _faktor in (("leather", 5), ("chainmail", 15), ("copper", 11), ("iron", 15), ("golden", 7),
+                      ("diamond", 33), ("netherite", 37)):
+    for _t, _basis in (("helmet", 11), ("chestplate", 16), ("leggings", 15), ("boots", 13)):
+        HALTBAR[f"{_mat}_{_t}"] = _faktor * _basis
+HALTBAR.update({"turtle_helmet": 275, "bow": 384, "crossbow": 465, "trident": 250, "shield": 336, "elytra": 432,
+                "fishing_rod": 64, "shears": 238, "flint_and_steel": 64, "carrot_on_a_stick": 25,
+                "warped_fungus_on_a_stick": 100, "mace": 500, "brush": 64})
+for _it, _max in HALTBAR.items():
+    fn(f"haltbar/{_it}", [f"scoreboard players set #hmax nw.tmp {_max}"])
+fn("sammler/haltbar_max", ["$function nachtwache:haltbar/$(id)"])
+fn("sammler/haltbar", [
+    # erwartet #w nw.tmp2 (Preis je Stueck), #dmg nw.tmp (Schaden) und id im Speicher
+    "execute unless score #dmg nw.tmp matches 1.. run return 0",
+    "scoreboard players set #hmax nw.tmp 0",
+    f"function {NS}:sammler/haltbar_max with storage nachtwache:tmp",
+    "execute unless score #hmax nw.tmp matches 1.. run return 0",
+    "scoreboard players operation #hrest nw.tmp = #hmax nw.tmp",
+    "scoreboard players operation #hrest nw.tmp -= #dmg nw.tmp",
+    "execute if score #hrest nw.tmp matches ..0 run scoreboard players set #hrest nw.tmp 0",
+    "scoreboard players operation #w nw.tmp2 *= #hrest nw.tmp",       # Preis mal uebrige Haltbarkeit ...
+    "scoreboard players operation #w nw.tmp2 += #hmax nw.tmp",
+    "scoreboard players remove #w nw.tmp2 1",
+    "scoreboard players operation #w nw.tmp2 /= #hmax nw.tmp",       # ... durch volle, aufgerundet
+])
+
+# v0.65 (Luis 08.11.2026): Shulkerkisten und andere Behaelter im Fass werden mit Inhalt verkauft.
+# Verkaeufliches geht raus und wird gutgeschrieben. Was der Sammler nicht nimmt (Werkzeug ohne Preis,
+# Minions, Spawn-Eier), bleibt in der Kiste, und die Kiste bleibt dann samt diesem Rest im Fass liegen.
+# Ist alles verkauft, geht die Kiste selbst mit (Shulker fest 50).
+fn("sammler/sk_naechstes", [
+    "execute unless data storage nachtwache:tmp sk[0] run return 0",
+    "data modify storage nachtwache:tmp ske set from storage nachtwache:tmp sk[0]",
+    "data remove storage nachtwache:tmp sk[0]",
+    "data modify storage nachtwache:tmp id set string storage nachtwache:tmp ske.item.id 10",
+    "scoreboard players set #w nw.tmp2 0",
+    f"function {NS}:sammler/preis with storage nachtwache:tmp",
+    'execute store result score #dmg nw.tmp run data get storage nachtwache:tmp ske.item.components."minecraft:damage"',
+    f"execute if score #w nw.tmp2 matches 1.. run function {NS}:sammler/haltbar",
+    "execute if score #w nw.tmp2 matches ..0 run data modify storage nachtwache:tmp skr append from storage nachtwache:tmp ske",
+    "execute store result score #skn nw.tmp run data get storage nachtwache:tmp ske.item.count",
+    "execute if score #w nw.tmp2 matches 1.. run scoreboard players operation #skn nw.tmp *= #w nw.tmp2",
+    "execute if score #w nw.tmp2 matches 1.. run scoreboard players operation #sksum nw.tmp += #skn nw.tmp",
+    f"function {NS}:sammler/sk_naechstes",
+])
+
 def verkauf_funktionen(name, pos, slots, prozent):
     x, y, z = pos
     lines = [f"execute unless items block {x} {y} {z} container.* * run return 0"]
     for slot in range(slots):
         lines.append(f"execute if items block {x} {y} {z} container.{slot} * run function {NS}:sammler/{name}_slot {{slot:{slot}}}")
     fn(f"sammler/{name}", lines)
+    _cont = f'Items[{{Slot:$(slot)b}}].components."minecraft:container"'
+    fn(f"sammler/{name}_kiste", [
+        f"$data modify storage nachtwache:tmp sk set from block {x} {y} {z} {_cont}",
+        "data modify storage nachtwache:tmp skr set value []",
+        "scoreboard players set #sksum nw.tmp 0",
+        f"function {NS}:sammler/sk_naechstes",
+        # die Kiste selbst: nur mitverkaufen, wenn nichts zurueckbleibt
+        f"$data modify storage nachtwache:tmp id set string block {x} {y} {z} Items[{{Slot:$(slot)b}}].id 10",
+        "scoreboard players set #w nw.tmp2 0",
+        f"function {NS}:sammler/preis with storage nachtwache:tmp",
+        "execute unless data storage nachtwache:tmp skr[0] if score #w nw.tmp2 matches 1.. run scoreboard players operation #sksum nw.tmp += #w nw.tmp2",
+        f"$execute unless data storage nachtwache:tmp skr[0] if score #w nw.tmp2 matches 1.. run item replace block {x} {y} {z} container.$(slot) with minecraft:air",
+        f"$execute if score #sksum nw.tmp matches 1.. run data modify block {x} {y} {z} {_cont} set from storage nachtwache:tmp skr",
+        "execute if score #sksum nw.tmp matches ..0 run return 0",
+        "scoreboard players operation #gain nw.tmp = #sksum nw.tmp",
+        f"scoreboard players set #pz nw.tmp2 {prozent}", "scoreboard players operation #gain nw.tmp *= #pz nw.tmp2", "scoreboard players operation #gain nw.tmp /= #100 nw.const",
+        "scoreboard players operation #konto nw.konto += #gain nw.tmp", "scoreboard players operation #verdient nw.verdient += #gain nw.tmp",
+        f"playsound minecraft:entity.villager.trade neutral @a[distance=..12] {x} {y} {z} 0.7 1",
+        f"title @a[distance=..12] actionbar {J([txt('Sold: +', 'gold'), {'score': {'name': '#gain', 'objective': 'nw.tmp'}, 'color': 'gold'}, txt(' ', 'gold'), coin()])}",
+    ])
     fn(f"sammler/{name}_slot", [
+        # Behaelter mit Inhalt (Shulkerkiste): Inhalt mitverkaufen (v0.65)
+        f"$execute if data block {x} {y} {z} {_cont}[0] run return run function {NS}:sammler/{name}_kiste {{slot:$(slot)}}",
         f"$execute store result score #n nw.tmp run data get block {x} {y} {z} Items[{{Slot:$(slot)b}}].count",
         f"$data modify storage nachtwache:tmp id set string block {x} {y} {z} Items[{{Slot:$(slot)b}}].id 10",
         "scoreboard players set #w nw.tmp2 0",
         f"function {NS}:sammler/preis with storage nachtwache:tmp",
+        # Haltbarkeit (v0.65): benutztes Werkzeug bringt anteilig weniger
+        f'$execute store result score #dmg nw.tmp run data get block {x} {y} {z} Items[{{Slot:$(slot)b}}].components."minecraft:damage"',
+        f"execute if score #w nw.tmp2 matches 1.. run function {NS}:sammler/haltbar",
         "execute if score #w nw.tmp2 matches ..0 run return 0",
         "scoreboard players operation #gain nw.tmp = #n nw.tmp", "scoreboard players operation #gain nw.tmp *= #w nw.tmp2",
         f"scoreboard players set #pz nw.tmp2 {prozent}", "scoreboard players operation #gain nw.tmp *= #pz nw.tmp2", "scoreboard players operation #gain nw.tmp /= #100 nw.const",
