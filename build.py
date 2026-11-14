@@ -20,7 +20,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 106                   # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 107                   # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 # ----------------------------------------------------------------------------
@@ -160,13 +160,16 @@ QUELL = (0, 64, -7)                    # Start-Generator, mittig auf der Insel
 # Alle Bloecke brauchen eine Spitzhacke, um schnell zu gehen (Haerte 1.5 bis 1.8), Drops werden weggeraeumt.
 # Abbauten je Stufe seit dem 11.09.2026 in 250er-Schritten (Luis): 500, 750, 1000, 1250, 1500, 1750.
 # Vorher waren es 500, 1000, 1500, 2000, 3000, 4000, zusammen 12000 statt jetzt 6750.
+# v0.68 (Luis 14.11.2026, Vorschlag C): Abbauten je Stufe 500 / 800 / 1200 / 1700 / 2300 / 3000,
+# Stufe 7 nach 9500 statt 6750. Der Anfang bleibt fast wie vorher, ab Stufe 4 wird es zaeher.
+# Vorher (v0.60) 500 / 750 / 1000 / 1250 / 1500 / 1750.
 STUFEN = [
     ("minecraft:tuff",             "Grau",    500,  1, 0.02, "zombie"),
-    ("minecraft:green_concrete",   "Gruen",   750,  2, 0.025, "zombie"),
-    ("minecraft:blue_concrete",    "Blau",    1000, 3, 0.03, "skeleton"),
-    ("minecraft:budding_amethyst", "Lila",    1250, 4, 0.035, "spider"),
-    ("minecraft:yellow_concrete",  "Gelb",    1500, 5, 0.04, "witch"),
-    ("minecraft:orange_concrete",  "Orange",  1750, 6, 0.045, "wither_skeleton"),
+    ("minecraft:green_concrete",   "Gruen",   800,  2, 0.025, "zombie"),
+    ("minecraft:blue_concrete",    "Blau",    1200, 3, 0.03, "skeleton"),
+    ("minecraft:budding_amethyst", "Lila",    1700, 4, 0.035, "spider"),
+    ("minecraft:yellow_concrete",  "Gelb",    2300, 5, 0.04, "witch"),
+    ("minecraft:orange_concrete",  "Orange",  3000, 6, 0.045, "wither_skeleton"),
     ("minecraft:black_concrete",   "Schwarz", 0,    8, 0.05, "wither_skeleton"),
 ]
 ANZ_STUFEN = len(STUFEN)
@@ -600,7 +603,7 @@ fn("migration", [
     # (#abbau trifft die Grenze genau), verschieben sich die Grenzen, passt die Stufe sonst nicht
     # mehr zum Zaehler und bleibt stehen. Hier wird sie einmal je Migration geradegezogen
     # (Luis 11.09.2026, Umstellung auf 250er-Schritte).
-    *[f"execute if score #abbau nw.abbau matches {g}.. run scoreboard players set #phase nw.phase {i + 2}"
+    *[f"execute if score #abbau nw.abbau matches {g}.. if score #phase nw.phase matches ..{i + 1} run scoreboard players set #phase nw.phase {i + 2}"
       for i, g in enumerate(PHASEN_GRENZEN)],
     *einmalig([f"setblock {QUELL[0]} {QUELL[1]} {QUELL[2]} minecraft:air"]),   # loescht eingelegte Items, deshalb nur einmal
     f"function {NS}:quell/setzen",
@@ -1450,7 +1453,7 @@ def abbau_lines(wer, loot_ziel, mit_anzeige):
   if mit_anzeige:
     abbau.append(f'title @s actionbar {J([txt("+", "gold"), {"score": {"name": "#splitter", "objective": "nw.tmp"}, "color": "gold"}, txt(" ", "gray"), coin(), txt("   mined ", "gray"), {"score": {"name": "#abbau", "objective": "nw.abbau"}, "color": "gray"}])}')
   for i, g in enumerate(PHASEN_GRENZEN):
-    abbau.append(f"execute if score #abbau nw.abbau matches {g} run function {NS}:quell/phase_wechsel {{phase:{i+2}}}")
+    abbau.append(f"execute if score #abbau nw.abbau matches {g} if score #phase nw.phase matches ..{i+1} run function {NS}:quell/phase_wechsel {{phase:{i+2}}}")
   return abbau
 fn("quell/abbau", abbau_lines(1, "give @s", True))
 fn("zwerg/abbau", abbau_lines(2, "insert ~ ~ ~", False))
