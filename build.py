@@ -20,7 +20,7 @@ NS = "nachtwache"
 # ----------------------------------------------------------------------------
 # EINSTELLUNGEN
 # ----------------------------------------------------------------------------
-PACK_VERSION = 107                   # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
+PACK_VERSION = 108                   # hochzaehlen, wenn Stand/Sammler sich aendern (Migration beim Laden)
 PACK_MIN, PACK_MAX = 94, 110          # 1.21.11 = 94, spaetere Versionen bis 110 zugelassen
 
 # ----------------------------------------------------------------------------
@@ -62,7 +62,8 @@ V060_SHULKER_WERT = 50
 # sie nimmt in Java auch die Erfahrung mit. Die Liste ist genau der Bestand aus MOBS plus
 # der Warden aus dem Finale. Nutztiere, Ertrunkene, Ghasts und der Rest behalten ihre Beute.
 V060_LEERE_BEUTE = ["zombie", "husk", "skeleton", "spider", "cave_spider", "creeper", "enderman",
-                    "witch", "wither_skeleton", "pillager", "ravager", "warden"]
+                    "witch", "wither_skeleton", "pillager", "ravager", "warden",
+                    "zombified_piglin", "magma_cube", "blaze", "ghast"]     # v0.70: Nether-Gegner
 
 ADMINS = ["luisgamer2349"]           # bekommen den Tag nw.admin und duerfen /trigger reset + /trigger yes (Ops koennen weitere per /tag <name> add nw.admin freischalten)
 ZWERG_TAKT = 300                        # Ticks je Schlag auf Stufe 0 (15 s)
@@ -329,7 +330,8 @@ BONUS_PRO_NACHT = 16                    # Splitter fuer eine komplett getoetete 
 # seit v0.42 ueber ihr Kennzeichen nw.a_<sorte> auseinandergehalten (Luis 10.09.2026).
 KOPFGELD = {"zombie": 6, "zombie_baby": 20, "zombie_leder": 9, "zombie_eisen": 14, "husk": 6, "brutalo": 25,
             "skeleton": 9, "spider": 6, "cave_spider": 4, "enderman": 30,
-            "witch": 18, "wither_skeleton": 18, "pillager": 15, "ravager": 45}
+            "witch": 18, "wither_skeleton": 18, "pillager": 15, "ravager": 45,
+            "zpiglin": 0, "magma": 0, "blaze": 0, "ghast": 0}     # Nether: kein Kopfgeld, nur Erfahrung
 KOPFGELD_BOSS = 150
 TOD_ABZUG_PROZENT = 10
 
@@ -355,6 +357,39 @@ BOSSE = {
     25: ("witch",        "The Witch",     100, "hexe",     ("wither_skeleton", 6)),
     30: ("warden",       "The Collector", 170, "finale",   None),
 }
+# ----------------------------------------------------------------------------
+# NETHER (v0.70, Luis 08.11. und 14.11.2026). Der Vanilla-Nether ist durch eine leere Dimension ersetzt
+# (data/minecraft/dimension/the_nether.json). Dort liegt dieselbe Inselanlage wie oben auf denselben
+# Koordinaten: Spielerinsel, Bruecke, Gegnerinsel, Beacon, Generator, aber kein Laden.
+# Die Spieler wechseln die Welt nur gemeinsam (alle im Portal). Deshalb gibt es genau EINE aktive Welt:
+# #welt nw.status 0 = Oberwelt, 1 = Nether. Uhr, Wellen, Bosse und Schutz laufen in der aktiven Welt
+# (tick_welt wird "in minecraft:the_nether" aufgerufen), der Zustand der anderen Welt liegt solange in
+# #x_<name> und wird beim Wechsel getauscht (Zeit, Nacht, Stufe, Abbauzaehler, Modus, Finale).
+# Die Leben sind gemeinsam, es gibt nur ein #leben.
+# ----------------------------------------------------------------------------
+NETHER_TAG_ZAEHLER, NETHER_TAG_NENNER = 15, 4     # 3,75 je Tick -> Nether-Tag genau 3 Minuten (Nenner wie oben)
+NETHER_SPAWN = (0.5, 64, -9.5)                    # Ankunft im Nether, gleiche Stelle wie der Inselspawn oben
+NETHER_PORTAL_X, NETHER_PORTAL_Z = -7, (-12, -9)  # Rueckportal: Rahmen bei x -7, z -12 bis -9 (dort steht oben der Laden)
+# Welle im Nether: (Sorte, ab Nacht, Start, Zuwachs, Takt), gleiche Formel wie wellen.csv
+NETHER_WELLEN = [("zpiglin", 1, 4, 1, 1), ("magma", 2, 2, 1, 2), ("blaze", 3, 1, 1, 2),
+                 ("ghast", 4, 1, 1, 3), ("wither_skeleton", 5, 2, 1, 2)]
+# Bosse im Nether: Nacht -> (Sorte, Name, Leben, Faehigkeit, Begleitung). Nach dem dritten ist der Nether
+# abgeschlossen, die Naechte laufen ohne Boss weiter.
+NETHER_BOSSE = {
+    4:  ("enderman", "The Stalker", 120, "stalker", ("enderman", 3)),
+    7:  ("ghast",    "The Howler",  100, "heuler",  ("ghast", 2)),
+    10: ("blaze",    "The Pyre",    160, "feuer",   ("blaze", 5)),
+}
+NETHER_BOSS_AUGEN = {4: 2, 7: 3, 10: 4}           # Enderaugen als Bossbeute (Vorschlag Claude, kein Kopfgeld im Nether)
+NETHER_GEN_KISTE = 0.2                            # Prozent Kiste je Abbau, sonst gibt der Nether-Generator nichts
+# Nether-Kiste je Stufe: (Flaschen min, max), (Enderaugen min, max, Chance in Prozent)
+NETHER_KISTE = {1: ((2, 4), (1, 1, 50)), 2: ((3, 5), (1, 1, 70)), 3: ((4, 6), (1, 2, 100)), 4: ((6, 10), (2, 2, 100)),
+                5: ((8, 12), (2, 3, 100)), 6: ((10, 14), (2, 4, 100)), 7: ((12, 16), (3, 4, 100))}
+FLIEGER = {"blaze", "ghast"}                      # laufen nicht ueber die Bruecke, werden an die Spieler herangezogen
+FLIEGER_HOEHE = 73                                # Flughoehe an der Leine und Mindesthoehe der Ghasts: ueber dem Gitterdach der Bruecke (69)
+FLIEGER_LEINE = 22                                # so nah am naechsten Spieler laesst die Leine los
+HEULER_HOEHE = 74                                 # The Howler bleibt mindestens so hoch: ohne Bogen kommt man nicht heran
+NETHER_SALVE_WEITE, NETHER_SALVE_SCHADEN = 30, 5  # Feuersalve von The Howler und The Pyre (Takt wie BOSS_SCHUSS_TAKT)
 BOSS_VERZUG = 300                       # 15 s nach dem Wellenstart kommt der Bosstrupp los
 BOSS_NACHSCHUB = 6                      # Deckel fuer nachgerufene Diener (Mutter)
 BOSS_SCHUSS_TAKT = 40                   # The Marksman: alle 2 s ein Schuss
@@ -450,6 +485,12 @@ MOBS = {
 }
 # "attributes" doppelt bei brutalo: den ersten Eintrag aus _mob entfernen
 MOBS["brutalo"] = (MOBS["brutalo"][0], MOBS["brutalo"][1].replace('attributes:[{id:"minecraft:follow_range",base:100d}],', '', 1))
+# v0.70: Nether-Gegner. Magmawuerfel Groesse 1 (teilt sich einmal), der Ghast mit ExplosionPower 0:
+# sein Feuerball trifft und verletzt, sprengt aber keinen Block (Luis: "macht nur Schaden und zerstoert nichts").
+MOBS["zpiglin"] = _mob("minecraft:zombified_piglin", 'equipment:{mainhand:{id:"minecraft:golden_sword",count:1}},drop_chances:{mainhand:0.0f}', helm=False)
+MOBS["magma"] = _mob("minecraft:magma_cube", "Size:1", helm=False)
+MOBS["blaze"] = _mob("minecraft:blaze", "", helm=False)
+MOBS["ghast"] = _mob("minecraft:ghast", "ExplosionPower:0b", helm=False)
 # v0.60: kein Drop heisst auch keine Ausruestung. Bogen, Schwert und Steinschwert standen auf 5 Prozent.
 if BALANCE_V060:
     MOBS = {_k: (_e, _n.replace("0.05f", "0.0f")) for _k, (_e, _n) in MOBS.items()}
@@ -576,6 +617,14 @@ load += [
     "scoreboard players enable @a nw.kauf", "scoreboard players enable @a nw.endlos", "scoreboard players enable @a nw.hilfe",
     f"tellraw @a {J([txt('[Nightwatch] ', 'dark_red'), txt('Datapack loaded. ', 'gray'), txt('/trigger nw.hilfe', 'yellow', click_event={'action':'run_command','command':'trigger nw.hilfe'}), txt(' shows the help.', 'gray')])}",
 ]
+load += [
+    # v0.70 Nether: Grundzustand, Portalregel und geladene Chunks. Der Vanilla-Portalwechsel ist abgeschaltet
+    # (Wartezeit praktisch unendlich), gewechselt wird nur ueber nether/portal, wenn alle im Portal stehen.
+    "execute unless score #welt nw.status matches 0.. run scoreboard players set #welt nw.status 0",
+    f"execute unless score #x_phase nw.phase matches 1.. run function {NS}:nether/zustand_neu",
+    "gamerule players_nether_portal_default_delay 2000000000", "gamerule players_nether_portal_creative_delay 2000000000",
+    "execute in minecraft:the_nether run forceload add -20 -20 20 100",
+]
 fn("load", load)
 # Migration laeuft bei jedem Versionssprung. Zwei Sorten Schritte (Luis 10.09.2026, Befund F1 im Review):
 # - IMMER: was idempotent ist (Stand, Sammler, Strasse, Gegnerinsel, Quell-Marker, Kaufmenue, Lebenstafeln).
@@ -679,6 +728,7 @@ init = [
     # Die Uhr laeuft. Nur der Reset stellt danach #pause auf 1, dann wartet das Spiel auf /trigger start
     # (Luis 11.09.2026). Eine frisch gebaute Welt soll wie bisher sofort loslaufen.
     "scoreboard players set #pause nw.status 0",
+    "scoreboard players set #welt nw.status 0", f"function {NS}:nether/zustand_neu",
     f"forceload add -20 -20 20 100",
     f"function {NS}:welt/startinsel", f"function {NS}:welt/stand", f"function {NS}:welt/gegnerinsel",
     f"function {NS}:quell/setzen",
@@ -1380,7 +1430,11 @@ fn("tick", [
     "scoreboard players operation #m20 nw.tmp = #tick nw.tick",
     "scoreboard players operation #m20 nw.tmp %= #20 nw.const",
     f"execute unless score #init nw.status matches 1 run return 0",
-    f"function {NS}:uhr/tick",
+    # v0.70: alles, was an festen Koordinaten haengt (Uhr mit Nachtstart, Schutz, Bosse), laeuft in der
+    # aktiven Welt. "execute in" setzt nur die Dimension, die Koordinaten der Inseln sind in beiden gleich.
+    f"execute unless score #welt nw.status matches 1 run function {NS}:tick_welt",
+    f"execute if score #welt nw.status matches 1 in minecraft:the_nether run function {NS}:tick_welt",
+    f"function {NS}:nether/tick",
     f"function {NS}:sammler/interaktion",
     f"function {NS}:sammler/kauf_tick", f"function {NS}:sammler2/kauf_tick",
     "scoreboard players operation #m5 nw.tmp = #tick nw.tick", "scoreboard players operation #m5 nw.tmp %= #5 nw.const",
@@ -1397,7 +1451,6 @@ fn("tick", [
     f"execute as @a[scores={{nw.tode=1..}}] run function {NS}:spieler/tod",
     f"function {NS}:gegner/tick",
     f"function {NS}:gegner/pfeil_tick",
-    f"function {NS}:schutz/tick",
     f"function {NS}:zwerg/tick",
     f"function {NS}:bogi/tick",
     f"function {NS}:gen/tick",
@@ -1405,10 +1458,7 @@ fn("tick", [
     f"execute as @a[tag=nw.admin,scores={{reset=1..}}] run function {NS}:admin/reset_trigger",
     f"execute as @a[tag=nw.admin,scores={{yes=1..}}] run function {NS}:admin/yes_trigger",
     f"execute as @a[tag=nw.admin,scores={{start=1..}}] run function {NS}:admin/start_trigger",
-    f"execute as @a[tag=nw.admin,scores={{night=1..}}] run function {NS}:admin/night_trigger",
-    f"execute as @a[tag=nw.admin,scores={{boss=1..}}] run function {NS}:admin/boss_trigger",
     f"execute as @a[tag=nw.admin,scores={{fraggle=1..}}] run function {NS}:admin/fraggle_trigger",
-    f"execute as @a[tag=nw.admin,scores={{endnight=1..}}] run function {NS}:admin/endnight_trigger",
     f"execute as @a[tag=nw.admin,scores={{money=1..}}] run function {NS}:admin/money_trigger",
     f"execute as @a[tag=nw.admin,scores={{money=..-1}}] run function {NS}:admin/money_trigger",
     f"execute if score #m20 nw.tmp matches 0 run function {NS}:schutz/sekunde",
@@ -1416,6 +1466,13 @@ fn("tick", [
     f"execute if score #m20 nw.tmp matches 15 run function {NS}:uhr/anzeige",
     f"execute if score #m20 nw.tmp matches 5 run function {NS}:atmo/sekunde",
     f"function {NS}:spieler/bett",
+])
+fn("tick_welt", [
+    f"function {NS}:uhr/tick",
+    f"function {NS}:schutz/tick",
+    f"execute as @a[tag=nw.admin,scores={{night=1..}}] run function {NS}:admin/night_trigger",
+    f"execute as @a[tag=nw.admin,scores={{boss=1..}}] run function {NS}:admin/boss_trigger",
+    f"execute as @a[tag=nw.admin,scores={{endnight=1..}}] run function {NS}:admin/endnight_trigger",
     f"function {NS}:nacht/boss_ruf",
     f"function {NS}:nacht/boss_tick",
 ])
@@ -1442,13 +1499,15 @@ def abbau_lines(wer, loot_ziel, mit_anzeige):
     abbau.append(f"execute if score #phase nw.phase matches {p} run scoreboard players set #splitter nw.tmp {s}")
   abbau += [
     "execute if score #focus nw.upgrade matches 1.. run scoreboard players operation #splitter nw.tmp *= #2 nw.const",
+    "execute if score #welt nw.status matches 1 run scoreboard players set #splitter nw.tmp 0",   # Nether: keine Coins
     "scoreboard players operation #konto nw.konto += #splitter nw.tmp",
     "scoreboard players operation #verdient nw.verdient += #splitter nw.tmp",
     f"playsound minecraft:block.amethyst_block.break player @a ~ ~ ~ 0.6 0.7",
   ]
   for p in range(1, ANZ_STUFEN + 1):
     abbau.append(f"execute if score #phase nw.phase matches {p} if predicate {NS}:quell_mob_{p} run function {NS}:quell/mob_{p}")
-    abbau.append(f"execute if score #phase nw.phase matches {p} unless score #mobda nw.tmp matches 1 run loot {loot_ziel} loot {NS}:quell/phase{p}")
+    abbau.append(f"execute if score #phase nw.phase matches {p} unless score #mobda nw.tmp matches 1 unless score #welt nw.status matches 1 run loot {loot_ziel} loot {NS}:quell/phase{p}")
+    abbau.append(f"execute if score #phase nw.phase matches {p} if score #welt nw.status matches 1 run loot {loot_ziel} loot {NS}:nether/phase{p}")
   abbau.append("scoreboard players reset #mobda nw.tmp")
   if mit_anzeige:
     abbau.append(f'title @s actionbar {J([txt("+", "gold"), {"score": {"name": "#splitter", "objective": "nw.tmp"}, "color": "gold"}, txt(" ", "gray"), coin(), txt("   mined ", "gray"), {"score": {"name": "#abbau", "objective": "nw.abbau"}, "color": "gray"}])}')
@@ -1912,19 +1971,20 @@ fn("beacon/aufbauen", [
     f"kill @e[type=item,x={BX-2},y={BY-2},z={BZ-2},dx=4,dy=4,dz=4,nbt={{Item:{{id:\"minecraft:beacon\"}}}}]",
     # Zielpunkt der Gegner: ein winziger, unverwundbarer Dorfbewohner auf dem Beacon. Zombies suchen Dorfbewohner
     # auch ohne Sichtlinie, deshalb laufen sie zuverlaessig hierher. Unsichtbare Entities werden dagegen ignoriert.
-    f"execute unless entity @e[tag=nw.herz] run summon minecraft:villager {BX+0.5} {BY+1.1} {BZ+0.5} "
+    f"execute unless entity @e[tag=nw.herz,distance=0..] run summon minecraft:villager {BX+0.5} {BY+1.1} {BZ+0.5} "
     f'{{Tags:["nw.herz"],NoAI:1b,Silent:1b,Invulnerable:1b,PersistenceRequired:1b,NoGravity:1b,Offers:{{Recipes:[]}},'
     f'VillagerData:{{profession:"minecraft:nitwit",level:1,type:"minecraft:swamp"}},'
     f'attributes:[{{id:"minecraft:scale",base:0.2d}},{{id:"minecraft:max_health",base:1024d}}],Health:1024f}}',
     # Lebensanzeige: vier feste Tafeln, je eine an jeder Seite des roten Glases (Luis 09.09.2026).
     # Sie schweben nicht mehr darueber, wo sie im Leuchtstrahl lag und nicht zu lesen war.
-    *[f"execute unless entity @e[tag=nw.herz_text,tag=nw.ht_{seite}] run summon minecraft:text_display {x} {BY+1.5} {z} "
+    *[f"execute unless entity @e[tag=nw.herz_text,tag=nw.ht_{seite},distance=0..] run summon minecraft:text_display {x} {BY+1.5} {z} "
       f'{{Tags:["nw.herz_text","nw.ht_{seite}"],Rotation:[{yaw}f,0f],billboard:"fixed",background:{HERZ_HINTERGRUND},'
       f'see_through:false,transformation:{{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],'
       f'translation:[0f,0f,0f],scale:[0.55f,0.55f,0.55f]}},text:{HERZ_TEXT}}}'
       for seite, x, z, yaw in HERZ_SEITEN],
 ])
-w(f"{NS}/tags/block/beacon_sockel.json", {"values": ["minecraft:air", "minecraft:grass_block", "minecraft:dirt", "minecraft:water", "minecraft:cave_air"]})
+w(f"{NS}/tags/block/beacon_sockel.json", {"values": ["minecraft:air", "minecraft:grass_block", "minecraft:dirt", "minecraft:water", "minecraft:cave_air",
+    "minecraft:crimson_nylium", "minecraft:netherrack"]})
 fn("beacon/anzeige", [
     f'execute as @e[tag=nw.herz_text] run data modify entity @s text set value {HERZ_TEXT}',
 ])
@@ -1940,6 +2000,8 @@ fn("beacon/verlust", [
 fn("beacon/ende", [
     "scoreboard players set #leben nw.leben 0",
     "scoreboard players set #ende nw.status 1",
+    # Magmawuerfel erst klein machen: ein getoeteter Wuerfel der Groesse 1 teilt sich sonst in neue (v0.70)
+    "execute as @e[type=minecraft:magma_cube,tag=nw.welle] run data merge entity @s {Size:0}", 
     "kill @e[tag=nw.welle]", f"function {NS}:gegner/vergessen",
     "scoreboard players set #gegner nw.gegner 0", "scoreboard players set #boss nw.boss 0",
     "bossbar set nw:welle visible false", "bossbar set nw:boss visible false", "bossbar set nw:uhr visible false",
@@ -2297,6 +2359,7 @@ for _dim, _kurz, _ab in (("the_nether", "nether", NETHER_AB), ("the_end", "end",
         "rewards": {"function": f"{NS}:welt/{_kurz}_betreten"}})
     zurueck = [
         f"advancement revoke @s only {NS}:{_kurz}_betreten",
+        ("execute if score #welt nw.status matches 1 run return 0" if _kurz == "nether" else None),
         f"execute if score #phase nw.phase matches {_ab}.. " +
         ("unless score #status nw.status matches 1 " if _kurz == "nether" else "") + "run return 0",
         f"execute in minecraft:overworld run tp @s {SPAWN[0]}.5 {SPAWN[1]} {SPAWN[2]}.5",
@@ -3292,13 +3355,15 @@ fn("uhr/tick", [
     # Zeit laeuft nur, wenn jemand in der Oberwelt ist. Wer im Nether steckt, haelt den Tag an
     # (Luis 10.09.2026), sonst waere der Nether ein Weg, die Nacht auszusitzen.
     "scoreboard players set #ow nw.tmp2 0",
-    "execute as @a at @s if dimension minecraft:overworld run scoreboard players set #ow nw.tmp2 1",
+    "execute if entity @a[distance=0..] run scoreboard players set #ow nw.tmp2 1",     # jemand in der aktiven Welt (v0.70)
     "execute if score #ow nw.tmp2 matches 0 run return 0",
     "scoreboard players set #tagphase nw.tmp 1",
     f"execute if score #zeit nw.zeit matches {NACHT_START}..{TAG_START - 1} run scoreboard players set #tagphase nw.tmp 0",
     # Akkumulator: je Tick ZAEHLER dazu, je volle NENNER eine Zeiteinheit
     f"execute if score #tagphase nw.tmp matches 1 run scoreboard players add #uhr_akku nw.tmp2 {TAG_ZAEHLER}",
     f"execute if score #tagphase nw.tmp matches 1 run scoreboard players set #uhr_nenner nw.tmp2 {TAG_NENNER}",
+    # Nether-Tag: 3 Minuten. Derselbe Nenner, der Zaehler bekommt den Unterschied obendrauf.
+    f"execute if score #tagphase nw.tmp matches 1 if score #welt nw.status matches 1 run scoreboard players add #uhr_akku nw.tmp2 {NETHER_TAG_ZAEHLER - TAG_ZAEHLER}",
     f"execute if score #tagphase nw.tmp matches 0 run scoreboard players add #uhr_akku nw.tmp2 {NACHT_ZAEHLER}",
     f"execute if score #tagphase nw.tmp matches 0 run scoreboard players set #uhr_nenner nw.tmp2 {NACHT_NENNER}",
     "execute unless score #uhr_akku nw.tmp2 >= #uhr_nenner nw.tmp2 run return 0",
@@ -3340,7 +3405,9 @@ fn("uhr/anzeige", [
     # echte Sekunden = rest * NENNER / (ZAEHLER * 20)
     "scoreboard players operation #usek nw.tmp2 = #rest nw.tmp2",
     f"scoreboard players set #uhr_n nw.tmp2 {TAG_NENNER}", "scoreboard players operation #usek nw.tmp2 *= #uhr_n nw.tmp2",
-    f"scoreboard players set #uhr_z nw.tmp2 {TAG_ZAEHLER * 20}", "scoreboard players operation #usek nw.tmp2 /= #uhr_z nw.tmp2",
+    f"scoreboard players set #uhr_z nw.tmp2 {TAG_ZAEHLER * 20}",
+    f"execute if score #welt nw.status matches 1 run scoreboard players set #uhr_z nw.tmp2 {NETHER_TAG_ZAEHLER * 20}",
+    "scoreboard players operation #usek nw.tmp2 /= #uhr_z nw.tmp2",
     "scoreboard players operation #umin nw.tmp2 = #usek nw.tmp2",
     "scoreboard players set #sechzig nw.tmp2 60",
     "scoreboard players operation #umin nw.tmp2 /= #sechzig nw.tmp2",
@@ -3377,6 +3444,11 @@ def summon_mob(key, extra_tags=(), pos=SPAWN_GEGNER):
     """Ein Gegner der Welle. nw.a_<sorte> ist das Kennzeichen fuer das Kopfgeld: alle Zombievarianten
     sind minecraft:zombie, ueber den Entity-Typ allein waeren sie nicht auseinanderzuhalten (v0.42)."""
     ent, nbt = MOBS[key]
+    if key in FLIEGER:
+        # Flieger starten ueber der Gegnerinsel und werden nicht mit der Welle am Boden verteilt
+        extra_tags = [t for t in extra_tags if t != "nw.neu"] + ["nw.flieger"]
+        if pos == SPAWN_GEGNER:
+            pos = (pos[0], pos[1] + 12, pos[2])
     tags = f'"nw.welle","nw.a_{key}"' + "".join(f',"{t}"' for t in extra_tags)
     return f"summon {ent} {pos[0]} {pos[1]} {pos[2]} {{Tags:[{tags}],{nbt}}}"
 
@@ -3397,7 +3469,9 @@ welle = [
     "scoreboard players operation #wn nw.tmp2 = #nacht nw.nacht",
     f"execute if score #wn nw.tmp2 matches {WELLE_MAX_NACHT + 1}.. run scoreboard players set #wn nw.tmp2 {WELLE_MAX_NACHT}",
 ]
-for mob, ab, start, zuwachs, takt in wellen:
+_wellen_alle = [(m, a, s, z, k, "unless score #welt nw.status matches 1") for m, a, s, z, k in wellen] + \
+               [(m, a, s, z, k, "if score #welt nw.status matches 1") for m, a, s, z, k in NETHER_WELLEN]
+for mob, ab, start, zuwachs, takt, _wb in _wellen_alle:
     fn(f"nacht/anz_{mob}", [
         "scoreboard players operation #c nw.tmp2 = #wn nw.tmp2",
         f"scoreboard players remove #c nw.tmp2 {ab}",
@@ -3426,8 +3500,8 @@ for mob, ab, start, zuwachs, takt in wellen:
         f"function {NS}:nacht/spawn_{mob}",
     ])
     welle.append(f"scoreboard players set #n_{mob} nw.tmp 0")
-    welle.append(f"execute if score #wn nw.tmp2 matches {ab}.. run function {NS}:nacht/anz_{mob}")
-    welle.append(f"execute if score #wn nw.tmp2 matches {ab}.. run function {NS}:nacht/spawn_{mob}")
+    welle.append(f"execute if score #wn nw.tmp2 matches {ab}.. {_wb} run function {NS}:nacht/anz_{mob}")
+    welle.append(f"execute if score #wn nw.tmp2 matches {ab}.. {_wb} run function {NS}:nacht/spawn_{mob}")
 
 welle += [
     # erst jetzt auf 2 ("laeuft heute Nacht"), sonst haette die erste Sorte den Kontrakt schon verbraucht
@@ -3448,17 +3522,23 @@ BOSS_NBT = {
     "ravager": '',
     "witch": '',
     "warden": '',
+    "enderman": '', "ghast": 'ExplosionPower:0b', "blaze": '',
 }
-BOSS_ENTITY = {"zombie_eisen": "minecraft:zombie", "spider": "minecraft:spider", "skeleton": "minecraft:skeleton", "ravager": "minecraft:ravager", "witch": "minecraft:witch", "warden": "minecraft:warden"}
+BOSS_ENTITY = {"enderman": "minecraft:enderman", "ghast": "minecraft:ghast", "blaze": "minecraft:blaze", "zombie_eisen": "minecraft:zombie", "spider": "minecraft:spider", "skeleton": "minecraft:skeleton", "ravager": "minecraft:ravager", "witch": "minecraft:witch", "warden": "minecraft:warden"}
 
 def boss_summon(key, name, hp, ability):
     extra = BOSS_NBT[key]
     # nw.bosstrupp: Boss und Begleitung gehen nur auf Spieler los und channeln nie am Beacon (v0.44)
-    tags = '"nw.welle","nw.boss","nw.bosstrupp"' + (f',"nw.boss_{ability}"' if ability else "")
+    tags = '"nw.welle","nw.boss","nw.bosstrupp"' + (f',"nw.boss_{ability}"' if ability else "") + (',"nw.flieger"' if key in FLIEGER else "")
     attribute = [f'{{id:"minecraft:follow_range",base:{FOKUS_WEIT}d}}', f'{{id:"minecraft:max_health",base:{hp}d}}']
     if ability == "tank":     # The First ist sichtbar groesser als seine Begleitung
         attribute.append('{id:"minecraft:scale",base:1.4d}')
         attribute.append('{id:"minecraft:knockback_resistance",base:0.6d}')
+    if ability == "stalker":  # Nether, Nacht 4: groesser und haerter als seine Begleitung
+        attribute.append('{id:"minecraft:scale",base:1.35d}')
+        attribute.append('{id:"minecraft:attack_damage",base:10d}')
+    if ability == "feuer":    # Nether, Nacht 10: die grosse Lohe
+        attribute.append('{id:"minecraft:scale",base:1.8d}')
     if ability == "koloss":   # der Rammbock ist langsam, dafuer haelt er alles aus
         attribute.append('{id:"minecraft:movement_speed",base:0.24d}')
         attribute.append('{id:"minecraft:knockback_resistance",base:1.0d}')
@@ -3468,9 +3548,14 @@ def boss_summon(key, name, hp, ability):
         nbt += "," + extra
     if key == "warden":   # sonst graebt er sich nach dem Auftauchen sofort wieder ein
         nbt += ',Brain:{memories:{"minecraft:dig_cooldown":{value:{},ttl:6000L}}}'
-    return f"summon {BOSS_ENTITY[key]} {SPAWN_GEGNER[0]} {SPAWN_GEGNER[1]} {SPAWN_GEGNER[2]} {{{nbt}}}"
+    _hoch = 12 if key in FLIEGER else 0
+    return f"summon {BOSS_ENTITY[key]} {SPAWN_GEGNER[0]} {SPAWN_GEGNER[1] + _hoch} {SPAWN_GEGNER[2]} {{{nbt}}}"
 
-for n, (key, name, hp, ability, trupp) in BOSSE.items():
+# Nether-Bosse heissen nacht/boss_104, _107, _110: dieselbe Mechanik, eigene Nummern, damit Nacht 10
+# oben und Nacht 10 im Nether nicht dieselbe Funktion sind.
+_BOSSE_ALLE = dict(BOSSE)
+_BOSSE_ALLE.update({100 + _n: _b for _n, _b in NETHER_BOSSE.items()})
+for n, (key, name, hp, ability, trupp) in _BOSSE_ALLE.items():
     begleitung = []
     if trupp:
         mob, anzahl = trupp
@@ -3496,7 +3581,7 @@ boss_ruf = ["execute if score #bosszeit nw.boss matches ..0 run return 0",
             # Die Nacht kann in der Zwischenzeit vorbei sein (/trigger endnight, alle tot): dann faellt der Boss aus.
             # Der Aufruf von Hand (/trigger boss set N) laeuft nicht hierueber und geht weiterhin jederzeit.
             "execute unless score #status nw.status matches 1 run return 0"]
-for n in BOSSE:
+for n in _BOSSE_ALLE:
     boss_ruf.append(f"execute if score #bossruf nw.boss matches {n} run function {NS}:nacht/boss_{n}")
 boss_ruf.append("execute if score #bossruf nw.boss matches -1 run function {}:nacht/boss_zufall".format(NS))
 fn("nacht/boss_ruf", boss_ruf)
@@ -3516,7 +3601,7 @@ nacht_start = [
     f'title @a times 10 60 20',
     f'title @a title {J([txt("Night ", "dark_red"), {"score": {"name": "#nacht", "objective": "nw.nacht"}, "color": "dark_red"}])}',
     f'title @a subtitle {J([txt("The road is growing.", "gray")])}',
-    f"execute if score #nacht nw.nacht matches {LETZTE_NACHT} unless score #modus nw.status matches 2 run function {NS}:nacht/finale_start",
+    f"execute if score #nacht nw.nacht matches {LETZTE_NACHT} unless score #modus nw.status matches 2 unless score #welt nw.status matches 1 run function {NS}:nacht/finale_start",
     f"function {NS}:nacht/welle",
 ]
 nacht_start += [
@@ -3524,7 +3609,9 @@ nacht_start += [
     "scoreboard players set #bossruf nw.boss 0", "scoreboard players set #bosszeit nw.boss 0",
 ]
 for n in BOSSE:
-    nacht_start.append(f"execute if score #nacht nw.nacht matches {n} unless score #modus nw.status matches 2 run scoreboard players set #bossruf nw.boss {n}")
+    nacht_start.append(f"execute if score #nacht nw.nacht matches {n} unless score #modus nw.status matches 2 unless score #welt nw.status matches 1 run scoreboard players set #bossruf nw.boss {n}")
+for n in NETHER_BOSSE:
+    nacht_start.append(f"execute if score #nacht nw.nacht matches {n} if score #welt nw.status matches 1 run scoreboard players set #bossruf nw.boss {100 + n}")
 nacht_start += [
     # Endlosmodus: alle fuenf Naechte ein zufaelliger Boss
     "scoreboard players operation #m5 nw.tmp2 = #nacht nw.nacht", "scoreboard players operation #m5 nw.tmp2 %= #5 nw.const",
@@ -3549,7 +3636,8 @@ fn("nacht/ende", [
     "effect give @e[tag=nw.welle] minecraft:glowing infinite 0 true",
     # Ueberlebende auf der Gegnerinsel zur Strassenmuendung
     f"execute as @e[tag=nw.welle,x=-30,y=0,z={GEGNER_Z - GEGNER_RADIUS - 1},dx=60,dy=200,dz=40] run tp @s {STRASSENMUND[0]} {STRASSENMUND[1]} {STRASSENMUND[2]}",
-    f"execute if score #gegner nw.gegner matches 0 unless score #stumm nw.status matches 1 run function {NS}:nacht/bonus",
+    f"execute if score #gegner nw.gegner matches 0 unless score #stumm nw.status matches 1 unless score #welt nw.status matches 1 run function {NS}:nacht/bonus",
+    f"execute if score #gegner nw.gegner matches 0 if score #welt nw.status matches 1 run tellraw @a {J([txt('The whole wave is dead. Nothing pays for it down here.', 'green')])}",
     f"execute if score #gegner nw.gegner matches 1.. run tellraw @a {J([txt('Dawn breaks. ', 'gray'), {'score': {'name': '#gegner', 'objective': 'nw.gegner'}, 'color': 'red'}, txt(' enemies are still alive. They glow, and they are coming.', 'gray')])}",
     f"execute if score #gegner nw.gegner matches 1.. run playsound minecraft:entity.zombie.ambient hostile @a ~ ~ ~ 1 0.5",
     f"function {NS}:sammler/spruch/morgen",
@@ -3600,6 +3688,8 @@ fn("nacht/boss_tick", [
     f"scoreboard players operation #ms nw.tmp2 = #tick nw.tick", f"scoreboard players set #k nw.tmp2 {BOSS_SCHUSS_TAKT}",
     "scoreboard players operation #ms nw.tmp2 %= #k nw.tmp2",
     f"execute if score #ms nw.tmp2 matches 0 as @e[tag=nw.boss_schuetze] at @s run function {NS}:nacht/boss_schuss",
+    f"execute if score #ms nw.tmp2 matches 0 as @e[tag=nw.boss_heuler] at @s run function {NS}:nether/boss_salve",
+    f"execute if score #ms nw.tmp2 matches 0 as @e[tag=nw.boss_feuer] at @s run function {NS}:nether/boss_salve",
     "scoreboard players operation #m200 nw.tmp2 = #tick nw.tick", "scoreboard players operation #m200 nw.tmp2 %= #200 nw.const",
     "execute unless score #m200 nw.tmp2 matches 0 run return 0",
     # Die Mutter zieht ihre Brut nach, hoechstens BOSS_NACHSCHUB Stueck (Luis 10.09.2026).
@@ -3646,6 +3736,7 @@ fn("nacht/warden_wut", [
 ])
 fn("nacht/boss_tot", [
     "scoreboard players set #boss nw.boss 0", "bossbar set nw:boss visible false",
+    f"execute if score #bossart nw.boss matches 100.. run return run function {NS}:nether/boss_tot",
     f"scoreboard players set #d nw.tmp {KOPFGELD_BOSS}", "execute if score #kontrakt nw.upgrade matches 2 run scoreboard players operation #d nw.tmp *= #2 nw.const",
     "scoreboard players operation #konto nw.konto += #d nw.tmp", "scoreboard players operation #verdient nw.verdient += #d nw.tmp",
     f"execute if score #finale nw.status matches 1 run return run function {NS}:nacht/sieg",
@@ -3678,6 +3769,203 @@ fn("nacht/endlos_an", [
 ])
 
 # ----------------------------------------------------------------------------
+# NETHER (v0.70): Dimension, Insel, Weltwechsel, Kiste, Flieger, Bosse
+# ----------------------------------------------------------------------------
+# Leere Nether-Dimension. structure_overrides MUSS als leere Liste dastehen: fehlt der Eintrag, laesst
+# der Flachgenerator jede Struktur des Bioms zu (Festung, Bastion, Portalruine).
+w("minecraft/dimension/the_nether.json", {"type": "minecraft:the_nether", "generator": {
+    "type": "minecraft:flat", "settings": {"biome": "minecraft:nether_wastes", "lakes": False, "features": False,
+                                           "layers": [], "structure_overrides": []}}})
+w(f"{NS}/tags/entity_type/feuerball.json", {"values": ["minecraft:small_fireball", "minecraft:fireball"]})
+w(f"{NS}/tags/entity_type/neutral.json", {"values": ["minecraft:enderman", "minecraft:zombified_piglin"]})
+
+# Beute: je Stufe eine Kiste mit Erfahrungsflaschen und Enderaugen, sonst nichts (keine Coins, keine Flasche)
+for _st, ((_xa, _xb), (_aa, _ab, _ac)) in NETHER_KISTE.items():
+    w(f"{NS}/loot_table/nether/xp{_st}.json", {"pools": [{"rolls": 1, "entries": [
+        {"type": "minecraft:item", "name": "minecraft:experience_bottle",
+         "functions": [{"function": "minecraft:set_count", "count": {"min": _xa, "max": _xb}}]}]}]})
+    w(f"{NS}/loot_table/nether/auge{_st}.json", {"pools": [{"rolls": 1, "entries": [
+        {"type": "minecraft:item", "name": "minecraft:ender_eye", "weight": _ac,
+         "functions": ([{"function": "minecraft:set_count", "count": {"min": _aa, "max": _ab}}] if _ab > 1 else [])}]
+        + ([{"type": "minecraft:empty", "weight": 100 - _ac}] if _ac < 100 else [])}]})
+    _gew, _name, _farbe = GLUECK_KISTEN[_st - 1]
+    w(f"{NS}/loot_table/nether/kiste{_st}.json", kiste_tabelle(_st, "Nether " + _name, _farbe, [
+        {"type": "minecraft:loot_table", "value": f"{NS}:nether/xp{_st}"},
+        {"type": "minecraft:loot_table", "value": f"{NS}:nether/auge{_st}"}]))
+    _k = round(1000 * NETHER_GEN_KISTE / 100)
+    w(f"{NS}/loot_table/nether/phase{_st}.json", {"pools": [{"rolls": 1, "entries": [
+        {"type": "minecraft:loot_table", "value": f"{NS}:nether/kiste{_st}", "weight": _k},
+        {"type": "minecraft:empty", "weight": 1000 - _k}]}]})
+
+# Zustand der jeweils anderen Welt. Beim Wechsel wird getauscht.
+_TAUSCH = [("zeit", "nw.zeit"), ("nacht", "nw.nacht"), ("phase", "nw.phase"), ("abbau", "nw.abbau"),
+           ("modus", "nw.status"), ("finale", "nw.status")]
+fn("nether/zustand_neu", [
+    "scoreboard players set #x_zeit nw.zeit 1000", "scoreboard players set #x_nacht nw.nacht 0",
+    "scoreboard players set #x_phase nw.phase 1", "scoreboard players set #x_abbau nw.abbau 0",
+    "scoreboard players set #x_modus nw.status 0", "scoreboard players set #x_finale nw.status 0",
+    "scoreboard players set #n_fertig nw.status 0",
+])
+fn("nether/tausch", [z for _n, _o in _TAUSCH for z in (
+    f"scoreboard players operation #tsch nw.tmp = #{_n} {_o}",
+    f"scoreboard players operation #{_n} {_o} = #x_{_n} {_o}",
+    f"scoreboard players operation #x_{_n} {_o} = #tsch nw.tmp")] + [
+    # alles, was an der Stufe haengt, neu zeichnen
+    f"execute as @e[type=marker,tag=nw.gen] at @s run function {NS}:gen/farbe",
+    f"execute as @e[type=marker,tag=nw.gen] at @s run function {NS}:gen/anzeige",
+    "execute store result storage nachtwache:tmp t int 1 run scoreboard players get #zeit nw.zeit",
+    f"function {NS}:uhr/setzen with storage nachtwache:tmp",
+    "scoreboard players set #uhr_akku nw.tmp2 0",
+    "scoreboard players set #portalzeit nw.tmp2 -100",      # fuenf Sekunden Sperre, sonst pendelt man
+])
+_nx, _ny, _nz = NETHER_SPAWN
+fn("nether/hin", [
+    f"function {NS}:nether/tausch",
+    "scoreboard players set #welt nw.status 1",
+    f"execute in minecraft:the_nether run function {NS}:nether/aufbauen",
+    f"execute in minecraft:the_nether run tp @a {_nx} {_ny} {_nz}",
+    "title @a times 10 60 20",
+    "title @a title " + J([txt("THE NETHER", "dark_red", bold=True)]),
+    "title @a subtitle " + J([txt("Same watch, new island. No shop down here.", "gray")]),
+    "tellraw @a " + J([txt("[Nightwatch] ", "dark_red"), txt("The lives are shared with the world above. The generator here pays no coins, only crates with Eyes of Ender. Back through the portal, by day, all together.", "gray")]),
+    "playsound minecraft:block.portal.travel master @a ~ ~ ~ 0.4 0.8",
+])
+fn("nether/zurueck", [
+    f"function {NS}:nether/tausch",
+    "scoreboard players set #welt nw.status 0",
+    f"execute in minecraft:overworld run tp @a {SPAWN[0]}.5 {SPAWN[1]} {SPAWN[2]}.5",
+    f"execute in minecraft:overworld run function {NS}:sammler/kaufmenue",
+    f"execute in minecraft:overworld run function {NS}:sammler2/kaufmenue",
+    "title @a times 10 40 20",
+    "title @a title " + J([txt("BACK ABOVE", "gold", bold=True)]),
+    "title @a subtitle " + J([txt("The day up here waited for you.", "gray")]),
+    "playsound minecraft:block.portal.travel master @a ~ ~ ~ 0.4 1.2",
+])
+
+# Insel im Nether: die Baufunktionen der Oberwelt, in der Nether-Dimension ausgefuehrt, danach umgefaerbt.
+_px, (_pz1, _pz2) = NETHER_PORTAL_X, NETHER_PORTAL_Z
+fn("nether/aufbauen", [
+    "forceload add -20 -20 20 100",
+    f"execute unless score #n_gebaut nw.status matches 1 run function {NS}:nether/insel_neu",
+])
+fn("nether/insel_neu", [
+    "execute unless loaded 0 64 0 run return 0",
+    f"execute unless loaded 0 64 {GEGNER_Z} run return 0",
+    f"function {NS}:welt/startinsel",
+    f"fill -10 {BODEN_Y - 9} {INSEL_ZM - INSEL_RZ - 1} 10 {BODEN_Y} {INSEL_ZM + INSEL_RZ + 1} minecraft:crimson_nylium replace minecraft:grass_block",
+    f"fill -10 {BODEN_Y - 9} {INSEL_ZM - INSEL_RZ - 1} 10 {BODEN_Y} {INSEL_ZM + INSEL_RZ + 1} minecraft:netherrack replace minecraft:dirt",
+    f"function {NS}:welt/gegnerinsel", f"function {NS}:strasse/entfernen",
+    f"function {NS}:quell/setzen",
+    f"function {NS}:nether/pflege",
+    "scoreboard players set #n_gebaut nw.status 1",
+])
+# Rueckportal und Beacon, jede Sekunde nachgezogen. Der Rahmen waechst nach, abgebauter Obsidian verschwindet,
+# sonst waere das Portal eine Obsidianquelle (Obsidian gibt es sonst nur aus dem Gluecksrad).
+fn("nether/pflege", [
+    f"fill {_px} {BODEN_Y} {_pz1} {_px} {BODEN_Y} {_pz2} minecraft:obsidian",
+    f"fill {_px} {BODEN_Y + 4} {_pz1} {_px} {BODEN_Y + 4} {_pz2} minecraft:obsidian",
+    f"fill {_px} {BODEN_Y + 1} {_pz1} {_px} {BODEN_Y + 3} {_pz1} minecraft:obsidian",
+    f"fill {_px} {BODEN_Y + 1} {_pz2} {_px} {BODEN_Y + 3} {_pz2} minecraft:obsidian",
+    f"fill {_px} {BODEN_Y + 1} {_pz1 + 1} {_px} {BODEN_Y + 3} {_pz2 - 1} minecraft:nether_portal[axis=z] replace minecraft:air",
+    f'kill @e[type=item,x={_px - 2},y={BODEN_Y - 1},z={_pz1 - 2},dx=4,dy=8,dz={_pz2 - _pz1 + 4},nbt={{Item:{{id:"minecraft:obsidian"}}}}]',
+    f"function {NS}:beacon/aufbauen",
+])
+
+# Weltwechsel: nur gemeinsam. Gezaehlt wird, wer in einem Portalblock steht (#pp), gegen alle Spieler (#pa).
+fn("nether/tick", [
+    # Magmawuerfel teilen sich: die Kinder tragen keine Kennzeichen und wuerden sonst nicht mitgezaehlt
+    "execute if score #welt nw.status matches 1 in minecraft:the_nether run tag @e[type=minecraft:magma_cube,tag=!nw.welle,distance=0..] add nw.a_magma",
+    "execute if score #welt nw.status matches 1 in minecraft:the_nether run tag @e[type=minecraft:magma_cube,tag=!nw.welle,distance=0..] add nw.welle",
+    f"execute if score #m20 nw.tmp matches 7 run function {NS}:nether/sekunde",
+    "execute if score #portalzeit nw.tmp2 matches ..-1 run return run scoreboard players add #portalzeit nw.tmp2 1",
+    "scoreboard players set #pp nw.tmp2 0",
+    "execute as @a at @s if block ~ ~ ~ minecraft:nether_portal run scoreboard players add #pp nw.tmp2 1",
+    "execute if score #pp nw.tmp2 matches 0 run return run scoreboard players set #portalzeit nw.tmp2 0",
+    f"function {NS}:nether/portal",
+])
+_hinweis = lambda s: "title @a actionbar " + J([txt(s, "light_purple")])
+fn("nether/portal", [
+    "execute if score #ende nw.status matches 1 run return 0",
+    "execute store result score #pa nw.tmp2 if entity @a",
+    "scoreboard players set #pok nw.tmp2 1",
+    "execute unless score #pp nw.tmp2 = #pa nw.tmp2 run scoreboard players set #pok nw.tmp2 2",
+    f"execute unless score #welt nw.status matches 1 unless score #phase nw.phase matches {NETHER_AB}.. run scoreboard players set #pok nw.tmp2 3",
+    "execute if score #gegner nw.gegner matches 1.. run scoreboard players set #pok nw.tmp2 4",
+    "execute if score #status nw.status matches 1 run scoreboard players set #pok nw.tmp2 5",
+    "execute unless score #n_gebaut nw.status matches 1 run scoreboard players set #pok nw.tmp2 6",
+    "execute if score #pok nw.tmp2 matches 2 run " + _hinweis("Everyone has to stand in the portal."),
+    "execute if score #pok nw.tmp2 matches 3 run " + _hinweis(f"The Source must reach tier {NETHER_AB} first."),
+    "execute if score #pok nw.tmp2 matches 4 run " + _hinweis("Not while something is alive."),
+    "execute if score #pok nw.tmp2 matches 5 run " + _hinweis("Not at night."),
+    "execute if score #pok nw.tmp2 matches 6 run " + _hinweis("The Nether is not ready yet. Try again in a moment."),
+    "execute unless score #pok nw.tmp2 matches 1 run return run scoreboard players set #portalzeit nw.tmp2 0",
+    "scoreboard players add #portalzeit nw.tmp2 1",
+    "execute if score #portalzeit nw.tmp2 matches 1 run playsound minecraft:block.portal.trigger master @a ~ ~ ~ 0.5 1",
+    "execute unless score #portalzeit nw.tmp2 matches 40.. run return 0",
+    f"execute if score #welt nw.status matches 1 run return run function {NS}:nether/zurueck",
+    f"function {NS}:nether/hin",
+])
+fn("nether/sekunde", [
+    # Insel bauen, sobald die Chunks geladen sind (neue Welt, Migration, nach einem Reset)
+    f"execute unless score #n_gebaut nw.status matches 1 in minecraft:the_nether run function {NS}:nether/aufbauen",
+    f"execute if score #welt nw.status matches 1 in minecraft:the_nether run function {NS}:nether/pflege",
+    # Feuerbaelle, die niemanden treffen, fliegen in der Leere endlos weiter
+    "execute as @e[type=#nachtwache:feuerball] at @s unless entity @a[distance=..72] run kill @s",
+    # Die Gruppe bleibt zusammen: wer in der falschen Welt auftaucht (Tod, spaeter Beitritt), wird nachgeholt
+    f"execute if score #welt nw.status matches 1 as @a at @s if dimension minecraft:overworld in minecraft:the_nether run tp @s {_nx} {_ny} {_nz}",
+    f"execute unless score #welt nw.status matches 1 as @a at @s if dimension minecraft:the_nether in minecraft:overworld run tp @s {SPAWN[0]}.5 {SPAWN[1]} {SPAWN[2]}.5",
+])
+
+# Flieger: kein Marsch, kein Graben. Ist kein Spieler in der Naehe, zieht die Leine sie heran. Wer in die
+# Leere sinkt, steigt wieder. The Howler bleibt oben.
+fn("nether/flieger", [
+    "team join nw_gegner @s",
+    "execute store result score @s nw.py run data get entity @s Pos[1]",
+    # Jede Zeile mit "at @s": sonst rechnet der zweite tp von der alten Stelle und hebt den ersten auf.
+    # Ghasts bleiben immer ueber dem Dach der Bruecke. Auf Kopfhoehe gezogen steckte der erste Testghast
+    # mit seiner 4 Bloecke breiten Hitbox in der Gangwand und erstickte.
+    f"execute if entity @s[type=minecraft:ghast] if score @s nw.py matches ..{FLIEGER_HOEHE - 1} at @s run tp @s ~ ~0.4 ~",
+    f"execute if entity @s[tag=nw.boss_heuler] if score @s nw.py matches ..{HEULER_HOEHE - 1} at @s run tp @s ~ ~0.4 ~",
+    f"execute if score @s nw.py matches ..{BODEN_Y - 2} at @s run tp @s ~ ~0.6 ~",
+    f"execute if entity @a[gamemode=!spectator,distance=..{FLIEGER_LEINE}] run return run function {NS}:nether/leine_los",
+    "execute unless entity @p[gamemode=!spectator] run return 0",
+    # An der Leine ruht die eigene KI (NoAI). Ein Ghast fliegt sonst mit bis zu 0,23 Bloecken je Tick auf
+    # seinen Zufallspunkt zurueck und frisst den Zug fast auf: gemessen kam er nur 0,5 Bloecke je Sekunde voran.
+    f"execute unless entity @s[tag=nw.leine] run function {NS}:nether/leine_an",
+    # erst auf Flughoehe, dann waagerecht zum naechsten Spieler
+    f"execute if score @s nw.py matches ..{FLIEGER_HOEHE - 1} at @s run tp @s ~ ~0.4 ~",
+    "execute at @s facing entity @p[gamemode=!spectator] eyes rotated ~ 0 run tp @s ^ ^ ^0.3",
+])
+fn("nether/leine_an", ["tag @s add nw.leine", "data merge entity @s {NoAI:1b}"])
+fn("nether/leine_los", ["execute unless entity @s[tag=nw.leine] run return 0", "tag @s remove nw.leine", "data merge entity @s {NoAI:0b}"])
+# Feuersalve der beiden fliegenden Bosse: wie der Schuss des Marksman, Schaden plus Spur, nur mit freier Sicht
+fn("nether/boss_salve", [
+    f"execute unless entity @p[{_SP_ARG},distance=..{NETHER_SALVE_WEITE}] run return 0",
+    f"scoreboard players set #sicht nw.tmp {NETHER_SALVE_WEITE}",
+    f"execute store result score #frei nw.tmp2 positioned ~ ~1.4 ~ facing entity {_SPIELER} eyes run function {NS}:gegner/sicht",
+    "execute unless score #frei nw.tmp2 matches 1 run return 0",
+    f"scoreboard players set #spur nw.tmp {2 * NETHER_SALVE_WEITE}",
+    f"execute positioned ~ ~1.4 ~ facing entity {_SPIELER} eyes run function {NS}:bogi/spur",
+    f"execute as @p[{_SP_ARG},distance=..{NETHER_SALVE_WEITE}] at @s run particle minecraft:flame ~ ~1 ~ 0.3 0.5 0.3 0.02 20",
+    f"execute as @p[{_SP_ARG},distance=..{NETHER_SALVE_WEITE}] run damage @s {NETHER_SALVE_SCHADEN} minecraft:in_fire",
+    "playsound minecraft:entity.blaze.shoot hostile @a[distance=..40] ~ ~ ~ 1 0.7",
+])
+fn("nether/boss_tot", [
+    *[f"execute if score #bossart nw.boss matches {100 + _n} run give @p minecraft:ender_eye {_a}" for _n, _a in NETHER_BOSS_AUGEN.items()],
+    "tellraw @a " + J([txt("The boss is dead. ", "dark_purple"), txt("It was carrying Eyes of Ender.", "gray")]),
+    "playsound minecraft:ui.toast.challenge_complete master @a ~ ~ ~ 1 0.8",
+    f"execute if score #bossart nw.boss matches {100 + max(NETHER_BOSSE)} run function {NS}:nether/fertig",
+    "scoreboard players set #bossart nw.boss 0",
+])
+fn("nether/fertig", [
+    "scoreboard players set #n_fertig nw.status 1",
+    "title @a times 20 100 40",
+    "title @a title " + J([txt("THE NETHER IS BROKEN", "gold", bold=True)]),
+    "title @a subtitle " + J([txt("No more bosses down here. The nights go on.", "gray")]),
+    "playsound minecraft:entity.ender_dragon.death master @a ~ ~ ~ 0.4 1.3",
+])
+
+# ----------------------------------------------------------------------------
 # Gegner: Zaehlung, Kopfgeld, Durchbruch
 # ----------------------------------------------------------------------------
 gt = [
@@ -3696,11 +3984,12 @@ for t, kg in KOPFGELD.items():
         f"execute if score #c_{t} nw.tmp2 < #p_{t} nw.tmp2 run scoreboard players operation #d nw.tmp -= #c_{t} nw.tmp2",
         f"execute if score #c_{t} nw.tmp2 < #p_{t} nw.tmp2 run scoreboard players operation #kills nw.kills += #d nw.tmp",
         f"execute if score #c_{t} nw.tmp2 < #p_{t} nw.tmp2 run scoreboard players set #kg nw.tmp {kg}",
+        f"execute if score #c_{t} nw.tmp2 < #p_{t} nw.tmp2 if score #welt nw.status matches 1 run scoreboard players set #kg nw.tmp 0",
         f"execute if score #c_{t} nw.tmp2 < #p_{t} nw.tmp2 run scoreboard players operation #d nw.tmp *= #kg nw.tmp",
         f"execute if score #c_{t} nw.tmp2 < #p_{t} nw.tmp2 if score #kontrakt nw.upgrade matches 2 run scoreboard players operation #d nw.tmp *= #2 nw.const",
         f"execute if score #c_{t} nw.tmp2 < #p_{t} nw.tmp2 run scoreboard players operation #konto nw.konto += #d nw.tmp",
         f"execute if score #c_{t} nw.tmp2 < #p_{t} nw.tmp2 run scoreboard players operation #verdient nw.verdient += #d nw.tmp",
-        f"execute if score #c_{t} nw.tmp2 < #p_{t} nw.tmp2 run title @a actionbar {J([txt('Bounty +', 'gold'), {'score': {'name': '#d', 'objective': 'nw.tmp'}, 'color': 'gold'}])}",
+        f"execute if score #c_{t} nw.tmp2 < #p_{t} nw.tmp2 unless score #d nw.tmp matches 0 run title @a actionbar {J([txt('Bounty +', 'gold'), {'score': {'name': '#d', 'objective': 'nw.tmp'}, 'color': 'gold'}])}",
         f"scoreboard players operation #p_{t} nw.tmp2 = #c_{t} nw.tmp2",
     ]
 gt += [
@@ -3727,11 +4016,11 @@ fn("gegner/durchbruch", [
 fn("gegner/vergessen", [f"scoreboard players set #p_{t} nw.tmp2 0" for t in KOPFGELD])
 # Endermen sind von Haus aus neutral: jede Sekunde auf den naechsten Spieler wuetend machen
 fn("gegner/enderman_wut", [        # 1.21.11: angry_at (UUID) und anger_end_time (Spielzeit, absolut)
-    "execute unless entity @e[type=enderman,tag=nw.welle] run return 0",
+    "execute unless entity @e[type=#nachtwache:neutral,tag=nw.welle] run return 0",
     "execute store result score #t nw.tmp2 run time query gametime",
     "scoreboard players add #t nw.tmp2 600",
-    "execute as @e[type=enderman,tag=nw.welle] at @s if entity @p run data modify entity @s angry_at set from entity @p UUID",
-    "execute as @e[type=enderman,tag=nw.welle] store result entity @s anger_end_time long 1 run scoreboard players get #t nw.tmp2",
+    "execute as @e[type=#nachtwache:neutral,tag=nw.welle] at @s if entity @p run data modify entity @s angry_at set from entity @p UUID",
+    "execute as @e[type=#nachtwache:neutral,tag=nw.welle] store result entity @s anger_end_time long 1 run scoreboard players get #t nw.tmp2",
 ])
 fn("gegner/glocke", [
     "scoreboard players set #glocke_geklingelt nw.upgrade 1",
@@ -3750,6 +4039,8 @@ fn("gegner/spielertreffer", [
     "scoreboard players set #treffer nw.status 2",
 ])
 fn("gegner/einer", [
+    # Flieger (Lohe, Ghast) marschieren und graben nicht, sie haengen an einer Leine zum naechsten Spieler (v0.70)
+    f"execute if entity @s[tag=nw.flieger] run return run function {NS}:nether/flieger",
     # Am Beacon: fuenf Sekunden ungestoert, dann loest sich der Gegner auf und kostet ein Leben
     "execute store result score @s nw.hpv run data get entity @s Health",
     # Spielertreffer: Channeln abbrechen und fuer eine Weile auf den Spieler losgehen (Luis 09.09.2026)
@@ -4055,7 +4346,7 @@ fn("schutz/tick", [
     # Gegnerinsel und Strasse: jeden Tick zuruecksetzen, nichts darf abgebaut oder gebaut werden
     "scoreboard players operation #m2 nw.tmp2 = #tick nw.tick", "scoreboard players operation #m2 nw.tmp2 %= #2 nw.const",
     f"execute if score #m2 nw.tmp2 matches 0 run function {NS}:welt/gegnerinsel_pflege",
-    f"function {NS}:welt/stand",
+    f"execute in minecraft:overworld run function {NS}:welt/stand",     # laeuft auch, waehrend die Gruppe im Nether ist
     f"execute if score #m2 nw.tmp2 matches 1 if score #status nw.status matches 1 run function {NS}:strasse/bauen",
     f"execute if score #m2 nw.tmp2 matches 1 if score #status nw.status matches 0 run function {NS}:strasse/entfernen",
     f"execute if score #status nw.status matches 1 run function {NS}:schutz/gasse",
@@ -4209,13 +4500,16 @@ reset_ja += [f"item replace entity @a enderchest.{i} with minecraft:air" for i i
 reset_ja += [f"fill {RESET_X[0]} {y} {RESET_Z[0]} {RESET_X[1]} {y} {RESET_Z[1]} minecraft:air" for y in range(RESET_Y[0], RESET_Y[1] + 1)]
 reset_ja += [
     "kill @e[type=!player]",
+    # v0.70: auch die Nether-Insel leeren (geladener Bereich), sie wird danach von selbst neu gebaut
+    *[f"execute in minecraft:the_nether run fill -32 {y} -32 31 {y} 111 minecraft:air" for y in range(RESET_Y[0], RESET_Y[1] + 1)],
+    "scoreboard players set #n_gebaut nw.status 0", "scoreboard players set #n_fertig nw.status 0",
     f"forceload remove {RESET_X[0]} {RESET_Z[0]} {RESET_X[1]} {RESET_Z[1]}",
     "scoreboard players reset * nw.tode", "scoreboard players reset * nw.schlaf",
     f"function {NS}:admin/neustart",
     # Nach dem Reset steht die Uhr, bis jemand offiziell startet (Luis 11.09.2026). Muss NACH admin/neustart
     # kommen, denn das ruft init, und init stellt #pause wieder auf 0.
     "scoreboard players set #pause nw.status 1",
-    "tellraw @a " + J([txt("[Nightwatch] Fresh start. Day 1, tier 1, empty pockets. Nether and End are untouched.", "yellow")]),
+    "tellraw @a " + J([txt("[Nightwatch] Fresh start. Day 1, tier 1, empty pockets. The Nether starts over too, the End is untouched.", "yellow")]),
     "tellraw @a " + J([txt("[Nightwatch] The clock stands still. ", "yellow"), txt("Get ready, then start the watch with ", "gray"), txt("/trigger start", "yellow"), txt(" (console: ", "gray"), txt("function nachtwache:start", "yellow"), txt(").", "gray")]),
     "execute unless entity @s run say [Nightwatch] Fresh start, the clock stands still. Begin with: function nachtwache:start",
 ]
@@ -4294,7 +4588,7 @@ boss_trigger.append("tellraw @s " + J([txt("[Nightwatch] /trigger boss set <" + 
 fn("admin/boss_trigger", boss_trigger)
 fn("admin/zeit_nacht", [f"scoreboard players set #zeit nw.zeit {NACHT_START - 50}", "tellraw @a " + J([txt("[Nightwatch] Night is coming.", "yellow")])])
 fn("admin/zeit_tag", [f"scoreboard players set #zeit nw.zeit {TAG_START - 50}", "tellraw @a " + J([txt("[Nightwatch] Day is coming.", "yellow")])])
-fn("admin/welle_toeten", ["kill @e[tag=nw.welle]", f"function {NS}:gegner/vergessen", "tellraw @a " + J([txt("[Nightwatch] Wave removed.", "yellow")])])
+fn("admin/welle_toeten", ["execute as @e[type=minecraft:magma_cube,tag=nw.welle] run data merge entity @s {Size:0}", "kill @e[tag=nw.welle]", f"function {NS}:gegner/vergessen", "tellraw @a " + J([txt("[Nightwatch] Wave removed.", "yellow")])])
 fn("admin/splitter", ["$scoreboard players add #konto nw.konto $(n)", "tellraw @a " + J([txt("[Nightwatch] Coins credited.", "yellow")])])
 # Admin-Phasenwechsel: Abbauzaehler auf den Anfang der Stufe heben, sonst zeigt die Anzeige Minus-Prozent
 admin_phase = ["$function nachtwache:quell/phase_wechsel {phase:$(p)}"]

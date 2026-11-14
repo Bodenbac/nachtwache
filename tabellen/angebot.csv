@@ -140,3 +140,4 @@ id,stufe,name,preis,max,item,kat,pos
 336,3,Potion of Regeneration II,250,1,TRANK_REGEN,BREW,
 337,4,Potion of Fire Resistance (long),200,1,TRANK_FEUER,BREW,
 338,5,Potion of Strength II,350,1,TRANK_STAERKE2,BREW,
+339,4,Flint and Steel,100,1,flint_and_steel,UTIL,
